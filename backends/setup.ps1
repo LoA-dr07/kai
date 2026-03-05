@@ -1,5 +1,9 @@
 # Windows Setup-Skript fuer das meal-planner Backend
 # Ausfuehren mit: .\setup.ps1
+#
+# HINWEIS: Falls du "UnauthorizedAccess" bekommst, fuehre einmalig aus:
+#   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+# Dann mit "J" bestaetigen und dieses Skript erneut starten.
 
 $ErrorActionPreference = "Stop"
 
