@@ -51,8 +51,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_meal_plans_id", "meal_plans", ["id"])
 
-    meal_type_enum = sa.Enum("breakfast", "lunch", "dinner", name="mealtype")
-    meal_type_enum.create(op.get_bind(), checkfirst=True)
+    op.execute("CREATE TYPE IF NOT EXISTS mealtype AS ENUM ('breakfast', 'lunch', 'dinner')")
 
     op.create_table(
         "meal_plan_entries",
