@@ -7,6 +7,7 @@ Create Date: 2026-03-05
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 revision = "0001"
 down_revision = None
@@ -51,14 +52,15 @@ def upgrade() -> None:
     )
     op.create_index("ix_meal_plans_id", "meal_plans", ["id"])
 
-    op.execute("CREATE TYPE IF NOT EXISTS mealtype AS ENUM ('breakfast', 'lunch', 'dinner')")
+    mealtype = postgresql.ENUM("breakfast", "lunch", "dinner", name="mealtype", create_type=False)
+    mealtype.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         "meal_plan_entries",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("meal_plan_id", sa.Integer(), sa.ForeignKey("meal_plans.id", ondelete="CASCADE"), nullable=False),
         sa.Column("day_of_week", sa.Integer(), nullable=False),
-        sa.Column("meal_type", sa.Enum("breakfast", "lunch", "dinner", name="mealtype", create_type=False), nullable=False),
+        sa.Column("meal_type", mealtype, nullable=False),
         sa.Column("recipe_id", sa.Integer(), sa.ForeignKey("recipes.id", ondelete="SET NULL"), nullable=True),
         sa.Column("custom_meal", sa.String(255), nullable=True),
     )
