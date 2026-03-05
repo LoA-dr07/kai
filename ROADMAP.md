@@ -1,7 +1,7 @@
 # Meal-Planner – Entwicklungs-Roadmap
 
 **Zielgruppe:** Familie / Haushalt (gemeinsame Nutzung)
-**App-Typ:** Klassischer Meal-Planner (Wochenplanung, Rezeptverwaltung, Einkaufsliste)
+**App-Typ:** Klassischer Meal-Planner (Wochenplanung, Rezeptverwaltung)
 **Stack:** FastAPI (Python) + React Native / Expo + PostgreSQL
 
 ---
@@ -10,9 +10,9 @@
 
 1. **Rezeptverwaltung** – Rezepte anlegen, bearbeiten, löschen; mit Zutaten, Portionsangaben und optionalem Bild
 2. **Wochenplan** – Mahlzeiten (Frühstück, Mittag, Abend) pro Tag planen; Rezepte aus der Rezeptdatenbank zuweisen
-3. **Einkaufsliste** – Automatisch aus dem Wochenplan generieren; Zutaten zusammenfassen, abhaken
 
 **Nice-to-Have (spätere Phasen)**
+- Einkaufsliste – automatisch aus dem Wochenplan generieren
 - Haushaltsmitglieder einladen / gemeinsam planen
 - Rezepte aus der Community durchsuchen oder importieren
 - Nährwertangaben
@@ -27,11 +27,10 @@
 Ziel: Alle Kernentitäten sind als Datenbankmodelle und REST-API vorhanden.
 
 **Tasks:**
-- [ ] Datenmodelle definieren: `Recipe`, `Ingredient`, `RecipeIngredient`, `MealPlan`, `MealPlanEntry`, `ShoppingList`, `ShoppingListItem`
+- [ ] Datenmodelle definieren: `Recipe`, `Ingredient`, `RecipeIngredient`, `MealPlan`, `MealPlanEntry`
 - [ ] Alembic-Migration erstellen und ausführen
 - [ ] CRUD-Endpunkte für Rezepte (`/recipes`)
 - [ ] CRUD-Endpunkte für Wochenpläne (`/meal-plans`)
-- [ ] Endpunkt: Einkaufsliste aus Wochenplan generieren (`/meal-plans/{id}/shopping-list`)
 - [ ] Pydantic-Schemas für Request/Response
 - [ ] Grundlegende Input-Validierung
 
@@ -45,7 +44,7 @@ Ziel: Nutzer können Rezepte auf dem Smartphone verwalten.
 
 **Tasks:**
 - [ ] API-Client (Axios-Wrapper) und React Query Hooks einrichten
-- [ ] Navigation (Expo Router): Tab-Struktur `Rezepte | Wochenplan | Einkaufsliste`
+- [ ] Navigation (Expo Router): Tab-Struktur `Rezepte | Wochenplan`
 - [ ] Rezeptliste (Übersicht)
 - [ ] Rezept-Detailansicht
 - [ ] Rezept erstellen / bearbeiten (Formular)
@@ -65,19 +64,7 @@ Ziel: Nutzer können Mahlzeiten für die Woche planen.
 
 ---
 
-### Phase 4 – Mobile Frontend: Einkaufsliste
-
-Ziel: Einkaufsliste wird automatisch generiert und ist interaktiv.
-
-**Tasks:**
-- [ ] Einkaufsliste aus aktuellem Wochenplan generieren (API-Aufruf)
-- [ ] Zutaten anzeigen (gruppiert nach Kategorie oder sortiert)
-- [ ] Artikel abhaken (lokaler Status)
-- [ ] Liste zurücksetzen / neu generieren
-
----
-
-### Phase 5 – Haushalt & Qualität
+### Phase 4 – Haushalt & Qualität
 
 Ziel: Mehrere Personen können den Planer gemeinsam nutzen; Code ist stabil.
 
@@ -121,8 +108,7 @@ Ziel: Mehrere Personen können den Planer gemeinsam nutzen; Code ist stabil.
 backends/app/
 ├── models/          # SQLAlchemy-Modelle (neu)
 │   ├── recipe.py
-│   ├── meal_plan.py
-│   └── shopping_list.py
+│   └── meal_plan.py
 ├── schemas/         # Pydantic-Schemas (neu)
 ├── routers/         # FastAPI-Router (neu)
 └── main.py          # Router einbinden
