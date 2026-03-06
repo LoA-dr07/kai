@@ -99,5 +99,5 @@ Den angezeigten QR-Code mit der Expo Go App scannen.
 
 ```powershell
 cd mobile
-npx expo start
+npx expo start --tunnel --clear
 ```
