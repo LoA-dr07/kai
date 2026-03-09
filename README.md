@@ -68,36 +68,71 @@ uvicorn app.main:app --reload --host 0.0.0.0
 
 - Node.js 18+
 - Expo Go App auf dem Smartphone ([iOS](https://apps.apple.com/app/expo-go/id982107779) / [Android](https://play.google.com/store/apps/details?id=host.exp.exponent))
-- Smartphone und PC im **selben WLAN**
 
 ### 1. Abhängigkeiten installieren (einmalig)
 
 ```powershell
 cd mobile
 npm install
+npx expo install @expo/ngrok@^4.0.0
 ```
 
-### 2. Backend-URL konfigurieren
+> Falls ngrok noch nicht installiert ist: `winget install ngrok.ngrok`
 
-Erstelle im Ordner `mobile\` eine Datei `.env.local` mit der LAN-IP deines PCs:
+### 2. ngrok starten (Backend nach außen tunneln)
+
+Damit die App auf dem Handy die Backend-API erreichen kann, muss das Backend öffentlich erreichbar sein.
+
+**ngrok installieren (einmalig):**
+```powershell
+winget install ngrok.ngrok
+```
+
+**ngrok starten** (in einem separaten PowerShell-Fenster, während der Backend-Server läuft):
+```powershell
+ngrok http 8000
+```
+
+ngrok zeigt eine URL an, z.B.:
+```
+Forwarding   https://abc123.ngrok-free.app -> http://localhost:8000
+```
+
+### 3. Backend-URL konfigurieren
+
+Erstelle im Ordner `mobile\` eine Datei `.env` mit der ngrok-URL aus dem vorherigen Schritt:
 
 ```
-EXPO_PUBLIC_API_URL=http://192.168.1.42:8000
+EXPO_PUBLIC_API_URL=https://abc123.ngrok-free.app
 ```
 
-> `localhost` funktioniert auf dem Gerät nicht — es muss die echte IP des PCs sein.
+> Die ngrok-URL ändert sich bei jedem Neustart von ngrok — dann muss die `.env` entsprechend aktualisiert werden.
+> `localhost` oder die LAN-IP funktionieren **nicht** zuverlässig, wenn das Handy über Tunnel verbunden ist.
 
-### 3. Expo starten
+### 4. Expo starten
 
 ```powershell
-npx expo start
+npx expo start --tunnel
 ```
 
-Den angezeigten QR-Code mit der Expo Go App scannen.
+Den angezeigten QR-Code mit der **Expo Go App** scannen.
 
 ### Kurzanleitung Frontend (nach einmaliger Einrichtung)
 
+1. Backend starten (in `backends\`):
+```powershell
+.\venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload --host 0.0.0.0
+```
+
+2. ngrok starten (separates Fenster) und URL in `mobile\.env` eintragen:
+```powershell
+ngrok http 8000
+# → EXPO_PUBLIC_API_URL in mobile\.env auf die angezeigte https://... URL setzen
+```
+
+3. Expo starten:
 ```powershell
 cd mobile
-npx expo start --tunnel --clear
+npx expo start --tunnel
 ```
