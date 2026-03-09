@@ -93,7 +93,11 @@ EXPO_PUBLIC_API_URL=http://192.168.1.42:8000
 npx expo start
 ```
 
-Den angezeigten QR-Code mit der Expo Go App scannen.
+Den angezeigten QR-Code mit der **Expo Go App** scannen.
+
+> **Wichtig:** Kein `--tunnel` verwenden — das erfordert ngrok und ist hier nicht nötig.
+> Kein `--clear` nötig (löscht nur den Cache und verlangsamt den ersten Start).
+> Der Standard-LAN-Modus (`npx expo start`) funktioniert, solange Handy und PC im selben WLAN sind.
 
 ### Kurzanleitung Frontend (nach einmaliger Einrichtung)
 
