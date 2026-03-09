@@ -79,14 +79,14 @@ npx expo install @expo/ngrok@^4.0.0
 
 ### 2. Backend-URL konfigurieren
 
-Erstelle im Ordner `mobile\` eine Datei `.env.local` mit der LAN-IP deines PCs:
+Erstelle im Ordner `mobile\` eine Datei `.env` mit der LAN-IP deines PCs:
 
 ```
 EXPO_PUBLIC_API_URL=http://192.168.1.42:8000
 ```
 
 > Die LAN-IP ermitteln: `ipconfig` → Eintrag „IPv4-Adresse".
-> `localhost` funktioniert nicht — die App läuft auf dem Handy und muss den PC direkt erreichen.
+> `localhost` funktioniert **nicht** — die App läuft auf dem Handy und muss den PC direkt erreichen.
 > Der Tunnel betrifft nur den Metro-Bundler (JS-Bundle), nicht die API-Aufrufe.
 
 ### 3. Expo starten
