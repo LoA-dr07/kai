@@ -68,13 +68,13 @@ uvicorn app.main:app --reload --host 0.0.0.0
 
 - Node.js 18+
 - Expo Go App auf dem Smartphone ([iOS](https://apps.apple.com/app/expo-go/id982107779) / [Android](https://play.google.com/store/apps/details?id=host.exp.exponent))
-- Smartphone und PC im **selben WLAN**
 
 ### 1. Abhängigkeiten installieren (einmalig)
 
 ```powershell
 cd mobile
 npm install
+npx expo install @expo/ngrok@^4.0.0
 ```
 
 ### 2. Backend-URL konfigurieren
@@ -85,23 +85,21 @@ Erstelle im Ordner `mobile\` eine Datei `.env.local` mit der LAN-IP deines PCs:
 EXPO_PUBLIC_API_URL=http://192.168.1.42:8000
 ```
 
-> `localhost` funktioniert auf dem Gerät nicht — es muss die echte IP des PCs sein.
+> Die LAN-IP ermitteln: `ipconfig` → Eintrag „IPv4-Adresse".
+> `localhost` funktioniert nicht — die App läuft auf dem Handy und muss den PC direkt erreichen.
+> Der Tunnel betrifft nur den Metro-Bundler (JS-Bundle), nicht die API-Aufrufe.
 
 ### 3. Expo starten
 
 ```powershell
-npx expo start
+npx expo start --tunnel
 ```
 
 Den angezeigten QR-Code mit der **Expo Go App** scannen.
-
-> **Wichtig:** Kein `--tunnel` verwenden — das erfordert ngrok und ist hier nicht nötig.
-> Kein `--clear` nötig (löscht nur den Cache und verlangsamt den ersten Start).
-> Der Standard-LAN-Modus (`npx expo start`) funktioniert, solange Handy und PC im selben WLAN sind.
 
 ### Kurzanleitung Frontend (nach einmaliger Einrichtung)
 
 ```powershell
 cd mobile
-npx expo start --tunnel --clear
+npx expo start --tunnel
 ```
