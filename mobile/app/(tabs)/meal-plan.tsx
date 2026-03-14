@@ -26,7 +26,7 @@ import type { MealPlanEntry, MealType, User } from '../../lib/types';
 
 function getMondayOf(date: Date): Date {
   const d = new Date(date);
-  const day = d.getDay(); // 0=So, 1=Mo, ...
+  const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
@@ -56,7 +56,7 @@ const MEAL_TYPES: { key: MealType; label: string; icon: string }[] = [
   { key: 'dinner', label: 'Abendessen', icon: '🍽' },
 ];
 
-// --- UserChips-Komponente ---
+// --- UserChips im Modal ---
 
 function UserChips({
   users,
@@ -94,16 +94,16 @@ function UserChips({
   );
 }
 
-// --- AvatarDots: zeigt Kurzzeichen zugewiesener User in einer Mahlzeit-Zeile ---
+// --- AvatarBadges: farbige Kürzel neben einem Eintrag ---
 
-function AvatarDots({ entry, users }: { entry: MealPlanEntry; users: User[] }) {
+function AvatarBadges({ entry, users }: { entry: MealPlanEntry; users: User[] }) {
   if (!entry.assigned_user_ids?.length) return null;
   const assigned = users.filter(u => entry.assigned_user_ids.includes(u.id));
   return (
-    <View style={dotStyles.row}>
+    <View style={badgeStyles.row}>
       {assigned.map(u => (
-        <View key={u.id} style={[dotStyles.dot, { backgroundColor: u.avatar_color }]}>
-          <Text style={dotStyles.dotText}>{u.short_name}</Text>
+        <View key={u.id} style={[badgeStyles.badge, { backgroundColor: u.avatar_color }]}>
+          <Text style={badgeStyles.text}>{u.short_name}</Text>
         </View>
       ))}
     </View>
@@ -147,21 +147,29 @@ export default function MealPlanScreen() {
     });
   };
 
-  const getEntry = (dayIndex: number, mealType: MealType): MealPlanEntry | undefined =>
-    currentPlan?.entries.find(e => e.day_of_week === dayIndex && e.meal_type === mealType);
+  const getEntries = (dayIndex: number, mealType: MealType): MealPlanEntry[] =>
+    currentPlan?.entries.filter(e => e.day_of_week === dayIndex && e.meal_type === mealType) ?? [];
 
-  const openModal = (dayIndex: number, mealType: MealType) => {
-    const existing = getEntry(dayIndex, mealType);
-    setSelectedSlot({ dayIndex, mealType, existingEntry: existing });
-    if (existing?.custom_meal) {
+  const openModalNew = (dayIndex: number, mealType: MealType) => {
+    setSelectedSlot({ dayIndex, mealType });
+    setTab('recipe');
+    setFreeText('');
+    setSearchText('');
+    setSelectedUserIds([]);
+    setModalVisible(true);
+  };
+
+  const openModalEdit = (dayIndex: number, mealType: MealType, entry: MealPlanEntry) => {
+    setSelectedSlot({ dayIndex, mealType, existingEntry: entry });
+    if (entry.custom_meal) {
       setTab('freetext');
-      setFreeText(existing.custom_meal);
+      setFreeText(entry.custom_meal);
     } else {
       setTab('recipe');
       setFreeText('');
     }
     setSearchText('');
-    setSelectedUserIds(existing?.assigned_user_ids ?? []);
+    setSelectedUserIds(entry.assigned_user_ids ?? []);
     setModalVisible(true);
   };
 
@@ -232,6 +240,8 @@ export default function MealPlanScreen() {
     ? MEAL_TYPES.find(m => m.key === selectedSlot.mealType)?.label
     : '';
 
+  const isEditing = !!selectedSlot?.existingEntry;
+
   return (
     <View style={styles.root}>
       {/* Wochennavigation */}
@@ -239,9 +249,7 @@ export default function MealPlanScreen() {
         <TouchableOpacity onPress={() => navigateWeek(-1)} style={styles.navBtn}>
           <Text style={styles.navArrow}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.weekLabel}>
-          KW {weekNum}, {year}
-        </Text>
+        <Text style={styles.weekLabel}>KW {weekNum}, {year}</Text>
         <TouchableOpacity onPress={() => navigateWeek(1)} style={styles.navBtn}>
           <Text style={styles.navArrow}>›</Text>
         </TouchableOpacity>
@@ -264,43 +272,54 @@ export default function MealPlanScreen() {
                 </View>
 
                 {MEAL_TYPES.map(({ key, label, icon }) => {
-                  const entry = getEntry(dayIdx, key);
-                  const mealLabel = entry?.recipe?.name ?? entry?.custom_meal ?? null;
+                  const entries = getEntries(dayIdx, key);
 
                   return (
-                    <TouchableOpacity
-                      key={key}
-                      style={styles.mealRow}
-                      onPress={() => openModal(dayIdx, key)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.mealIcon}>{icon}</Text>
-                      <Text style={styles.mealTypeLabel}>{label}</Text>
+                    <View key={key} style={styles.mealSection}>
+                      {/* Mahlzeit-Kopfzeile */}
+                      <View style={styles.mealHeader}>
+                        <Text style={styles.mealIcon}>{icon}</Text>
+                        <Text style={styles.mealTypeLabel}>{label}</Text>
+                      </View>
 
-                      {mealLabel ? (
-                        <View style={styles.mealFilled}>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.mealName} numberOfLines={1}>
-                              {mealLabel}
-                            </Text>
-                            {entry && <AvatarDots entry={entry} users={users} />}
-                          </View>
+                      {/* Bestehende Einträge */}
+                      {entries.map(entry => {
+                        const mealLabel = entry.recipe?.name ?? entry.custom_meal ?? '';
+                        return (
                           <TouchableOpacity
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            onPress={e => {
-                              e.stopPropagation();
-                              handleDelete(entry!);
-                            }}
+                            key={entry.id}
+                            style={styles.entryRow}
+                            onPress={() => openModalEdit(dayIdx, key, entry)}
+                            activeOpacity={0.7}
                           >
-                            <Text style={styles.deleteBtn}>✕</Text>
+                            <View style={styles.entryContent}>
+                              <Text style={styles.entryName} numberOfLines={1}>
+                                {mealLabel}
+                              </Text>
+                              <AvatarBadges entry={entry} users={users} />
+                            </View>
+                            <TouchableOpacity
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                              onPress={e => {
+                                e.stopPropagation();
+                                handleDelete(entry);
+                              }}
+                            >
+                              <Text style={styles.deleteBtn}>✕</Text>
+                            </TouchableOpacity>
                           </TouchableOpacity>
-                        </View>
-                      ) : (
-                        <View style={styles.mealEmpty}>
-                          <Text style={styles.addPlus}>+</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
+                        );
+                      })}
+
+                      {/* Eintrag hinzufügen */}
+                      <TouchableOpacity
+                        style={styles.addRow}
+                        onPress={() => openModalNew(dayIdx, key)}
+                        activeOpacity={0.6}
+                      >
+                        <Text style={styles.addRowText}>+ Eintrag hinzufügen</Text>
+                      </TouchableOpacity>
+                    </View>
                   );
                 })}
               </View>
@@ -309,7 +328,7 @@ export default function MealPlanScreen() {
         </ScrollView>
       )}
 
-      {/* Modal: Mahlzeit hinzufügen / bearbeiten */}
+      {/* Modal */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -332,25 +351,27 @@ export default function MealPlanScreen() {
           {/* Nutzerauswahl */}
           <UserChips users={users} selectedIds={selectedUserIds} onToggle={toggleUser} />
 
-          {/* Tab-Auswahl */}
-          <View style={styles.tabRow}>
-            <TouchableOpacity
-              style={[styles.tabBtn, tab === 'recipe' && styles.tabActive]}
-              onPress={() => setTab('recipe')}
-            >
-              <Text style={[styles.tabText, tab === 'recipe' && styles.tabTextActive]}>
-                Rezept
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tabBtn, tab === 'freetext' && styles.tabActive]}
-              onPress={() => setTab('freetext')}
-            >
-              <Text style={[styles.tabText, tab === 'freetext' && styles.tabTextActive]}>
-                Freitext
-              </Text>
-            </TouchableOpacity>
-          </View>
+          {/* Tabs – nur bei neuem Eintrag; beim Bearbeiten bleibt der Typ fix */}
+          {!isEditing && (
+            <View style={styles.tabRow}>
+              <TouchableOpacity
+                style={[styles.tabBtn, tab === 'recipe' && styles.tabActive]}
+                onPress={() => setTab('recipe')}
+              >
+                <Text style={[styles.tabText, tab === 'recipe' && styles.tabTextActive]}>
+                  Rezept
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tabBtn, tab === 'freetext' && styles.tabActive]}
+                onPress={() => setTab('freetext')}
+              >
+                <Text style={[styles.tabText, tab === 'freetext' && styles.tabTextActive]}>
+                  Freitext
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Rezept-Tab */}
           {tab === 'recipe' ? (
@@ -390,7 +411,6 @@ export default function MealPlanScreen() {
               />
             </View>
           ) : (
-            /* Freitext-Tab */
             <View style={styles.tabContent}>
               <TextInput
                 style={styles.freetextInput}
@@ -423,12 +443,8 @@ const GREEN_LIGHT = '#E8F5E9';
 const BORDER = '#E0E0E0';
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
+  root: { flex: 1, backgroundColor: '#F8F9FA' },
 
-  // Wochennavigation
   weekNav: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -439,28 +455,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
-  navBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  navArrow: {
-    fontSize: 28,
-    color: GREEN,
-    lineHeight: 32,
-  },
-  weekLabel: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
+  navBtn: { paddingHorizontal: 16, paddingVertical: 8 },
+  navArrow: { fontSize: 28, color: GREEN, lineHeight: 32 },
+  weekLabel: { fontSize: 17, fontWeight: '700', color: '#1A1A1A' },
 
-  // Scroll
-  scrollContent: {
-    padding: 12,
-    gap: 10,
-  },
+  scrollContent: { padding: 12, gap: 10 },
 
-  // Tageskarte
   dayCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -476,77 +476,49 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
-  dayName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: GREEN,
-  },
-  dayDate: {
-    fontSize: 13,
-    color: '#555',
-  },
+  dayName: { fontSize: 15, fontWeight: '700', color: GREEN },
+  dayDate: { fontSize: 13, color: '#555' },
 
-  // Mahlzeit-Zeile
-  mealRow: {
+  mealSection: {
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
+    paddingBottom: 4,
+  },
+  mealHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: BORDER,
-    gap: 8,
-  },
-  mealIcon: {
-    fontSize: 18,
-    width: 24,
-    textAlign: 'center',
-  },
-  mealTypeLabel: {
-    fontSize: 14,
-    color: '#555',
-    width: 96,
-  },
-  mealFilled: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: GREEN_LIGHT,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingTop: 8,
+    paddingBottom: 4,
     gap: 6,
   },
-  mealName: {
-    fontSize: 14,
-    color: '#1A1A1A',
-    fontWeight: '500',
-  },
-  deleteBtn: {
-    fontSize: 14,
-    color: '#B71C1C',
-    fontWeight: '600',
-  },
-  mealEmpty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: BORDER,
-    borderStyle: 'dashed',
-    paddingVertical: 6,
-  },
-  addPlus: {
-    fontSize: 18,
-    color: '#AAA',
-  },
+  mealIcon: { fontSize: 16, width: 22, textAlign: 'center' },
+  mealTypeLabel: { fontSize: 13, fontWeight: '600', color: '#555' },
 
-  // Modal
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
+  entryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginHorizontal: 8,
+    marginBottom: 4,
+    backgroundColor: GREEN_LIGHT,
+    borderRadius: 8,
+    gap: 8,
   },
+  entryContent: { flex: 1 },
+  entryName: { fontSize: 14, fontWeight: '500', color: '#1A1A1A' },
+  deleteBtn: { fontSize: 13, color: '#B71C1C', fontWeight: '700' },
+
+  addRow: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginHorizontal: 8,
+    marginBottom: 4,
+  },
+  addRowText: { fontSize: 13, color: '#AAA' },
+
+  modalContainer: { flex: 1, backgroundColor: '#fff' },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -557,47 +529,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  modalClose: {
-    fontSize: 16,
-    color: GREEN,
-    fontWeight: '600',
-  },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
+  modalClose: { fontSize: 16, color: GREEN, fontWeight: '600' },
 
-  // Tabs
   tabRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: GREEN,
-  },
-  tabText: {
-    fontSize: 15,
-    color: '#888',
-    fontWeight: '500',
-  },
-  tabTextActive: {
-    color: GREEN,
-    fontWeight: '700',
-  },
-  tabContent: {
-    flex: 1,
-    padding: 16,
-  },
+  tabBtn: { flex: 1, paddingVertical: 12, alignItems: 'center' },
+  tabActive: { borderBottomWidth: 2, borderBottomColor: GREEN },
+  tabText: { fontSize: 15, color: '#888', fontWeight: '500' },
+  tabTextActive: { color: GREEN, fontWeight: '700' },
+  tabContent: { flex: 1, padding: 16 },
 
-  // Rezept-Tab
   searchInput: {
     borderWidth: 1,
     borderColor: BORDER,
@@ -614,24 +559,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
-  recipeName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  recipeDesc: {
-    fontSize: 13,
-    color: '#888',
-    marginTop: 2,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: '#AAA',
-    marginTop: 32,
-    fontSize: 14,
-  },
+  recipeName: { fontSize: 15, fontWeight: '600', color: '#1A1A1A' },
+  recipeDesc: { fontSize: 13, color: '#888', marginTop: 2 },
+  emptyText: { textAlign: 'center', color: '#AAA', marginTop: 32, fontSize: 14 },
 
-  // Freitext-Tab
   freetextInput: {
     borderWidth: 1,
     borderColor: BORDER,
@@ -648,17 +579,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
-  saveBtnDisabled: {
-    backgroundColor: '#A5D6A7',
-  },
-  saveBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  saveBtnDisabled: { backgroundColor: '#A5D6A7' },
+  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
-
-// --- Chip Styles ---
 
 const chipStyles = StyleSheet.create({
   container: {
@@ -668,16 +591,8 @@ const chipStyles = StyleSheet.create({
     borderBottomColor: BORDER,
     backgroundColor: '#fff',
   },
-  label: {
-    fontSize: 13,
-    color: '#555',
-    marginBottom: 8,
-    fontWeight: '600',
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+  label: { fontSize: 13, color: '#555', marginBottom: 8, fontWeight: '600' },
+  row: { flexDirection: 'row', gap: 8 },
   chip: {
     borderWidth: 1.5,
     borderColor: BORDER,
@@ -686,34 +601,18 @@ const chipStyles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: '#fff',
   },
-  chipText: {
-    fontSize: 14,
-    color: '#555',
-    fontWeight: '600',
-  },
-  chipTextSelected: {
-    color: '#fff',
-  },
+  chipText: { fontSize: 14, color: '#555', fontWeight: '600' },
+  chipTextSelected: { color: '#fff' },
 });
 
-// --- Dot Styles ---
-
-const dotStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: 4,
-    marginTop: 3,
-  },
-  dot: {
+const badgeStyles = StyleSheet.create({
+  row: { flexDirection: 'row', gap: 4, marginTop: 3 },
+  badge: {
     borderRadius: 10,
     paddingHorizontal: 5,
     paddingVertical: 1,
-    minWidth: 22,
+    minWidth: 24,
     alignItems: 'center',
   },
-  dotText: {
-    fontSize: 10,
-    color: '#fff',
-    fontWeight: '700',
-  },
+  text: { fontSize: 10, color: '#fff', fontWeight: '700' },
 });
