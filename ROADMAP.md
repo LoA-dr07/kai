@@ -64,17 +64,22 @@ Ziel: Nutzer können Mahlzeiten für die Woche planen.
 
 ---
 
-### Phase 4 – Haushalt & Qualität
+### Phase 4 – Haushalt & Mehrpersonen-Planung
 
-Ziel: Mehrere Personen können den Planer gemeinsam nutzen; Code ist stabil.
+Ziel: Drei Haushaltsmitglieder teilen eine gemeinsame Rezeptsammlung und einen gemeinsamen Wochenplan. Jede Mahlzeit im Wochenplan kann einem, mehreren oder allen Mitgliedern zugewiesen werden. Kein Login erforderlich – die Nutzer werden als feste Datensätze angelegt (Authentifizierung folgt in einer späteren Phase).
 
 **Tasks:**
-- [ ] Entscheidung: Authentifizierung (einfaches Passwort / E-Mail-Login vs. kein Login)
-- [ ] Haushalt-Konzept: Mehrere Nutzer teilen einen Wochenplan
-- [ ] Unit-Tests Backend (pytest)
-- [ ] Grundlegende Tests Frontend (Jest / React Testing Library)
-- [ ] CI/CD-Pipeline (GitHub Actions: Lint + Tests bei jedem Push)
-- [ ] Deployment-Strategie klären (Backend: Railway / Fly.io / VPS; App: Expo Go / EAS Build)
+- [ ] `User`-Modell anlegen (Name, Avatar-Farbe oder Kürzel; kein Passwort / kein Auth)
+- [ ] `Household`-Modell anlegen; verknüpft die 3 User
+- [ ] 3 User + 1 Haushalt als Seed-Daten in die Datenbank eintragen
+- [ ] Rezepte dem Haushalt zuordnen (`Recipe.household_id`); gemeinsame Rezeptsammlung
+- [ ] Wochenplan dem Haushalt zuordnen (`MealPlan.household_id`)
+- [ ] `MealPlanEntry` um Zuweisung zu Haushaltsmitgliedern erweitern (Many-to-Many: `MealPlanEntry ↔ User`)
+- [ ] API-Endpunkte: User-Liste abrufen (`GET /users`), Haushalt abrufen (`GET /household`)
+- [ ] API: Mahlzeit-Eintrag mit Mitglieder-Zuweisung erstellen/aktualisieren
+- [ ] Alembic-Migration für neue Modelle + geänderte Spalten
+- [ ] Frontend: Nutzerauswahl bei Mahlzeiten-Slot (Chips / Checkboxen für Haushaltsmitglieder)
+- [ ] Unit-Tests Backend (pytest) für User/Household-Endpunkte und MealPlanEntry-Zuweisung
 
 ---
 
@@ -102,16 +107,24 @@ Ziel: Mehrere Personen können den Planer gemeinsam nutzen; Code ist stabil.
 
 ## Nächster konkreter Schritt
 
-**→ Phase 1 starten: Datenmodelle und erste API-Endpunkte**
+**→ Phase 4 starten: User- und Household-Modelle + Seed-Daten**
 
 ```
 backends/app/
-├── models/          # SQLAlchemy-Modelle (neu)
-│   ├── recipe.py
-│   └── meal_plan.py
-├── schemas/         # Pydantic-Schemas (neu)
-├── routers/         # FastAPI-Router (neu)
-└── main.py          # Router einbinden
+├── models/
+│   ├── user.py           # User-Modell (neu)
+│   ├── household.py      # Household-Modell (neu)
+│   ├── recipe.py         # household_id ergänzen
+│   └── meal_plan.py      # household_id + MealPlanEntry-User-Zuweisung
+├── schemas/
+│   ├── user.py           # Pydantic-Schemas für User (neu)
+│   └── household.py      # Pydantic-Schemas für Household (neu)
+├── routers/
+│   ├── users.py          # GET /users (neu)
+│   └── household.py      # GET /household (neu)
+├── db/
+│   └── seed.py           # 3 User + 1 Haushalt als Seed-Daten (neu)
+└── alembic/versions/     # neue Migration
 ```
 
-Sag einfach "Phase 1 starten" oder beschreibe, was du zuerst umsetzen möchtest.
+Sag einfach "Phase 4 starten" oder beschreibe, was du zuerst umsetzen möchtest.
