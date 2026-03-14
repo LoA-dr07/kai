@@ -9,8 +9,9 @@ import {
   TextInput,
   FlatList,
   ActivityIndicator,
-  Alert,
+  useWindowDimensions,
 } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import {
   useMealPlans,
   useCreateMealPlan,
@@ -113,6 +114,9 @@ function AvatarBadges({ entry, users }: { entry: MealPlanEntry; users: User[] })
 // --- Hauptkomponente ---
 
 export default function MealPlanScreen() {
+  const { width } = useWindowDimensions();
+  const isWide = width >= 768;
+
   const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(new Date()));
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{
@@ -217,13 +221,13 @@ export default function MealPlanScreen() {
       }
       closeModal();
     } catch {
-      Alert.alert('Fehler', 'Eintrag konnte nicht gespeichert werden.');
+      showAlert('Fehler', 'Eintrag konnte nicht gespeichert werden.');
     }
   };
 
   const handleDelete = (entry: MealPlanEntry) => {
     if (!currentPlan) return;
-    Alert.alert('Mahlzeit entfernen', 'Diesen Eintrag wirklich löschen?', [
+    showAlert('Mahlzeit entfernen', 'Diesen Eintrag wirklich löschen?', [
       { text: 'Abbrechen', style: 'cancel' },
       {
         text: 'Entfernen',
@@ -258,14 +262,15 @@ export default function MealPlanScreen() {
       {isLoading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color="#2E7D32" size="large" />
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView contentContainerStyle={[styles.scrollContent, isWide && styles.scrollContentWide]}>
+          <View style={isWide ? styles.dayGrid : undefined}>
           {DAYS_DE.map((dayName, dayIdx) => {
             const date = new Date(weekStart);
             date.setDate(date.getDate() + dayIdx);
             const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 
             return (
-              <View key={dayIdx} style={styles.dayCard}>
+              <View key={dayIdx} style={[styles.dayCard, isWide && styles.dayCardWide]}>
                 <View style={styles.dayHeader}>
                   <Text style={styles.dayName}>{dayName}</Text>
                   <Text style={styles.dayDate}>{dateStr}</Text>
@@ -325,6 +330,7 @@ export default function MealPlanScreen() {
               </View>
             );
           })}
+          </View>
         </ScrollView>
       )}
 
@@ -460,6 +466,13 @@ const styles = StyleSheet.create({
   weekLabel: { fontSize: 17, fontWeight: '700', color: '#1A1A1A' },
 
   scrollContent: { padding: 12, gap: 10 },
+  scrollContentWide: { maxWidth: 1200, alignSelf: 'center', width: '100%' },
+
+  dayGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
 
   dayCard: {
     backgroundColor: '#fff',
@@ -468,6 +481,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BORDER,
   },
+  dayCardWide: { width: 'calc(50% - 5px)' as any },
   dayHeader: {
     flexDirection: 'row',
     alignItems: 'center',
