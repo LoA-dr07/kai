@@ -2,7 +2,7 @@
 
 **Zielgruppe:** Familie / Haushalt (gemeinsame Nutzung)
 **App-Typ:** Klassischer Meal-Planner (Wochenplanung, Rezeptverwaltung)
-**Stack:** FastAPI (Python) + React Native / Expo + PostgreSQL
+**Stack:** FastAPI (Python) + React Native / Expo + Expo Web + PostgreSQL
 
 ---
 
@@ -83,6 +83,37 @@ Ziel: Drei Haushaltsmitglieder teilen eine gemeinsame Rezeptsammlung und einen g
 
 ---
 
+### Phase 5 – Web-Frontend (Expo Web)
+
+Ziel: Die bestehende Expo-App auch im Browser lauffähig machen. Kein separates Projekt – ein Codebase für Mobile + Web.
+
+**Tasks:**
+- [ ] Expo Web aktivieren: `web`-Plattform in `app.json` ergänzen, `react-dom` + `react-native-web` installieren
+- [ ] Build-Skript für Web in `mobile/package.json` ergänzen (`expo export --platform web` / `expo start --web`)
+- [ ] AsyncStorage auf Web-Kompatibilität prüfen (ggf. `@react-native-async-storage/async-storage` Web-Adapter)
+- [ ] CORS-Check: Backend-URL für Web-Requests testen (CORS ist bereits auf alle Origins gesetzt)
+- [ ] Responsive Layouts: Tab-Navigation und Grid-Ansicht für breitere Bildschirme anpassen
+- [ ] Plattform-spezifische Fixes: `Platform.OS`-Guards prüfen und Web-Fallbacks ergänzen
+- [ ] README.md um Web-Entwicklungsanleitung erweitern (`cd mobile && npx expo start --web`)
+
+**Ergebnis:** App läuft vollständig im Browser; gemeinsamer Code-Stand mit Mobile-App
+
+---
+
+### Phase 6 – Kleinere Verbesserungen (noch zu spezifizieren)
+
+Ziel: Sammlung kleinerer Features und Fixes, die nach Phase 5 priorisiert werden.
+
+> Die konkreten Tasks werden vor Beginn der Phase spezifiziert.
+
+**Mögliche Kandidaten (aus bestehender Nice-to-Have-Liste):**
+- Einkaufsliste automatisch aus Wochenplan generieren
+- Rezeptbilder hochladen / anzeigen
+- Nährwertangaben
+- Wiederverwendbare Vorlagen für Wochenpläne
+
+---
+
 ## Empfohlener Workflow (Entwicklung mit Claude)
 
 ### Schritt-für-Schritt pro Feature
@@ -108,6 +139,8 @@ Ziel: Drei Haushaltsmitglieder teilen eine gemeinsame Rezeptsammlung und einen g
 ## Nächster konkreter Schritt
 
 **→ Phase 4 starten: User- und Household-Modelle + Seed-Daten**
+
+*(Danach: Phase 5 – Expo Web aktivieren; Phase 6 – Details noch offen)*
 
 ```
 backends/app/
