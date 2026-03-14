@@ -110,6 +110,11 @@ Ziel: Sammlung kleinerer Features und Fixes nach Phase 5.
   - Alembic-Migration für geänderten Enum-Wert
   - Frontend: Wochenplan-Grid von 3 auf 5 Zeilen pro Tag erweitern (Frühstück, Mittagessen, Snack, Abendessen, Dessert)
 
+- [ ] **Rezept-Import aus dem Internet** – URL eingeben, Rezeptdaten automatisch auslesen und als neues Rezept speichern
+  - Backend: Import-Endpunkt `POST /recipes/import` mit URL als Input
+  - Web-Scraping via `recipe-scrapers` (Python-Library, unterstützt 300+ Rezeptseiten via Schema.org)
+  - Frontend: "Aus URL importieren"-Button im Rezept-Bereich, URL-Eingabefeld, Vorschau vor dem Speichern
+
 **Weitere Kandidaten (aus bestehender Nice-to-Have-Liste):**
 - Einkaufsliste automatisch aus Wochenplan generieren
 - Rezeptbilder hochladen / anzeigen
