@@ -2,7 +2,7 @@
 
 **Zielgruppe:** Familie / Haushalt (gemeinsame Nutzung)
 **App-Typ:** Klassischer Meal-Planner (Wochenplanung, Rezeptverwaltung)
-**Stack:** FastAPI (Python) + React Native / Expo + PostgreSQL
+**Stack:** FastAPI (Python) + React Native / Expo + Expo Web + PostgreSQL
 
 ---
 
@@ -83,6 +83,46 @@ Ziel: Drei Haushaltsmitglieder teilen eine gemeinsame Rezeptsammlung und einen g
 
 ---
 
+### Phase 5 – Web-Frontend (Expo Web)
+
+Ziel: Die bestehende Expo-App auch im Browser lauffähig machen. Kein separates Projekt – ein Codebase für Mobile + Web.
+
+**Tasks:**
+- [ ] Expo Web aktivieren: `web`-Plattform in `app.json` ergänzen, `react-dom` + `react-native-web` installieren
+- [ ] Build-Skript für Web in `mobile/package.json` ergänzen (`expo export --platform web` / `expo start --web`)
+- [ ] AsyncStorage auf Web-Kompatibilität prüfen (ggf. `@react-native-async-storage/async-storage` Web-Adapter)
+- [ ] CORS-Check: Backend-URL für Web-Requests testen (CORS ist bereits auf alle Origins gesetzt)
+- [ ] Responsive Layouts: Tab-Navigation und Grid-Ansicht für breitere Bildschirme anpassen
+- [ ] Plattform-spezifische Fixes: `Platform.OS`-Guards prüfen und Web-Fallbacks ergänzen
+- [ ] README.md um Web-Entwicklungsanleitung erweitern (`cd mobile && npx expo start --web`)
+
+**Ergebnis:** App läuft vollständig im Browser; gemeinsamer Code-Stand mit Mobile-App
+
+---
+
+### Phase 6 – Kleinere Verbesserungen
+
+Ziel: Sammlung kleinerer Features und Fixes nach Phase 5.
+
+**Tasks:**
+- [ ] **5 Mahlzeiten pro Tag** – `meal_type`-Enum um `snack` und `dessert` erweitern (aktuell: breakfast, lunch, dinner)
+  - Backend: Enum in `MealPlanEntry`-Modell und Pydantic-Schema anpassen
+  - Alembic-Migration für geänderten Enum-Wert
+  - Frontend: Wochenplan-Grid von 3 auf 5 Zeilen pro Tag erweitern (Frühstück, Mittagessen, Snack, Abendessen, Dessert)
+
+- [ ] **Rezept-Import aus dem Internet** – URL eingeben, Rezeptdaten automatisch auslesen und als neues Rezept speichern
+  - Backend: Import-Endpunkt `POST /recipes/import` mit URL als Input
+  - Web-Scraping via `recipe-scrapers` (Python-Library, unterstützt 300+ Rezeptseiten via Schema.org)
+  - Frontend: "Aus URL importieren"-Button im Rezept-Bereich, URL-Eingabefeld, Vorschau vor dem Speichern
+
+**Weitere Kandidaten (aus bestehender Nice-to-Have-Liste):**
+- Einkaufsliste automatisch aus Wochenplan generieren
+- Rezeptbilder hochladen / anzeigen
+- Nährwertangaben
+- Wiederverwendbare Vorlagen für Wochenpläne
+
+---
+
 ## Empfohlener Workflow (Entwicklung mit Claude)
 
 ### Schritt-für-Schritt pro Feature
@@ -108,6 +148,8 @@ Ziel: Drei Haushaltsmitglieder teilen eine gemeinsame Rezeptsammlung und einen g
 ## Nächster konkreter Schritt
 
 **→ Phase 4 starten: User- und Household-Modelle + Seed-Daten**
+
+*(Danach: Phase 5 – Expo Web aktivieren; Phase 6 – Details noch offen)*
 
 ```
 backends/app/
