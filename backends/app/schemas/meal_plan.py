@@ -38,21 +38,20 @@ class MealPlanEntryOut(BaseModel):
     recipe: Optional[RecipeOut] = None
     assigned_user_ids: list[int] = []
 
+    @model_validator(mode="before")
     @classmethod
-    def model_validate(cls, obj, **kwargs):
-        # Flatten assigned_users -> assigned_user_ids
-        if hasattr(obj, "assigned_users"):
-            data = {
-                "id": obj.id,
-                "day_of_week": obj.day_of_week,
-                "meal_type": obj.meal_type,
-                "recipe_id": obj.recipe_id,
-                "custom_meal": obj.custom_meal,
-                "recipe": obj.recipe,
-                "assigned_user_ids": [u.id for u in obj.assigned_users],
+    def flatten_assigned_users(cls, data):
+        if hasattr(data, "assigned_users"):
+            return {
+                "id": data.id,
+                "day_of_week": data.day_of_week,
+                "meal_type": data.meal_type,
+                "recipe_id": data.recipe_id,
+                "custom_meal": data.custom_meal,
+                "recipe": data.recipe,
+                "assigned_user_ids": [u.id for u in data.assigned_users],
             }
-            return cls(**data)
-        return super().model_validate(obj, **kwargs)
+        return data
 
     model_config = {"from_attributes": True}
 

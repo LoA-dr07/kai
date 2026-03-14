@@ -46,4 +46,5 @@ class MealPlanEntry(Base):
         "User",
         secondary="meal_plan_entry_users",
         back_populates="meal_plan_entries",
+        lazy="selectin",
     )
