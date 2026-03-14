@@ -100,13 +100,17 @@ Ziel: Die bestehende Expo-App auch im Browser lauffähig machen. Kein separates 
 
 ---
 
-### Phase 6 – Kleinere Verbesserungen (noch zu spezifizieren)
+### Phase 6 – Kleinere Verbesserungen
 
-Ziel: Sammlung kleinerer Features und Fixes, die nach Phase 5 priorisiert werden.
+Ziel: Sammlung kleinerer Features und Fixes nach Phase 5.
 
-> Die konkreten Tasks werden vor Beginn der Phase spezifiziert.
+**Tasks:**
+- [ ] **5 Mahlzeiten pro Tag** – `meal_type`-Enum um `snack` und `dessert` erweitern (aktuell: breakfast, lunch, dinner)
+  - Backend: Enum in `MealPlanEntry`-Modell und Pydantic-Schema anpassen
+  - Alembic-Migration für geänderten Enum-Wert
+  - Frontend: Wochenplan-Grid von 3 auf 5 Zeilen pro Tag erweitern (Frühstück, Mittagessen, Snack, Abendessen, Dessert)
 
-**Mögliche Kandidaten (aus bestehender Nice-to-Have-Liste):**
+**Weitere Kandidaten (aus bestehender Nice-to-Have-Liste):**
 - Einkaufsliste automatisch aus Wochenplan generieren
 - Rezeptbilder hochladen / anzeigen
 - Nährwertangaben
