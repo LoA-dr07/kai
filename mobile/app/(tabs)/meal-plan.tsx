@@ -19,7 +19,8 @@ import {
   useDeleteEntry,
 } from '../../lib/hooks/useMealPlan';
 import { useRecipes } from '../../lib/hooks/useRecipes';
-import type { MealPlanEntry, MealType } from '../../lib/types';
+import { useUsers } from '../../lib/hooks/useUsers';
+import type { MealPlanEntry, MealType, User } from '../../lib/types';
 
 // --- Datums-Hilfsfunktionen ---
 
@@ -55,6 +56,60 @@ const MEAL_TYPES: { key: MealType; label: string; icon: string }[] = [
   { key: 'dinner', label: 'Abendessen', icon: '🍽' },
 ];
 
+// --- UserChips-Komponente ---
+
+function UserChips({
+  users,
+  selectedIds,
+  onToggle,
+}: {
+  users: User[];
+  selectedIds: number[];
+  onToggle: (id: number) => void;
+}) {
+  if (users.length === 0) return null;
+  return (
+    <View style={chipStyles.container}>
+      <Text style={chipStyles.label}>Für wen?</Text>
+      <View style={chipStyles.row}>
+        {users.map(user => {
+          const selected = selectedIds.includes(user.id);
+          return (
+            <TouchableOpacity
+              key={user.id}
+              style={[
+                chipStyles.chip,
+                selected && { backgroundColor: user.avatar_color, borderColor: user.avatar_color },
+              ]}
+              onPress={() => onToggle(user.id)}
+            >
+              <Text style={[chipStyles.chipText, selected && chipStyles.chipTextSelected]}>
+                {user.short_name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+// --- AvatarDots: zeigt Kurzzeichen zugewiesener User in einer Mahlzeit-Zeile ---
+
+function AvatarDots({ entry, users }: { entry: MealPlanEntry; users: User[] }) {
+  if (!entry.assigned_user_ids?.length) return null;
+  const assigned = users.filter(u => entry.assigned_user_ids.includes(u.id));
+  return (
+    <View style={dotStyles.row}>
+      {assigned.map(u => (
+        <View key={u.id} style={[dotStyles.dot, { backgroundColor: u.avatar_color }]}>
+          <Text style={dotStyles.dotText}>{u.short_name}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 // --- Hauptkomponente ---
 
 export default function MealPlanScreen() {
@@ -68,6 +123,7 @@ export default function MealPlanScreen() {
   const [tab, setTab] = useState<'recipe' | 'freetext'>('recipe');
   const [searchText, setSearchText] = useState('');
   const [freeText, setFreeText] = useState('');
+  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
 
   const weekStartIso = isoDate(weekStart);
   const weekNum = getISOWeek(weekStart);
@@ -75,6 +131,7 @@ export default function MealPlanScreen() {
 
   const { data: allPlans, isLoading } = useMealPlans();
   const { data: recipes } = useRecipes();
+  const { data: users = [] } = useUsers();
   const createPlan = useCreateMealPlan();
   const addEntry = useAddEntry();
   const updateEntry = useUpdateEntry();
@@ -104,12 +161,19 @@ export default function MealPlanScreen() {
       setFreeText('');
     }
     setSearchText('');
+    setSelectedUserIds(existing?.assigned_user_ids ?? []);
     setModalVisible(true);
   };
 
   const closeModal = () => {
     setModalVisible(false);
     setSelectedSlot(null);
+  };
+
+  const toggleUser = (id: number) => {
+    setSelectedUserIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
   };
 
   const handleSave = async (recipeId: number | null, customMeal: string | null) => {
@@ -123,6 +187,7 @@ export default function MealPlanScreen() {
           entryId: existingEntry.id,
           recipe_id: recipeId,
           custom_meal: customMeal,
+          assigned_user_ids: selectedUserIds,
         });
       } else {
         let planId = currentPlan?.id;
@@ -139,6 +204,7 @@ export default function MealPlanScreen() {
           meal_type: mealType,
           recipe_id: recipeId,
           custom_meal: customMeal,
+          assigned_user_ids: selectedUserIds,
         });
       }
       closeModal();
@@ -213,9 +279,12 @@ export default function MealPlanScreen() {
 
                       {mealLabel ? (
                         <View style={styles.mealFilled}>
-                          <Text style={styles.mealName} numberOfLines={1}>
-                            {mealLabel}
-                          </Text>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.mealName} numberOfLines={1}>
+                              {mealLabel}
+                            </Text>
+                            {entry && <AvatarDots entry={entry} users={users} />}
+                          </View>
                           <TouchableOpacity
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                             onPress={e => {
@@ -259,6 +328,9 @@ export default function MealPlanScreen() {
               <Text style={styles.modalClose}>Schließen</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Nutzerauswahl */}
+          <UserChips users={users} selectedIds={selectedUserIds} onToggle={toggleUser} />
 
           {/* Tab-Auswahl */}
           <View style={styles.tabRow}>
@@ -446,7 +518,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   mealName: {
-    flex: 1,
     fontSize: 14,
     color: '#1A1A1A',
     fontWeight: '500',
@@ -583,6 +654,66 @@ const styles = StyleSheet.create({
   saveBtnText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '700',
+  },
+});
+
+// --- Chip Styles ---
+
+const chipStyles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+    backgroundColor: '#fff',
+  },
+  label: {
+    fontSize: 13,
+    color: '#555',
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  chip: {
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    backgroundColor: '#fff',
+  },
+  chipText: {
+    fontSize: 14,
+    color: '#555',
+    fontWeight: '600',
+  },
+  chipTextSelected: {
+    color: '#fff',
+  },
+});
+
+// --- Dot Styles ---
+
+const dotStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: 3,
+  },
+  dot: {
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    minWidth: 22,
+    alignItems: 'center',
+  },
+  dotText: {
+    fontSize: 10,
+    color: '#fff',
     fontWeight: '700',
   },
 });
