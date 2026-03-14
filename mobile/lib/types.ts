@@ -30,6 +30,13 @@ export interface RecipeCreatePayload {
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner';
 
+export interface User {
+  id: number;
+  name: string;
+  avatar_color: string;
+  short_name: string;
+}
+
 export interface MealPlanEntry {
   id: number;
   day_of_week: number; // 0=Montag … 6=Sonntag
@@ -37,6 +44,7 @@ export interface MealPlanEntry {
   recipe_id: number | null;
   custom_meal: string | null;
   recipe: Recipe | null;
+  assigned_user_ids: number[];
 }
 
 export interface MealPlan {
@@ -52,6 +60,7 @@ export interface MealPlanEntryCreatePayload {
   meal_type: MealType;
   recipe_id?: number | null;
   custom_meal?: string | null;
+  assigned_user_ids?: number[];
 }
 
 export interface MealPlanEntryUpdatePayload {
@@ -59,4 +68,5 @@ export interface MealPlanEntryUpdatePayload {
   entryId: number;
   recipe_id?: number | null;
   custom_meal?: string | null;
+  assigned_user_ids?: number[];
 }
