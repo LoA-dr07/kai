@@ -1,5 +1,6 @@
-import { ActivityIndicator, View, Text, Alert } from 'react-native';
+import { ActivityIndicator, View, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { showAlert } from '../../../lib/alert';
 import RecipeForm from '../../../components/RecipeForm';
 import { useRecipe, useUpdateRecipe } from '../../../lib/hooks/useRecipes';
 
@@ -42,7 +43,7 @@ export default function EditRecipeScreen() {
           await updateRecipe.mutateAsync(data);
           router.back();
         } catch {
-          Alert.alert('Fehler', 'Änderungen konnten nicht gespeichert werden.');
+          showAlert('Fehler', 'Änderungen konnten nicht gespeichert werden.');
         }
       }}
       isSubmitting={updateRecipe.isPending}

@@ -4,10 +4,10 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { showAlert } from '../../../lib/alert';
 import { useRecipe, useDeleteRecipe } from '../../../lib/hooks/useRecipes';
 
 export default function RecipeDetailScreen() {
@@ -31,7 +31,7 @@ export default function RecipeDetailScreen() {
   }
 
   function handleDelete() {
-    Alert.alert(
+    showAlert(
       'Rezept löschen',
       `"${recipe!.name}" wirklich löschen?`,
       [
