@@ -1,8 +1,9 @@
 from pydantic import BaseModel, Field, model_validator
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 from app.models.meal_plan import MealType
 from app.schemas.recipe import RecipeOut
+from app.schemas.user import UserOut
 
 
 class MealPlanEntryBase(BaseModel):
@@ -19,17 +20,19 @@ class MealPlanEntryBase(BaseModel):
 
 
 class MealPlanEntryCreate(MealPlanEntryBase):
-    pass
+    user_ids: List[int] = []
 
 
 class MealPlanEntryUpdate(BaseModel):
     recipe_id: Optional[int] = None
     custom_meal: Optional[str] = Field(default=None, max_length=255)
+    user_ids: Optional[List[int]] = None
 
 
 class MealPlanEntryOut(MealPlanEntryBase):
     id: int
     recipe: Optional[RecipeOut] = None
+    assigned_users: List[UserOut] = []
 
     model_config = {"from_attributes": True}
 

@@ -11,9 +11,11 @@ class Recipe(Base):
     description = Column(Text, nullable=True)
     servings = Column(Integer, nullable=False, default=2)
     prep_time_minutes = Column(Integer, nullable=True)
+    household_id = Column(Integer, ForeignKey("households.id"), nullable=True)
 
     ingredients = relationship("RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
     meal_plan_entries = relationship("MealPlanEntry", back_populates="recipe")
+    household = relationship("Household", back_populates="recipes")
 
 
 class Ingredient(Base):

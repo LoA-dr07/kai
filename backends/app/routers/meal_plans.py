@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.meal_plan import MealPlan, MealPlanEntry
 from app.models.recipe import Recipe
+from app.models.user import User
 from app.schemas.meal_plan import (
     MealPlanCreate, MealPlanUpdate, MealPlanOut,
     MealPlanEntryCreate, MealPlanEntryUpdate, MealPlanEntryOut,
@@ -23,6 +24,17 @@ def _validate_recipe(db: Session, recipe_id: int | None):
         raise HTTPException(status_code=404, detail=f"Recipe {recipe_id} not found")
 
 
+def _resolve_users(db: Session, user_ids: list[int]) -> list[User]:
+    if not user_ids:
+        return []
+    users = db.query(User).filter(User.id.in_(user_ids)).all()
+    found_ids = {u.id for u in users}
+    missing = set(user_ids) - found_ids
+    if missing:
+        raise HTTPException(status_code=404, detail=f"Users not found: {sorted(missing)}")
+    return users
+
+
 # --- Meal Plans ---
 
 @router.get("", response_model=list[MealPlanOut])
@@ -36,15 +48,18 @@ def create_meal_plan(payload: MealPlanCreate, db: Session = Depends(get_db)):
     db.add(plan)
     db.flush()
 
-    for entry in payload.entries:
-        _validate_recipe(db, entry.recipe_id)
-        db.add(MealPlanEntry(
+    for entry_data in payload.entries:
+        _validate_recipe(db, entry_data.recipe_id)
+        users = _resolve_users(db, entry_data.user_ids)
+        entry = MealPlanEntry(
             meal_plan_id=plan.id,
-            day_of_week=entry.day_of_week,
-            meal_type=entry.meal_type,
-            recipe_id=entry.recipe_id,
-            custom_meal=entry.custom_meal,
-        ))
+            day_of_week=entry_data.day_of_week,
+            meal_type=entry_data.meal_type,
+            recipe_id=entry_data.recipe_id,
+            custom_meal=entry_data.custom_meal,
+        )
+        entry.assigned_users = users
+        db.add(entry)
 
     db.commit()
     db.refresh(plan)
@@ -79,6 +94,7 @@ def delete_meal_plan(plan_id: int, db: Session = Depends(get_db)):
 def add_entry(plan_id: int, payload: MealPlanEntryCreate, db: Session = Depends(get_db)):
     _get_plan_or_404(db, plan_id)
     _validate_recipe(db, payload.recipe_id)
+    users = _resolve_users(db, payload.user_ids)
     entry = MealPlanEntry(
         meal_plan_id=plan_id,
         day_of_week=payload.day_of_week,
@@ -86,6 +102,7 @@ def add_entry(plan_id: int, payload: MealPlanEntryCreate, db: Session = Depends(
         recipe_id=payload.recipe_id,
         custom_meal=payload.custom_meal,
     )
+    entry.assigned_users = users
     db.add(entry)
     db.commit()
     db.refresh(entry)
@@ -98,9 +115,13 @@ def update_entry(plan_id: int, entry_id: int, payload: MealPlanEntryUpdate, db: 
     entry = db.get(MealPlanEntry, entry_id)
     if not entry or entry.meal_plan_id != plan_id:
         raise HTTPException(status_code=404, detail="Entry not found")
-    _validate_recipe(db, payload.recipe_id)
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    data = payload.model_dump(exclude_unset=True)
+    user_ids = data.pop("user_ids", None)
+    _validate_recipe(db, data.get("recipe_id"))
+    for field, value in data.items():
         setattr(entry, field, value)
+    if user_ids is not None:
+        entry.assigned_users = _resolve_users(db, user_ids)
     db.commit()
     db.refresh(entry)
     return entry
