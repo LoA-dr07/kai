@@ -27,3 +27,36 @@ export interface RecipeCreatePayload {
   prep_time_minutes?: number | null;
   ingredients?: { ingredient_id: number; amount: number; unit: string }[];
 }
+
+export type MealType = 'breakfast' | 'lunch' | 'dinner';
+
+export interface MealPlanEntry {
+  id: number;
+  day_of_week: number; // 0=Montag … 6=Sonntag
+  meal_type: MealType;
+  recipe_id: number | null;
+  custom_meal: string | null;
+  recipe: Recipe | null;
+}
+
+export interface MealPlan {
+  id: number;
+  name: string;
+  week_start_date: string; // ISO-Datum (Montag der Woche)
+  entries: MealPlanEntry[];
+}
+
+export interface MealPlanEntryCreatePayload {
+  planId: number;
+  day_of_week: number;
+  meal_type: MealType;
+  recipe_id?: number | null;
+  custom_meal?: string | null;
+}
+
+export interface MealPlanEntryUpdatePayload {
+  planId: number;
+  entryId: number;
+  recipe_id?: number | null;
+  custom_meal?: string | null;
+}
