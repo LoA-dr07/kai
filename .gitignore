@@ -1,8 +1,10 @@
 ﻿# Python
-backend/venv/
-backend/__pycache__/
-backend/.env
-backend/*.pyc
+backends/venv/
+backends/**/__pycache__/
+**/__pycache__/
+backends/.env
+backends/**/*.pyc
+*.pyc
 # Node / React Native
 mobile/node_modules/
 mobile/.expo/
