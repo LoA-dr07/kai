@@ -4,18 +4,20 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useImportRecipes, useRecipes } from '../../lib/hooks/useRecipes';
-import type { Recipe, RecipeExportItem } from '../../lib/types';
+import type { Recipe, RecipeExportItem, RecipeUrlPreview } from '../../lib/types';
 import { api } from '../../lib/api';
 
 export default function RecipesScreen() {
@@ -27,6 +29,14 @@ export default function RecipesScreen() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // URL-Import State
+  const [urlModalVisible, setUrlModalVisible] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [urlPreview, setUrlPreview] = useState<RecipeUrlPreview | null>(null);
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const [isSavingUrl, setIsSavingUrl] = useState(false);
 
   async function handleExport() {
     setIsExporting(true);
@@ -108,6 +118,58 @@ export default function RecipesScreen() {
     }
   }
 
+  function openUrlModal() {
+    setUrlInput('');
+    setUrlPreview(null);
+    setUrlError(null);
+    setUrlModalVisible(true);
+  }
+
+  async function handleUrlFetch() {
+    const trimmed = urlInput.trim();
+    if (!trimmed) return;
+    setUrlLoading(true);
+    setUrlError(null);
+    setUrlPreview(null);
+    try {
+      const response = await api.post<RecipeUrlPreview>('/recipes/import/url', { url: trimmed });
+      setUrlPreview(response.data);
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail ?? (e instanceof Error ? e.message : String(e));
+      setUrlError(String(detail));
+    } finally {
+      setUrlLoading(false);
+    }
+  }
+
+  async function handleUrlSave() {
+    if (!urlPreview) return;
+    setIsSavingUrl(true);
+    try {
+      const exportItem: RecipeExportItem = {
+        name: urlPreview.name,
+        description: urlPreview.description,
+        servings: urlPreview.servings,
+        prep_time_minutes: urlPreview.prep_time_minutes,
+        ingredients: urlPreview.ingredients,
+      };
+      const { created, skipped } = await importMutation.mutateAsync([exportItem]);
+      setUrlModalVisible(false);
+      if (skipped > 0) {
+        const msg = 'Ein Rezept mit diesem Namen existiert bereits.';
+        Platform.OS === 'web' ? alert(msg) : Alert.alert('Übersprungen', msg);
+      } else {
+        const msg = `"${urlPreview.name}" wurde gespeichert.`;
+        Platform.OS === 'web' ? alert(msg) : Alert.alert('Gespeichert', msg);
+      }
+    } catch (e) {
+      const msg = `Speichern fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`;
+      Platform.OS === 'web' ? alert(msg) : Alert.alert('Fehler', msg);
+    } finally {
+      setIsSavingUrl(false);
+    }
+  }
+
   if (isLoading) {
     return <ActivityIndicator style={styles.center} size="large" color="#2E7D32" />;
   }
@@ -158,6 +220,13 @@ export default function RecipesScreen() {
       <View style={styles.fabGroup}>
         <TouchableOpacity
           style={styles.fabSecondary}
+          onPress={openUrlModal}
+          accessibilityLabel="Rezept aus URL importieren"
+        >
+          <Ionicons name="link-outline" size={22} color="#2E7D32" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.fabSecondary}
           onPress={handleImport}
           disabled={isImporting}
           accessibilityLabel="Rezepte importieren"
@@ -180,21 +249,126 @@ export default function RecipesScreen() {
           <Text style={styles.fabText}>+ Rezept</Text>
         </TouchableOpacity>
       </View>
+
+      {/* URL-Import Modal */}
+      <Modal
+        visible={urlModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setUrlModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Rezept aus URL importieren</Text>
+            <TouchableOpacity onPress={() => setUrlModalVisible(false)}>
+              <Text style={styles.modalClose}>Schließen</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.modalBody}>
+            <Text style={styles.urlLabel}>Rezept-URL eingeben:</Text>
+            <View style={styles.urlRow}>
+              <TextInput
+                style={styles.urlInput}
+                placeholder="https://www.chefkoch.de/rezepte/…"
+                value={urlInput}
+                onChangeText={setUrlInput}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                returnKeyType="go"
+                onSubmitEditing={handleUrlFetch}
+              />
+              <TouchableOpacity
+                style={[styles.fetchBtn, (!urlInput.trim() || urlLoading) && styles.fetchBtnDisabled]}
+                onPress={handleUrlFetch}
+                disabled={!urlInput.trim() || urlLoading}
+              >
+                {urlLoading
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Text style={styles.fetchBtnText}>Laden</Text>}
+              </TouchableOpacity>
+            </View>
+
+            {urlError && (
+              <Text style={styles.urlError}>{urlError}</Text>
+            )}
+
+            {urlPreview && (
+              <View style={styles.preview}>
+                <Text style={styles.previewTitle}>{urlPreview.name}</Text>
+                {urlPreview.description ? (
+                  <Text style={styles.previewDesc} numberOfLines={3}>{urlPreview.description}</Text>
+                ) : null}
+                <View style={styles.previewMeta}>
+                  <Text style={styles.previewMetaText}>{urlPreview.servings} Portionen</Text>
+                  {urlPreview.prep_time_minutes ? (
+                    <Text style={styles.previewMetaText}>{urlPreview.prep_time_minutes} Min.</Text>
+                  ) : null}
+                  <Text style={styles.previewMetaText}>{urlPreview.ingredients.length} Zutaten</Text>
+                </View>
+                {urlPreview.ingredients.length > 0 && (
+                  <View style={styles.ingredientList}>
+                    {urlPreview.ingredients.slice(0, 5).map((ing, i) => (
+                      <Text key={i} style={styles.ingredientItem}>
+                        · {ing.amount} {ing.unit} {ing.ingredient_name}
+                      </Text>
+                    ))}
+                    {urlPreview.ingredients.length > 5 && (
+                      <Text style={styles.ingredientMore}>
+                        … und {urlPreview.ingredients.length - 5} weitere
+                      </Text>
+                    )}
+                  </View>
+                )}
+                <TouchableOpacity
+                  style={[styles.saveBtn, isSavingUrl && styles.saveBtnDisabled]}
+                  onPress={handleUrlSave}
+                  disabled={isSavingUrl}
+                >
+                  {isSavingUrl
+                    ? <ActivityIndicator size="small" color="#fff" />
+                    : <Text style={styles.saveBtnText}>Rezept speichern</Text>}
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
-function RecipeCard({ recipe, onPress, wide }: { recipe: Recipe; onPress: () => void; wide?: boolean }) {
+function RecipeCard({ recipe, onPress }: { recipe: Recipe; onPress: () => void }) {
+  const avgRating =
+    recipe.ratings.length > 0
+      ? recipe.ratings.reduce((s, r) => s + r.stars, 0) / recipe.ratings.length
+      : null;
+
   return (
-    <TouchableOpacity style={[styles.card, wide && styles.cardWide]} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <Text style={styles.cardTitle}>{recipe.name}</Text>
       {recipe.description ? (
         <Text style={styles.cardDesc} numberOfLines={2}>{recipe.description}</Text>
       ) : null}
+      {recipe.tags.length > 0 && (
+        <View style={styles.cardTagRow}>
+          {recipe.tags.map(tag => (
+            <View key={tag.id} style={[styles.cardTag, !tag.is_predefined && styles.cardTagCustom]}>
+              <Text style={[styles.cardTagText, !tag.is_predefined && styles.cardTagTextCustom]}>
+                {tag.name}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
       <View style={styles.cardMeta}>
         <Chip label={`${recipe.servings} Portionen`} />
         {recipe.prep_time_minutes ? <Chip label={`${recipe.prep_time_minutes} Min.`} /> : null}
         <Chip label={`${recipe.ingredients.length} Zutaten`} />
+        {avgRating !== null && (
+          <Chip label={`${'★'.repeat(Math.round(avgRating))} ${avgRating.toFixed(1)}`} />
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -208,16 +382,21 @@ function Chip({ label }: { label: string }) {
   );
 }
 
+const GREEN = '#2E7D32';
+const BORDER = '#E0E0E0';
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { padding: 16, paddingBottom: 120 },
+  listWide: { maxWidth: 1200, alignSelf: 'center', width: '100%' },
+  columnWrapper: { gap: 12 },
   emptyContainer: { alignItems: 'center', marginTop: 80 },
   emptyTitle: { fontSize: 18, fontWeight: '600', color: '#444', marginBottom: 8 },
   emptySubtitle: { fontSize: 15, color: '#888' },
   errorText: { fontSize: 16, color: '#D32F2F', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#2E7D32' },
-  retryBtnText: { color: '#2E7D32', fontSize: 15, fontWeight: '500' },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: GREEN },
+  retryBtnText: { color: GREEN, fontSize: 15, fontWeight: '500' },
   fabGroup: {
     position: 'absolute',
     bottom: 24,
@@ -232,7 +411,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: '#fff',
     borderWidth: 1.5,
-    borderColor: '#2E7D32',
+    borderColor: GREEN,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -246,13 +425,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    flex: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 3,
     elevation: 2,
   },
-  cardWide: { flex: 1 },
   cardTitle: { fontSize: 18, fontWeight: '600', color: '#1A1A1A', marginBottom: 6 },
   cardDesc: { fontSize: 14, color: '#666', marginBottom: 10, lineHeight: 20 },
   cardMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -262,9 +441,9 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
   },
-  chipText: { fontSize: 12, color: '#2E7D32', fontWeight: '500' },
+  chipText: { fontSize: 12, color: GREEN, fontWeight: '500' },
   fab: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: GREEN,
     paddingHorizontal: 22,
     paddingVertical: 14,
     borderRadius: 28,
@@ -275,4 +454,80 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   fabText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  cardTagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+  cardTag: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: '#2E7D32',
+  },
+  cardTagCustom: { backgroundColor: '#EDE7F6', borderColor: '#5C6BC0' },
+  cardTagText: { fontSize: 11, fontWeight: '600', color: '#2E7D32' },
+  cardTagTextCustom: { color: '#5C6BC0' },
+
+  // Modal
+  modalContainer: { flex: 1, backgroundColor: '#fff' },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
+  modalClose: { fontSize: 16, color: GREEN, fontWeight: '600' },
+  modalBody: { padding: 16 },
+  urlLabel: { fontSize: 14, fontWeight: '600', color: '#555', marginBottom: 8 },
+  urlRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  urlInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    backgroundColor: '#FAFAFA',
+  },
+  fetchBtn: {
+    backgroundColor: GREEN,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 70,
+  },
+  fetchBtnDisabled: { backgroundColor: '#A5D6A7' },
+  fetchBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  urlError: { color: '#D32F2F', fontSize: 13, marginBottom: 12 },
+
+  // Preview
+  preview: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
+    marginTop: 8,
+  },
+  previewTitle: { fontSize: 17, fontWeight: '700', color: '#1A1A1A', marginBottom: 6 },
+  previewDesc: { fontSize: 13, color: '#666', marginBottom: 10, lineHeight: 18 },
+  previewMeta: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  previewMetaText: { fontSize: 13, color: '#555' },
+  ingredientList: { marginBottom: 16 },
+  ingredientItem: { fontSize: 13, color: '#444', lineHeight: 20 },
+  ingredientMore: { fontSize: 13, color: '#888', fontStyle: 'italic' },
+  saveBtn: {
+    backgroundColor: GREEN,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  saveBtnDisabled: { backgroundColor: '#A5D6A7' },
+  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

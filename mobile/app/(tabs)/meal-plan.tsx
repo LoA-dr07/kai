@@ -54,7 +54,9 @@ const DAYS_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 const MEAL_TYPES: { key: MealType; label: string; icon: string }[] = [
   { key: 'breakfast', label: 'Frühstück', icon: '🍳' },
   { key: 'lunch', label: 'Mittagessen', icon: '🥗' },
+  { key: 'snack', label: 'Snack', icon: '🍎' },
   { key: 'dinner', label: 'Abendessen', icon: '🍽' },
+  { key: 'dessert', label: 'Dessert', icon: '🍰' },
 ];
 
 // --- UserChips im Modal ---
