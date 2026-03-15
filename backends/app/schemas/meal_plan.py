@@ -10,6 +10,7 @@ class MealPlanEntryBase(BaseModel):
     meal_type: MealType
     recipe_id: Optional[int] = None
     custom_meal: Optional[str] = Field(default=None, max_length=255)
+    assigned_user_ids: list[int] = []
 
     @model_validator(mode="after")
     def recipe_or_custom_meal(self):
@@ -25,11 +26,32 @@ class MealPlanEntryCreate(MealPlanEntryBase):
 class MealPlanEntryUpdate(BaseModel):
     recipe_id: Optional[int] = None
     custom_meal: Optional[str] = Field(default=None, max_length=255)
+    assigned_user_ids: Optional[list[int]] = None
 
 
-class MealPlanEntryOut(MealPlanEntryBase):
+class MealPlanEntryOut(BaseModel):
     id: int
+    day_of_week: int
+    meal_type: MealType
+    recipe_id: Optional[int] = None
+    custom_meal: Optional[str] = None
     recipe: Optional[RecipeOut] = None
+    assigned_user_ids: list[int] = []
+
+    @model_validator(mode="before")
+    @classmethod
+    def flatten_assigned_users(cls, data):
+        if hasattr(data, "assigned_users"):
+            return {
+                "id": data.id,
+                "day_of_week": data.day_of_week,
+                "meal_type": data.meal_type,
+                "recipe_id": data.recipe_id,
+                "custom_meal": data.custom_meal,
+                "recipe": data.recipe,
+                "assigned_user_ids": [u.id for u in data.assigned_users],
+            }
+        return data
 
     model_config = {"from_attributes": True}
 

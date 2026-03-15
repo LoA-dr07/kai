@@ -1,5 +1,5 @@
-import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { showAlert } from '../../lib/alert';
 import RecipeForm from '../../components/RecipeForm';
 import { useCreateRecipe } from '../../lib/hooks/useRecipes';
 
@@ -14,7 +14,7 @@ export default function NewRecipeScreen() {
           await createRecipe.mutateAsync(data);
           router.back();
         } catch {
-          Alert.alert('Fehler', 'Rezept konnte nicht erstellt werden. Bitte prüfe die Verbindung.');
+          showAlert('Fehler', 'Rezept konnte nicht erstellt werden. Bitte prüfe die Verbindung.');
         }
       }}
       isSubmitting={createRecipe.isPending}

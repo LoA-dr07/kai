@@ -20,6 +20,8 @@ import { api } from '../../lib/api';
 
 export default function RecipesScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const numColumns = width >= 768 ? 2 : 1;
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
   const importMutation = useImportRecipes();
   const [isExporting, setIsExporting] = useState(false);
@@ -133,9 +135,12 @@ export default function RecipesScreen() {
         />
       )}
       <FlatList
+        key={numColumns}
         data={recipes}
         keyExtractor={item => String(item.id)}
-        contentContainerStyle={styles.list}
+        numColumns={numColumns}
+        columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
+        contentContainerStyle={[styles.list, numColumns > 1 && styles.listWide]}
         onRefresh={refetch}
         refreshing={isRefetching}
         ListEmptyComponent={
@@ -179,9 +184,9 @@ export default function RecipesScreen() {
   );
 }
 
-function RecipeCard({ recipe, onPress }: { recipe: Recipe; onPress: () => void }) {
+function RecipeCard({ recipe, onPress, wide }: { recipe: Recipe; onPress: () => void; wide?: boolean }) {
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity style={[styles.card, wide && styles.cardWide]} onPress={onPress} activeOpacity={0.7}>
       <Text style={styles.cardTitle}>{recipe.name}</Text>
       {recipe.description ? (
         <Text style={styles.cardDesc} numberOfLines={2}>{recipe.description}</Text>
@@ -247,6 +252,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
+  cardWide: { flex: 1 },
   cardTitle: { fontSize: 18, fontWeight: '600', color: '#1A1A1A', marginBottom: 6 },
   cardDesc: { fontSize: 14, color: '#666', marginBottom: 10, lineHeight: 20 },
   cardMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

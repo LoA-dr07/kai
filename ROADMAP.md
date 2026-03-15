@@ -88,13 +88,13 @@ Ziel: Drei Haushaltsmitglieder teilen eine gemeinsame Rezeptsammlung und einen g
 Ziel: Die bestehende Expo-App auch im Browser lauffähig machen. Kein separates Projekt – ein Codebase für Mobile + Web.
 
 **Tasks:**
-- [ ] Expo Web aktivieren: `web`-Plattform in `app.json` ergänzen, `react-dom` + `react-native-web` installieren
-- [ ] Build-Skript für Web in `mobile/package.json` ergänzen (`expo export --platform web` / `expo start --web`)
-- [ ] AsyncStorage auf Web-Kompatibilität prüfen (ggf. `@react-native-async-storage/async-storage` Web-Adapter)
-- [ ] CORS-Check: Backend-URL für Web-Requests testen (CORS ist bereits auf alle Origins gesetzt)
-- [ ] Responsive Layouts: Tab-Navigation und Grid-Ansicht für breitere Bildschirme anpassen
-- [ ] Plattform-spezifische Fixes: `Platform.OS`-Guards prüfen und Web-Fallbacks ergänzen
-- [ ] README.md um Web-Entwicklungsanleitung erweitern (`cd mobile && npx expo start --web`)
+- [x] Expo Web aktivieren: `web`-Plattform in `app.json` ergänzen, `react-dom` + `react-native-web` installieren
+- [x] Build-Skript für Web in `mobile/package.json` ergänzen (`expo export --platform web` / `expo start --web`)
+- [x] AsyncStorage auf Web-Kompatibilität prüfen (`@react-native-async-storage/async-storage` v2 unterstützt Web nativ)
+- [x] CORS-Check: Backend-URL für Web-Requests testen (CORS ist bereits auf alle Origins gesetzt)
+- [x] Responsive Layouts: Tab-Navigation und Grid-Ansicht für breitere Bildschirme anpassen
+- [x] Plattform-spezifische Fixes: `Alert.alert` durch cross-platform `showAlert`-Utility ersetzt (Web: `window.confirm`/`window.alert`)
+- [x] README.md um Web-Entwicklungsanleitung erweitern (`cd mobile && npx expo start --web`)
 
 **Ergebnis:** App läuft vollständig im Browser; gemeinsamer Code-Stand mit Mobile-App
 
