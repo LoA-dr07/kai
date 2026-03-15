@@ -3,6 +3,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -20,8 +21,11 @@ export default function RecipesScreen() {
   const router = useRouter();
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
   const importMutation = useImportRecipes();
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   async function handleExport() {
+    setIsExporting(true);
     try {
       const isAvailable = await Sharing.isAvailableAsync();
       if (!isAvailable) {
@@ -40,10 +44,13 @@ export default function RecipesScreen() {
       await Sharing.shareAsync(path, { mimeType: 'application/json', dialogTitle: 'Rezepte exportieren' });
     } catch (e) {
       Alert.alert('Export fehlgeschlagen', e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsExporting(false);
     }
   }
 
   async function handleImport() {
+    setIsImporting(true);
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: 'application/json',
@@ -59,6 +66,8 @@ export default function RecipesScreen() {
       Alert.alert('Import abgeschlossen', `${created} Rezept(e) importiert, ${skipped} übersprungen.`);
     } catch (e) {
       Alert.alert('Import fehlgeschlagen', e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsImporting(false);
     }
   }
 
@@ -101,16 +110,22 @@ export default function RecipesScreen() {
         <TouchableOpacity
           style={styles.fabSecondary}
           onPress={handleImport}
+          disabled={isImporting}
           accessibilityLabel="Rezepte importieren"
         >
-          <Ionicons name="download-outline" size={22} color="#2E7D32" />
+          {isImporting
+            ? <ActivityIndicator size="small" color="#2E7D32" />
+            : <Ionicons name="download-outline" size={22} color="#2E7D32" />}
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.fabSecondary}
           onPress={handleExport}
+          disabled={isExporting}
           accessibilityLabel="Rezepte exportieren"
         >
-          <Ionicons name="share-outline" size={22} color="#2E7D32" />
+          {isExporting
+            ? <ActivityIndicator size="small" color="#2E7D32" />
+            : <Ionicons name="share-outline" size={22} color="#2E7D32" />}
         </TouchableOpacity>
         <TouchableOpacity style={styles.fab} onPress={() => router.push('/recipe/new')}>
           <Text style={styles.fabText}>+ Rezept</Text>
