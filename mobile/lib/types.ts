@@ -28,6 +28,29 @@ export interface RecipeCreatePayload {
   ingredients?: { ingredient_id: number; amount: number; unit: string }[];
 }
 
+// --- Import / Export ---
+
+export interface RecipeExportIngredient {
+  ingredient_name: string;
+  amount: number;
+  unit: string;
+}
+
+export interface RecipeExportItem {
+  name: string;
+  description?: string | null;
+  servings: number;
+  prep_time_minutes?: number | null;
+  ingredients: RecipeExportIngredient[];
+}
+
+export interface RecipeImportResult {
+  created: number;
+  skipped: number;
+}
+
+// --- Meal Plan ---
+
 export type MealType = 'breakfast' | 'lunch' | 'dinner';
 
 export interface User {
