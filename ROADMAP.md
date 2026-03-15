@@ -14,9 +14,7 @@
 **Nice-to-Have (spätere Phasen)**
 - Einkaufsliste – automatisch aus dem Wochenplan generieren
 - Haushaltsmitglieder einladen / gemeinsam planen
-- Rezepte aus der Community durchsuchen oder importieren
-- Nährwertangaben
-- Wiederverwendbare Vorlagen für Wochenpläne
+- KI Unterstützung bei der Wochenplanung
 
 ---
 
@@ -121,12 +119,6 @@ Ziel: Sammlung kleinerer Features und Fixes nach Phase 5.
   - Web-Scraping via `recipe-scrapers` (Python-Library, unterstützt 300+ Rezeptseiten via Schema.org)
   - Frontend: "Aus URL importieren"-Button im Rezept-Bereich, URL-Eingabefeld, Vorschau vor dem Speichern
 
-**Weitere Kandidaten (aus bestehender Nice-to-Have-Liste):**
-- Einkaufsliste automatisch aus Wochenplan generieren
-- Rezeptbilder hochladen / anzeigen
-- Nährwertangaben
-- Wiederverwendbare Vorlagen für Wochenpläne
-
 ---
 
 ## Empfohlener Workflow (Entwicklung mit Claude)
@@ -150,29 +142,3 @@ Ziel: Sammlung kleinerer Features und Fixes nach Phase 5.
 - Technische Vorgaben (ich wähle passende Implementierungen selbst)
 
 ---
-
-## Nächster konkreter Schritt
-
-**→ Phase 4 starten: User- und Household-Modelle + Seed-Daten**
-
-*(Danach: Phase 5 – Expo Web aktivieren; Phase 6 – Details noch offen)*
-
-```
-backends/app/
-├── models/
-│   ├── user.py           # User-Modell (neu)
-│   ├── household.py      # Household-Modell (neu)
-│   ├── recipe.py         # household_id ergänzen
-│   └── meal_plan.py      # household_id + MealPlanEntry-User-Zuweisung
-├── schemas/
-│   ├── user.py           # Pydantic-Schemas für User (neu)
-│   └── household.py      # Pydantic-Schemas für Household (neu)
-├── routers/
-│   ├── users.py          # GET /users (neu)
-│   └── household.py      # GET /household (neu)
-├── db/
-│   └── seed.py           # 3 User + 1 Haushalt als Seed-Daten (neu)
-└── alembic/versions/     # neue Migration
-```
-
-Sag einfach "Phase 4 starten" oder beschreibe, was du zuerst umsetzen möchtest.
