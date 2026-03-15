@@ -4,10 +4,10 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { showAlert } from '../../../lib/alert';
 import { useRecipe, useDeleteRecipe } from '../../../lib/hooks/useRecipes';
 
 export default function RecipeDetailScreen() {
@@ -31,7 +31,7 @@ export default function RecipeDetailScreen() {
   }
 
   function handleDelete() {
-    Alert.alert(
+    showAlert(
       'Rezept löschen',
       `"${recipe!.name}" wirklich löschen?`,
       [
@@ -78,6 +78,12 @@ export default function RecipeDetailScreen() {
         )}
 
         <View style={styles.actions}>
+          <TouchableOpacity
+            style={styles.cookBtn}
+            onPress={() => router.push(`/recipe/${recipeId}/cook`)}
+          >
+            <Text style={styles.cookBtnText}>Kochen</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.editBtn}
             onPress={() => router.push(`/recipe/${recipeId}/edit`)}
@@ -157,6 +163,14 @@ const styles = StyleSheet.create({
   ingName: { fontSize: 15, color: '#1A1A1A' },
   ingAmount: { fontSize: 15, color: '#666' },
   actions: { flexDirection: 'row', gap: 12 },
+  cookBtn: {
+    flex: 1,
+    backgroundColor: '#1B5E20',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cookBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   editBtn: {
     flex: 1,
     backgroundColor: '#2E7D32',
