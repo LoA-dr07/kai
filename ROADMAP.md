@@ -103,7 +103,7 @@ Ziel: Die bestehende Expo-App auch im Browser lauffähig machen. Kein separates 
 Ziel: Sammlung kleinerer Features und Fixes nach Phase 5.
 
 **Tasks:**
-- [ ] **5 Mahlzeiten pro Tag** – `meal_type`-Enum um `snack` und `dessert` erweitern (aktuell: breakfast, lunch, dinner)
+- [x] **5 Mahlzeiten pro Tag** – `meal_type`-Enum um `snack` und `dessert` erweitern (aktuell: breakfast, lunch, dinner)
   - Backend: Enum in `MealPlanEntry`-Modell und Pydantic-Schema anpassen
   - Alembic-Migration für geänderten Enum-Wert
   - Frontend: Wochenplan-Grid von 3 auf 5 Zeilen pro Tag erweitern (Frühstück, Mittagessen, Snack, Abendessen, Dessert)
@@ -114,7 +114,7 @@ Ziel: Sammlung kleinerer Features und Fixes nach Phase 5.
   - Frontend: Export-Button (↑) im Rezepte-Header öffnet System-Teilen-Dialog; Import-Button (↓) öffnet Datei-Picker für `.json`
   - Packages: `expo-document-picker`, `expo-file-system`, `expo-sharing`
 
-- [ ] **Rezept-Import aus dem Internet** – URL eingeben, Rezeptdaten automatisch auslesen und als neues Rezept speichern
+- [x] **Rezept-Import aus dem Internet** – URL eingeben, Rezeptdaten automatisch auslesen und als neues Rezept speichern
   - Backend: `POST /recipes/import/url` mit URL als Input (separater Endpunkt, um Konflikt mit JSON-Import zu vermeiden)
   - Web-Scraping via `recipe-scrapers` (Python-Library, unterstützt 300+ Rezeptseiten via Schema.org)
   - Frontend: "Aus URL importieren"-Button im Rezept-Bereich, URL-Eingabefeld, Vorschau vor dem Speichern

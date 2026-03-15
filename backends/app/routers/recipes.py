@@ -6,6 +6,7 @@ from app.schemas.recipe import (
     RecipeCreate, RecipeUpdate, RecipeOut,
     IngredientCreate, IngredientOut,
     RecipeExportItem, RecipeExportIngredient, RecipeImportResult,
+    RecipeUrlImport, RecipeUrlPreview,
 )
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
@@ -122,6 +123,65 @@ def import_recipes(recipes: list[RecipeExportItem], db: Session = Depends(get_db
         created += 1
     db.commit()
     return RecipeImportResult(created=created, skipped=skipped)
+
+
+@router.post("/import/url", response_model=RecipeUrlPreview)
+def import_recipe_from_url(payload: RecipeUrlImport):
+    try:
+        from recipe_scrapers import scrape_me
+        scraper = scrape_me(payload.url)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Rezept konnte nicht ausgelesen werden: {exc}",
+        )
+
+    # Parse ingredients: "amount unit ingredient_name" format
+    raw_ingredients: list[RecipeExportIngredient] = []
+    try:
+        for line in scraper.ingredients():
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split(None, 2)
+            if len(parts) == 3:
+                try:
+                    amount = float(parts[0].replace(",", "."))
+                    raw_ingredients.append(
+                        RecipeExportIngredient(ingredient_name=parts[2], amount=amount, unit=parts[1])
+                    )
+                    continue
+                except ValueError:
+                    pass
+            # Fallback: store whole line as ingredient name with amount=1, unit="Stück"
+            raw_ingredients.append(
+                RecipeExportIngredient(ingredient_name=line, amount=1.0, unit="Stück")
+            )
+    except Exception:
+        pass
+
+    try:
+        prep_minutes = int(scraper.total_time()) if scraper.total_time() else None
+    except Exception:
+        prep_minutes = None
+
+    try:
+        servings = int(scraper.yields().split()[0]) if scraper.yields() else 2
+    except Exception:
+        servings = 2
+
+    try:
+        description = scraper.description() or None
+    except Exception:
+        description = None
+
+    return RecipeUrlPreview(
+        name=scraper.title(),
+        description=description,
+        servings=servings,
+        prep_time_minutes=prep_minutes,
+        ingredients=raw_ingredients,
+    )
 
 
 @router.get("/{recipe_id}", response_model=RecipeOut)

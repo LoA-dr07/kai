@@ -49,9 +49,17 @@ export interface RecipeImportResult {
   skipped: number;
 }
 
+export interface RecipeUrlPreview {
+  name: string;
+  description?: string | null;
+  servings: number;
+  prep_time_minutes?: number | null;
+  ingredients: RecipeExportIngredient[];
+}
+
 // --- Meal Plan ---
 
-export type MealType = 'breakfast' | 'lunch' | 'dinner';
+export type MealType = 'breakfast' | 'lunch' | 'snack' | 'dinner' | 'dessert';
 
 export interface User {
   id: number;
