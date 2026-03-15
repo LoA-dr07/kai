@@ -57,3 +57,24 @@ class RecipeOut(RecipeBase):
     ingredients: list[RecipeIngredientOut] = []
 
     model_config = {"from_attributes": True}
+
+
+# --- Import / Export ---
+
+class RecipeExportIngredient(BaseModel):
+    ingredient_name: str
+    amount: float
+    unit: str
+
+
+class RecipeExportItem(BaseModel):
+    name: str
+    description: Optional[str] = None
+    servings: int = 2
+    prep_time_minutes: Optional[int] = None
+    ingredients: list[RecipeExportIngredient] = []
+
+
+class RecipeImportResult(BaseModel):
+    created: int
+    skipped: int

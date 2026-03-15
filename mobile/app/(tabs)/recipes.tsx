@@ -1,18 +1,69 @@
+import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { useNavigation, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useRecipes } from '../../lib/hooks/useRecipes';
-import type { Recipe } from '../../lib/types';
+import { useImportRecipes, useRecipes } from '../../lib/hooks/useRecipes';
+import type { Recipe, RecipeExportItem } from '../../lib/types';
+import { api } from '../../lib/api';
 
 export default function RecipesScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
+  const importMutation = useImportRecipes();
+
+  async function handleExport() {
+    try {
+      const response = await api.get<RecipeExportItem[]>('/recipes/export');
+      const json = JSON.stringify(response.data, null, 2);
+      const path = FileSystem.cacheDirectory + 'rezepte.json';
+      await FileSystem.writeAsStringAsync(path, json, { encoding: FileSystem.EncodingType.UTF8 });
+      await Sharing.shareAsync(path, { mimeType: 'application/json', dialogTitle: 'Rezepte exportieren' });
+    } catch {
+      Alert.alert('Fehler', 'Export fehlgeschlagen.');
+    }
+  }
+
+  async function handleImport() {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: 'application/json', copyToCacheDirectory: true });
+      if (result.canceled) return;
+      const content = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: FileSystem.EncodingType.UTF8 });
+      const data: RecipeExportItem[] = JSON.parse(content);
+      if (!Array.isArray(data)) throw new Error('Ungültiges Format');
+      const { created, skipped } = await importMutation.mutateAsync(data);
+      Alert.alert('Import abgeschlossen', `${created} Rezept(e) importiert, ${skipped} übersprungen.`);
+    } catch {
+      Alert.alert('Fehler', 'Import fehlgeschlagen. Bitte eine gültige JSON-Datei wählen.');
+    }
+  }
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={styles.headerButtons}>
+          <TouchableOpacity onPress={handleImport} style={styles.headerBtn} accessibilityLabel="Rezepte importieren">
+            <Ionicons name="download-outline" size={24} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleExport} style={styles.headerBtn} accessibilityLabel="Rezepte exportieren">
+            <Ionicons name="share-outline" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      ),
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigation]);
 
   if (isLoading) {
     return <ActivityIndicator style={styles.center} size="large" color="#2E7D32" />;
@@ -86,6 +137,8 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 16, color: '#D32F2F', marginBottom: 16 },
   retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#2E7D32' },
   retryBtnText: { color: '#2E7D32', fontSize: 15, fontWeight: '500' },
+  headerButtons: { flexDirection: 'row', marginRight: 4 },
+  headerBtn: { padding: 8 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
