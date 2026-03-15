@@ -11,6 +11,17 @@ export interface RecipeIngredient {
   ingredient: Ingredient;
 }
 
+export interface Tag {
+  id: number;
+  name: string;
+  is_predefined: boolean;
+}
+
+export interface RecipeRating {
+  user_id: number;
+  stars: number;
+}
+
 export interface Recipe {
   id: number;
   name: string;
@@ -18,6 +29,8 @@ export interface Recipe {
   servings: number;
   prep_time_minutes: number | null;
   ingredients: RecipeIngredient[];
+  tags: Tag[];
+  ratings: RecipeRating[];
 }
 
 export interface RecipeCreatePayload {
@@ -26,6 +39,7 @@ export interface RecipeCreatePayload {
   servings?: number;
   prep_time_minutes?: number | null;
   ingredients?: { ingredient_id: number; amount: number; unit: string }[];
+  tag_ids?: number[];
 }
 
 // --- Import / Export ---
