@@ -3,7 +3,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useNavigation, useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useCallback, useLayoutEffect } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -23,47 +23,69 @@ export default function RecipesScreen() {
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
   const importMutation = useImportRecipes();
 
-  async function handleExport() {
+  const handleExport = useCallback(async () => {
     try {
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert('Nicht unterstützt', 'Teilen wird auf diesem Gerät nicht unterstützt.');
+        return;
+      }
+      const cacheDir = FileSystem.cacheDirectory;
+      if (!cacheDir) {
+        Alert.alert('Fehler', 'Kein Cache-Verzeichnis verfügbar.');
+        return;
+      }
       const response = await api.get<RecipeExportItem[]>('/recipes/export');
       const json = JSON.stringify(response.data, null, 2);
-      const path = FileSystem.cacheDirectory + 'rezepte.json';
+      const path = cacheDir + 'rezepte.json';
       await FileSystem.writeAsStringAsync(path, json, { encoding: FileSystem.EncodingType.UTF8 });
       await Sharing.shareAsync(path, { mimeType: 'application/json', dialogTitle: 'Rezepte exportieren' });
-    } catch {
-      Alert.alert('Fehler', 'Export fehlgeschlagen.');
+    } catch (e) {
+      Alert.alert('Export fehlgeschlagen', e instanceof Error ? e.message : String(e));
     }
-  }
+  }, []);
 
-  async function handleImport() {
+  const handleImport = useCallback(async () => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({ type: 'application/json', copyToCacheDirectory: true });
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+        copyToCacheDirectory: true,
+      });
       if (result.canceled) return;
-      const content = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: FileSystem.EncodingType.UTF8 });
+      const content = await FileSystem.readAsStringAsync(result.assets[0].uri, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
       const data: RecipeExportItem[] = JSON.parse(content);
-      if (!Array.isArray(data)) throw new Error('Ungültiges Format');
+      if (!Array.isArray(data)) throw new Error('Ungültiges Format – erwartet wird ein JSON-Array.');
       const { created, skipped } = await importMutation.mutateAsync(data);
       Alert.alert('Import abgeschlossen', `${created} Rezept(e) importiert, ${skipped} übersprungen.`);
-    } catch {
-      Alert.alert('Fehler', 'Import fehlgeschlagen. Bitte eine gültige JSON-Datei wählen.');
+    } catch (e) {
+      Alert.alert('Import fehlgeschlagen', e instanceof Error ? e.message : String(e));
     }
-  }
+  }, [importMutation]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <View style={styles.headerButtons}>
-          <TouchableOpacity onPress={handleImport} style={styles.headerBtn} accessibilityLabel="Rezepte importieren">
+          <TouchableOpacity
+            onPress={handleImport}
+            style={styles.headerBtn}
+            accessibilityLabel="Rezepte importieren"
+          >
             <Ionicons name="download-outline" size={24} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleExport} style={styles.headerBtn} accessibilityLabel="Rezepte exportieren">
+          <TouchableOpacity
+            onPress={handleExport}
+            style={styles.headerBtn}
+            accessibilityLabel="Rezepte exportieren"
+          >
             <Ionicons name="share-outline" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
       ),
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigation]);
+  }, [navigation, handleExport, handleImport]);
 
   if (isLoading) {
     return <ActivityIndicator style={styles.center} size="large" color="#2E7D32" />;
@@ -94,7 +116,9 @@ export default function RecipesScreen() {
             <Text style={styles.emptySubtitle}>Tippe auf "+ Rezept", um loszulegen.</Text>
           </View>
         }
-        renderItem={({ item }) => <RecipeCard recipe={item} onPress={() => router.push(`/recipe/${item.id}`)} />}
+        renderItem={({ item }) => (
+          <RecipeCard recipe={item} onPress={() => router.push(`/recipe/${item.id}`)} />
+        )}
       />
       <TouchableOpacity style={styles.fab} onPress={() => router.push('/recipe/new')}>
         <Text style={styles.fabText}>+ Rezept</Text>
