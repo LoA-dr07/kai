@@ -21,6 +21,10 @@ export default function RootLayout() {
           name="recipe/[id]/edit"
           options={{ title: 'Rezept bearbeiten', presentation: 'modal' }}
         />
+        <Stack.Screen
+          name="recipe/[id]/cook"
+          options={{ title: 'Kochen' }}
+        />
       </Stack>
     </QueryClientProvider>
   );
