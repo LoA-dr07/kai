@@ -33,6 +33,36 @@ class RecipeIngredientOut(RecipeIngredientBase):
     model_config = {"from_attributes": True}
 
 
+# --- Tags ---
+
+class TagOut(BaseModel):
+    id: int
+    name: str
+    is_predefined: bool
+
+    model_config = {"from_attributes": True}
+
+
+class TagCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+
+
+# --- Ratings ---
+
+class RecipeRatingOut(BaseModel):
+    user_id: int
+    stars: int
+
+    model_config = {"from_attributes": True}
+
+
+class RecipeRatingUpsert(BaseModel):
+    user_id: int
+    stars: int = Field(..., ge=0, le=5)
+
+
+# --- Recipes ---
+
 class RecipeBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
@@ -42,6 +72,7 @@ class RecipeBase(BaseModel):
 
 class RecipeCreate(RecipeBase):
     ingredients: list[RecipeIngredientCreate] = []
+    tag_ids: list[int] = []
 
 
 class RecipeUpdate(BaseModel):
@@ -50,11 +81,14 @@ class RecipeUpdate(BaseModel):
     servings: Optional[int] = Field(default=None, ge=1)
     prep_time_minutes: Optional[int] = Field(default=None, ge=1)
     ingredients: Optional[list[RecipeIngredientCreate]] = None
+    tag_ids: Optional[list[int]] = None
 
 
 class RecipeOut(RecipeBase):
     id: int
     ingredients: list[RecipeIngredientOut] = []
+    tags: list[TagOut] = []
+    ratings: list[RecipeRatingOut] = []
 
     model_config = {"from_attributes": True}
 
@@ -78,3 +112,15 @@ class RecipeExportItem(BaseModel):
 class RecipeImportResult(BaseModel):
     created: int
     skipped: int
+
+
+class RecipeUrlImport(BaseModel):
+    url: str
+
+
+class RecipeUrlPreview(BaseModel):
+    name: str
+    description: Optional[str] = None
+    servings: int = 2
+    prep_time_minutes: Optional[int] = None
+    ingredients: list[RecipeExportIngredient] = []

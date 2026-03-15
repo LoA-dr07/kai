@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.models.recipe import Recipe, Ingredient, RecipeIngredient
+from app.models.recipe import Recipe, Ingredient, RecipeIngredient, Tag, RecipeRating
 from app.schemas.recipe import (
     RecipeCreate, RecipeUpdate, RecipeOut,
     IngredientCreate, IngredientOut,
+    TagCreate, TagOut,
+    RecipeRatingOut, RecipeRatingUpsert,
     RecipeExportItem, RecipeExportIngredient, RecipeImportResult,
+    RecipeUrlImport, RecipeUrlPreview,
 )
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
@@ -16,6 +19,11 @@ def _get_or_create_ingredient(db: Session, ingredient_id: int) -> Ingredient:
     if not ingredient:
         raise HTTPException(status_code=404, detail=f"Ingredient {ingredient_id} not found")
     return ingredient
+
+
+def _apply_tags(db: Session, recipe: Recipe, tag_ids: list[int]) -> None:
+    tags = [db.get(Tag, tid) for tid in tag_ids]
+    recipe.tags = [t for t in tags if t is not None]
 
 
 # --- Ingredients ---
@@ -37,6 +45,25 @@ def create_ingredient(payload: IngredientCreate, db: Session = Depends(get_db)):
     return ingredient
 
 
+# --- Tags ---
+
+@router.get("/tags", response_model=list[TagOut])
+def list_tags(db: Session = Depends(get_db)):
+    return db.query(Tag).order_by(Tag.is_predefined.desc(), Tag.name).all()
+
+
+@router.post("/tags", response_model=TagOut, status_code=status.HTTP_201_CREATED)
+def create_tag(payload: TagCreate, db: Session = Depends(get_db)):
+    existing = db.query(Tag).filter(Tag.name == payload.name).first()
+    if existing:
+        return existing
+    tag = Tag(name=payload.name, is_predefined=False)
+    db.add(tag)
+    db.commit()
+    db.refresh(tag)
+    return tag
+
+
 # --- Recipes ---
 
 @router.get("", response_model=list[RecipeOut])
@@ -53,7 +80,7 @@ def create_recipe(payload: RecipeCreate, db: Session = Depends(get_db)):
         prep_time_minutes=payload.prep_time_minutes,
     )
     db.add(recipe)
-    db.flush()  # get recipe.id before adding ingredients
+    db.flush()
 
     for item in payload.ingredients:
         _get_or_create_ingredient(db, item.ingredient_id)
@@ -63,6 +90,8 @@ def create_recipe(payload: RecipeCreate, db: Session = Depends(get_db)):
             amount=item.amount,
             unit=item.unit,
         ))
+
+    _apply_tags(db, recipe, payload.tag_ids)
 
     db.commit()
     db.refresh(recipe)
@@ -124,6 +153,63 @@ def import_recipes(recipes: list[RecipeExportItem], db: Session = Depends(get_db
     return RecipeImportResult(created=created, skipped=skipped)
 
 
+@router.post("/import/url", response_model=RecipeUrlPreview)
+def import_recipe_from_url(payload: RecipeUrlImport):
+    try:
+        from recipe_scrapers import scrape_me
+        scraper = scrape_me(payload.url)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Rezept konnte nicht ausgelesen werden: {exc}",
+        )
+
+    raw_ingredients: list[RecipeExportIngredient] = []
+    try:
+        for line in scraper.ingredients():
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split(None, 2)
+            if len(parts) == 3:
+                try:
+                    amount = float(parts[0].replace(",", "."))
+                    raw_ingredients.append(
+                        RecipeExportIngredient(ingredient_name=parts[2], amount=amount, unit=parts[1])
+                    )
+                    continue
+                except ValueError:
+                    pass
+            raw_ingredients.append(
+                RecipeExportIngredient(ingredient_name=line, amount=1.0, unit="Stück")
+            )
+    except Exception:
+        pass
+
+    try:
+        prep_minutes = int(scraper.total_time()) if scraper.total_time() else None
+    except Exception:
+        prep_minutes = None
+
+    try:
+        servings = int(scraper.yields().split()[0]) if scraper.yields() else 2
+    except Exception:
+        servings = 2
+
+    try:
+        description = scraper.description() or None
+    except Exception:
+        description = None
+
+    return RecipeUrlPreview(
+        name=scraper.title(),
+        description=description,
+        servings=servings,
+        prep_time_minutes=prep_minutes,
+        ingredients=raw_ingredients,
+    )
+
+
 @router.get("/{recipe_id}", response_model=RecipeOut)
 def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
     recipe = db.get(Recipe, recipe_id)
@@ -138,11 +224,10 @@ def update_recipe(recipe_id: int, payload: RecipeUpdate, db: Session = Depends(g
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
-    for field, value in payload.model_dump(exclude_unset=True, exclude={"ingredients"}).items():
+    for field, value in payload.model_dump(exclude_unset=True, exclude={"ingredients", "tag_ids"}).items():
         setattr(recipe, field, value)
 
     if payload.ingredients is not None:
-        # replace all ingredients
         db.query(RecipeIngredient).filter(RecipeIngredient.recipe_id == recipe_id).delete()
         for item in payload.ingredients:
             _get_or_create_ingredient(db, item.ingredient_id)
@@ -152,6 +237,9 @@ def update_recipe(recipe_id: int, payload: RecipeUpdate, db: Session = Depends(g
                 amount=item.amount,
                 unit=item.unit,
             ))
+
+    if payload.tag_ids is not None:
+        _apply_tags(db, recipe, payload.tag_ids)
 
     db.commit()
     db.refresh(recipe)
@@ -165,3 +253,25 @@ def delete_recipe(recipe_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Recipe not found")
     db.delete(recipe)
     db.commit()
+
+
+@router.post("/{recipe_id}/ratings", response_model=RecipeRatingOut)
+def upsert_rating(recipe_id: int, payload: RecipeRatingUpsert, db: Session = Depends(get_db)):
+    recipe = db.get(Recipe, recipe_id)
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    rating = db.query(RecipeRating).filter(
+        RecipeRating.recipe_id == recipe_id,
+        RecipeRating.user_id == payload.user_id,
+    ).first()
+
+    if rating:
+        rating.stars = payload.stars
+    else:
+        rating = RecipeRating(recipe_id=recipe_id, user_id=payload.user_id, stars=payload.stars)
+        db.add(rating)
+
+    db.commit()
+    db.refresh(rating)
+    return rating

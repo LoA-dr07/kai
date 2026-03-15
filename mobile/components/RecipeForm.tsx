@@ -9,8 +9,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { showAlert } from '../lib/alert';
-import { useIngredients, useCreateIngredient } from '../lib/hooks/useRecipes';
-import type { RecipeCreatePayload } from '../lib/types';
+import { useIngredients, useCreateIngredient, useTags, useCreateTag } from '../lib/hooks/useRecipes';
+import type { RecipeCreatePayload, Tag } from '../lib/types';
 
 export interface FormIngredient {
   ingredient_id: number;
@@ -25,6 +25,7 @@ interface RecipeFormProps {
   initialServings?: number;
   initialPrepTime?: number | null;
   initialIngredients?: FormIngredient[];
+  initialTagIds?: number[];
   onSubmit: (data: RecipeCreatePayload) => Promise<void>;
   isSubmitting: boolean;
   submitLabel: string;
@@ -36,6 +37,7 @@ export default function RecipeForm({
   initialServings = 2,
   initialPrepTime = null,
   initialIngredients = [],
+  initialTagIds = [],
   onSubmit,
   isSubmitting,
   submitLabel,
@@ -45,6 +47,8 @@ export default function RecipeForm({
   const [servings, setServings] = useState(String(initialServings));
   const [prepTime, setPrepTime] = useState(initialPrepTime ? String(initialPrepTime) : '');
   const [formIngredients, setFormIngredients] = useState<FormIngredient[]>(initialIngredients);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>(initialTagIds);
+  const [newCustomTag, setNewCustomTag] = useState('');
 
   const [newIngName, setNewIngName] = useState('');
   const [newIngAmount, setNewIngAmount] = useState('');
@@ -54,6 +58,8 @@ export default function RecipeForm({
 
   const { data: ingredients } = useIngredients();
   const createIngredient = useCreateIngredient();
+  const { data: tags = [] } = useTags();
+  const createTag = useCreateTag();
 
   const suggestions =
     newIngName.length >= 1
@@ -66,6 +72,24 @@ export default function RecipeForm({
     setNewIngName(ingName);
     setSelectedIngId(id);
     setShowSuggestions(false);
+  }
+
+  function toggleTag(id: number) {
+    setSelectedTagIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  }
+
+  async function handleAddCustomTag() {
+    const trimmed = newCustomTag.trim();
+    if (!trimmed) return;
+    try {
+      const tag = await createTag.mutateAsync(trimmed);
+      setSelectedTagIds(prev => prev.includes(tag.id) ? prev : [...prev, tag.id]);
+      setNewCustomTag('');
+    } catch {
+      showAlert('Fehler', 'Tag konnte nicht erstellt werden.');
+    }
   }
 
   async function handleAddIngredient() {
@@ -143,10 +167,14 @@ export default function RecipeForm({
         amount: parseFloat(ing.amount.replace(',', '.')),
         unit: ing.unit,
       })),
+      tag_ids: selectedTagIds,
     };
 
     await onSubmit(payload);
   }
+
+  const predefinedTags = tags.filter(t => t.is_predefined);
+  const customTags = tags.filter(t => !t.is_predefined);
 
   return (
     <ScrollView
@@ -204,6 +232,72 @@ export default function RecipeForm({
         </View>
       </View>
 
+      {/* Tags */}
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Tags</Text>
+
+        <Text style={styles.tagGroupLabel}>Mahlzeiten-Typ</Text>
+        <View style={styles.tagRow}>
+          {predefinedTags.map(tag => {
+            const selected = selectedTagIds.includes(tag.id);
+            return (
+              <TouchableOpacity
+                key={tag.id}
+                style={[styles.tagChip, selected && styles.tagChipSelected]}
+                onPress={() => toggleTag(tag.id)}
+              >
+                <Text style={[styles.tagChipText, selected && styles.tagChipTextSelected]}>
+                  {tag.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {customTags.length > 0 && (
+          <>
+            <Text style={[styles.tagGroupLabel, { marginTop: 12 }]}>Eigene Tags</Text>
+            <View style={styles.tagRow}>
+              {customTags.map(tag => {
+                const selected = selectedTagIds.includes(tag.id);
+                return (
+                  <TouchableOpacity
+                    key={tag.id}
+                    style={[styles.tagChip, styles.tagChipCustom, selected && styles.tagChipCustomSelected]}
+                    onPress={() => toggleTag(tag.id)}
+                  >
+                    <Text style={[styles.tagChipText, selected && styles.tagChipTextSelected]}>
+                      {tag.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
+
+        <Text style={[styles.label, { marginTop: 12 }]}>Neuen Tag erstellen</Text>
+        <View style={styles.customTagRow}>
+          <TextInput
+            style={[styles.input, styles.flex1]}
+            value={newCustomTag}
+            onChangeText={setNewCustomTag}
+            placeholder="z.B. Vegetarisch, Schnell, …"
+            returnKeyType="done"
+            onSubmitEditing={handleAddCustomTag}
+          />
+          <TouchableOpacity
+            style={[styles.addTagBtn, !newCustomTag.trim() && styles.addTagBtnDisabled]}
+            onPress={handleAddCustomTag}
+            disabled={!newCustomTag.trim() || createTag.isPending}
+          >
+            {createTag.isPending
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Text style={styles.addTagBtnText}>+</Text>}
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* Zutaten */}
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Zutaten</Text>
@@ -227,7 +321,6 @@ export default function RecipeForm({
         <View style={styles.addIngSection}>
           <Text style={styles.addIngLabel}>Zutat hinzufügen</Text>
 
-          {/* Name mit Autovervollständigung */}
           <View style={styles.suggestionsWrapper}>
             <TextInput
               style={styles.input}
@@ -307,6 +400,9 @@ export default function RecipeForm({
   );
 }
 
+const GREEN = '#2E7D32';
+const BORDER = '#DDD';
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   content: { padding: 16, paddingBottom: 48, maxWidth: 700, alignSelf: 'center', width: '100%' },
@@ -325,7 +421,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: '500', color: '#555', marginBottom: 6, marginTop: 12 },
   input: {
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: BORDER,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -338,6 +434,35 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
   gap: { width: 12 },
   mt8: { marginTop: 8 },
+
+  // Tags
+  tagGroupLabel: { fontSize: 12, fontWeight: '600', color: '#888', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tagChip: {
+    borderWidth: 1.5,
+    borderColor: GREEN,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    backgroundColor: '#fff',
+  },
+  tagChipSelected: { backgroundColor: GREEN },
+  tagChipCustom: { borderColor: '#5C6BC0' },
+  tagChipCustomSelected: { backgroundColor: '#5C6BC0', borderColor: '#5C6BC0' },
+  tagChipText: { fontSize: 13, fontWeight: '600', color: GREEN },
+  tagChipTextSelected: { color: '#fff' },
+  customTagRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  addTagBtn: {
+    backgroundColor: GREEN,
+    borderRadius: 8,
+    width: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addTagBtnDisabled: { backgroundColor: '#A5D6A7' },
+  addTagBtnText: { color: '#fff', fontSize: 22, fontWeight: '700', lineHeight: 26 },
+
+  // Ingredients
   noIngredients: { fontSize: 14, color: '#999', fontStyle: 'italic', marginBottom: 12 },
   ingRow: {
     flexDirection: 'row',
@@ -360,7 +485,7 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: BORDER,
     borderRadius: 8,
     zIndex: 100,
     shadowColor: '#000',
@@ -378,14 +503,16 @@ const styles = StyleSheet.create({
   addIngBtn: {
     marginTop: 10,
     borderWidth: 1.5,
-    borderColor: '#2E7D32',
+    borderColor: GREEN,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
   },
-  addIngBtnText: { color: '#2E7D32', fontSize: 15, fontWeight: '600' },
+  addIngBtnText: { color: GREEN, fontSize: 15, fontWeight: '600' },
+
+  // Submit
   submitBtn: {
-    backgroundColor: '#2E7D32',
+    backgroundColor: GREEN,
     padding: 18,
     borderRadius: 12,
     alignItems: 'center',

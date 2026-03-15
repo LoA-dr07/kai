@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
-import type { Recipe, RecipeCreatePayload, Ingredient, RecipeExportItem, RecipeImportResult } from '../types';
+import type {
+  Recipe, RecipeCreatePayload, Ingredient,
+  RecipeExportItem, RecipeImportResult,
+  Tag, RecipeRating,
+} from '../types';
 
 export function useRecipes() {
   return useQuery<Recipe[]>({
@@ -55,6 +59,33 @@ export function useCreateIngredient() {
   return useMutation<Ingredient, Error, string>({
     mutationFn: name => api.post('/recipes/ingredients', { name }).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['ingredients'] }),
+  });
+}
+
+export function useTags() {
+  return useQuery<Tag[]>({
+    queryKey: ['tags'],
+    queryFn: () => api.get('/recipes/tags').then(r => r.data),
+  });
+}
+
+export function useCreateTag() {
+  const qc = useQueryClient();
+  return useMutation<Tag, Error, string>({
+    mutationFn: name => api.post('/recipes/tags', { name }).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tags'] }),
+  });
+}
+
+export function useRateRecipe(recipeId: number) {
+  const qc = useQueryClient();
+  return useMutation<RecipeRating, Error, { user_id: number; stars: number }>({
+    mutationFn: payload =>
+      api.post(`/recipes/${recipeId}/ratings`, payload).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['recipes', recipeId] });
+      qc.invalidateQueries({ queryKey: ['recipes'] });
+    },
   });
 }
 
