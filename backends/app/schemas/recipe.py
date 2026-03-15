@@ -78,3 +78,15 @@ class RecipeExportItem(BaseModel):
 class RecipeImportResult(BaseModel):
     created: int
     skipped: int
+
+
+class RecipeUrlImport(BaseModel):
+    url: str
+
+
+class RecipeUrlPreview(BaseModel):
+    name: str
+    description: Optional[str] = None
+    servings: int = 2
+    prep_time_minutes: Optional[int] = None
+    ingredients: list[RecipeExportIngredient] = []

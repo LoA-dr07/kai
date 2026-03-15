@@ -16,7 +16,9 @@ meal_plan_entry_users = Table(
 class MealType(str, enum.Enum):
     breakfast = "breakfast"
     lunch = "lunch"
+    snack = "snack"
     dinner = "dinner"
+    dessert = "dessert"
 
 
 class MealPlan(Base):
