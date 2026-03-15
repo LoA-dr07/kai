@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
-import type { Recipe, RecipeCreatePayload, Ingredient } from '../types';
+import type { Recipe, RecipeCreatePayload, Ingredient, RecipeExportItem, RecipeImportResult } from '../types';
 
 export function useRecipes() {
   return useQuery<Recipe[]>({
@@ -55,5 +55,16 @@ export function useCreateIngredient() {
   return useMutation<Ingredient, Error, string>({
     mutationFn: name => api.post('/recipes/ingredients', { name }).then(r => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['ingredients'] }),
+  });
+}
+
+export function useImportRecipes() {
+  const qc = useQueryClient();
+  return useMutation<RecipeImportResult, Error, RecipeExportItem[]>({
+    mutationFn: recipes => api.post('/recipes/import', recipes).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['recipes'] });
+      qc.invalidateQueries({ queryKey: ['ingredients'] });
+    },
   });
 }

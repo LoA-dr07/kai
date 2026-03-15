@@ -1,21 +1,112 @@
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  useWindowDimensions,
-} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { useRouter } from 'expo-router';
-import { useRecipes } from '../../lib/hooks/useRecipes';
-import type { Recipe } from '../../lib/types';
+import { useRef, useState } from 'react';
+import { Platform } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useImportRecipes, useRecipes } from '../../lib/hooks/useRecipes';
+import type { Recipe, RecipeExportItem } from '../../lib/types';
+import { api } from '../../lib/api';
 
 export default function RecipesScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const numColumns = width >= 768 ? 2 : 1;
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
+  const importMutation = useImportRecipes();
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  async function handleExport() {
+    setIsExporting(true);
+    try {
+      const response = await api.get<RecipeExportItem[]>('/recipes/export');
+      const json = JSON.stringify(response.data, null, 2);
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'rezepte.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (!isAvailable) {
+          Alert.alert('Nicht unterstützt', 'Teilen wird auf diesem Gerät nicht unterstützt.');
+          return;
+        }
+        const cacheDir = FileSystem.cacheDirectory;
+        if (!cacheDir) {
+          Alert.alert('Fehler', 'Kein Cache-Verzeichnis verfügbar.');
+          return;
+        }
+        const path = cacheDir + 'rezepte.json';
+        await FileSystem.writeAsStringAsync(path, json, { encoding: FileSystem.EncodingType.UTF8 });
+        await Sharing.shareAsync(path, { mimeType: 'application/json', dialogTitle: 'Rezepte exportieren' });
+      }
+    } catch (e) {
+      Alert.alert('Export fehlgeschlagen', e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function handleImport() {
+    if (Platform.OS === 'web') {
+      fileInputRef.current?.click();
+      return;
+    }
+    setIsImporting(true);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled) return;
+      const content = await FileSystem.readAsStringAsync(result.assets[0].uri, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      const data: RecipeExportItem[] = JSON.parse(content);
+      if (!Array.isArray(data)) throw new Error('Ungültiges Format – erwartet wird ein JSON-Array.');
+      const { created, skipped } = await importMutation.mutateAsync(data);
+      Alert.alert('Import abgeschlossen', `${created} Rezept(e) importiert, ${skipped} übersprungen.`);
+    } catch (e) {
+      Alert.alert('Import fehlgeschlagen', e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsImporting(false);
+    }
+  }
+
+  async function handleWebFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsImporting(true);
+    try {
+      const text = await file.text();
+      const data: RecipeExportItem[] = JSON.parse(text);
+      if (!Array.isArray(data)) throw new Error('Ungültiges Format – erwartet wird ein JSON-Array.');
+      const { created, skipped } = await importMutation.mutateAsync(data);
+      alert(`Import abgeschlossen: ${created} Rezept(e) importiert, ${skipped} übersprungen.`);
+    } catch (e) {
+      alert(`Import fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
 
   if (isLoading) {
     return <ActivityIndicator style={styles.center} size="large" color="#2E7D32" />;
@@ -34,6 +125,15 @@ export default function RecipesScreen() {
 
   return (
     <View style={styles.container}>
+      {Platform.OS === 'web' && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          style={{ display: 'none' }}
+          onChange={handleWebFileSelected}
+        />
+      )}
       <FlatList
         key={numColumns}
         data={recipes}
@@ -50,16 +150,36 @@ export default function RecipesScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <RecipeCard
-            recipe={item}
-            onPress={() => router.push(`/recipe/${item.id}`)}
-            wide={numColumns > 1}
-          />
+          <RecipeCard recipe={item} onPress={() => router.push(`/recipe/${item.id}`)} />
         )}
       />
-      <TouchableOpacity style={styles.fab} onPress={() => router.push('/recipe/new')}>
-        <Text style={styles.fabText}>+ Rezept</Text>
-      </TouchableOpacity>
+
+      {/* Action buttons */}
+      <View style={styles.fabGroup}>
+        <TouchableOpacity
+          style={styles.fabSecondary}
+          onPress={handleImport}
+          disabled={isImporting}
+          accessibilityLabel="Rezepte importieren"
+        >
+          {isImporting
+            ? <ActivityIndicator size="small" color="#2E7D32" />
+            : <Ionicons name="download-outline" size={22} color="#2E7D32" />}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.fabSecondary}
+          onPress={handleExport}
+          disabled={isExporting}
+          accessibilityLabel="Rezepte exportieren"
+        >
+          {isExporting
+            ? <ActivityIndicator size="small" color="#2E7D32" />
+            : <Ionicons name="share-outline" size={22} color="#2E7D32" />}
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.fab} onPress={() => router.push('/recipe/new')}>
+          <Text style={styles.fabText}>+ Rezept</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -91,15 +211,36 @@ function Chip({ label }: { label: string }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list: { padding: 16, paddingBottom: 96 },
-  listWide: { maxWidth: 960, alignSelf: 'center', width: '100%' },
-  columnWrapper: { gap: 12 },
+  list: { padding: 16, paddingBottom: 120 },
   emptyContainer: { alignItems: 'center', marginTop: 80 },
   emptyTitle: { fontSize: 18, fontWeight: '600', color: '#444', marginBottom: 8 },
   emptySubtitle: { fontSize: 15, color: '#888' },
   errorText: { fontSize: 16, color: '#D32F2F', marginBottom: 16 },
   retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#2E7D32' },
   retryBtnText: { color: '#2E7D32', fontSize: 15, fontWeight: '500' },
+  fabGroup: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  fabSecondary: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: '#2E7D32',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -123,9 +264,6 @@ const styles = StyleSheet.create({
   },
   chipText: { fontSize: 12, color: '#2E7D32', fontWeight: '500' },
   fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
     backgroundColor: '#2E7D32',
     paddingHorizontal: 22,
     paddingVertical: 14,

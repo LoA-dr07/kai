@@ -110,8 +110,14 @@ Ziel: Sammlung kleinerer Features und Fixes nach Phase 5.
   - Alembic-Migration für geänderten Enum-Wert
   - Frontend: Wochenplan-Grid von 3 auf 5 Zeilen pro Tag erweitern (Frühstück, Mittagessen, Snack, Abendessen, Dessert)
 
+- [x] **Rezept Import/Export (JSON-Datei)** – Alle Rezepte als JSON-Datei exportieren und auf einem anderen Gerät wieder importieren
+  - Backend: `GET /recipes/export` liefert alle Rezepte inkl. Zutaten-Namen als JSON
+  - Backend: `POST /recipes/import` nimmt JSON-Array entgegen, legt fehlende Zutaten automatisch an, überspringt Duplikate (gleicher Name)
+  - Frontend: Export-Button (↑) im Rezepte-Header öffnet System-Teilen-Dialog; Import-Button (↓) öffnet Datei-Picker für `.json`
+  - Packages: `expo-document-picker`, `expo-file-system`, `expo-sharing`
+
 - [ ] **Rezept-Import aus dem Internet** – URL eingeben, Rezeptdaten automatisch auslesen und als neues Rezept speichern
-  - Backend: Import-Endpunkt `POST /recipes/import` mit URL als Input
+  - Backend: `POST /recipes/import/url` mit URL als Input (separater Endpunkt, um Konflikt mit JSON-Import zu vermeiden)
   - Web-Scraping via `recipe-scrapers` (Python-Library, unterstützt 300+ Rezeptseiten via Schema.org)
   - Frontend: "Aus URL importieren"-Button im Rezept-Bereich, URL-Eingabefeld, Vorschau vor dem Speichern
 
