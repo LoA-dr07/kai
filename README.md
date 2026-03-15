@@ -136,3 +136,66 @@ ngrok http 8000
 cd mobile
 npx expo start --tunnel
 ```
+
+---
+
+## Web-App starten (Expo Web)
+
+Die App läuft auch direkt im Browser – kein Smartphone erforderlich.
+
+### Voraussetzungen
+
+- Node.js 18+
+- Backend läuft lokal (s. oben)
+
+### 1. Abhängigkeiten installieren (einmalig)
+
+```powershell
+cd mobile
+npm install
+```
+
+### 2. API-URL konfigurieren
+
+Erstelle im Ordner `mobile\` eine Datei `.env` (oder ergänze die vorhandene):
+
+```
+EXPO_PUBLIC_API_URL=http://localhost:8000
+```
+
+> Für die Web-App reicht `localhost`, da Browser und Backend auf demselben Rechner laufen.
+
+### 3. Web-Dev-Server starten
+
+```powershell
+cd mobile
+npx expo start --web
+```
+
+Der Browser öffnet sich automatisch unter `http://localhost:8081`.
+
+### Web-App bauen (statischer Export)
+
+```powershell
+cd mobile
+npm run export
+```
+
+Die fertigen Dateien liegen danach in `mobile/dist/` und können auf jeden
+statischen Webserver (Netlify, GitHub Pages, etc.) deployt werden.
+
+### Kurzanleitung Web (nach einmaliger Einrichtung)
+
+1. Backend starten:
+```powershell
+cd backends
+.\venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload --host 0.0.0.0
+```
+
+2. Web-App starten:
+```powershell
+cd mobile
+npx expo start --web
+```
+
