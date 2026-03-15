@@ -3,7 +3,8 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import {
   ActivityIndicator,
   Alert,
@@ -23,25 +24,37 @@ export default function RecipesScreen() {
   const importMutation = useImportRecipes();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   async function handleExport() {
     setIsExporting(true);
     try {
-      const isAvailable = await Sharing.isAvailableAsync();
-      if (!isAvailable) {
-        Alert.alert('Nicht unterstützt', 'Teilen wird auf diesem Gerät nicht unterstützt.');
-        return;
-      }
-      const cacheDir = FileSystem.cacheDirectory;
-      if (!cacheDir) {
-        Alert.alert('Fehler', 'Kein Cache-Verzeichnis verfügbar.');
-        return;
-      }
       const response = await api.get<RecipeExportItem[]>('/recipes/export');
       const json = JSON.stringify(response.data, null, 2);
-      const path = cacheDir + 'rezepte.json';
-      await FileSystem.writeAsStringAsync(path, json, { encoding: FileSystem.EncodingType.UTF8 });
-      await Sharing.shareAsync(path, { mimeType: 'application/json', dialogTitle: 'Rezepte exportieren' });
+
+      if (Platform.OS === 'web') {
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'rezepte.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (!isAvailable) {
+          Alert.alert('Nicht unterstützt', 'Teilen wird auf diesem Gerät nicht unterstützt.');
+          return;
+        }
+        const cacheDir = FileSystem.cacheDirectory;
+        if (!cacheDir) {
+          Alert.alert('Fehler', 'Kein Cache-Verzeichnis verfügbar.');
+          return;
+        }
+        const path = cacheDir + 'rezepte.json';
+        await FileSystem.writeAsStringAsync(path, json, { encoding: FileSystem.EncodingType.UTF8 });
+        await Sharing.shareAsync(path, { mimeType: 'application/json', dialogTitle: 'Rezepte exportieren' });
+      }
     } catch (e) {
       Alert.alert('Export fehlgeschlagen', e instanceof Error ? e.message : String(e));
     } finally {
@@ -50,6 +63,10 @@ export default function RecipesScreen() {
   }
 
   async function handleImport() {
+    if (Platform.OS === 'web') {
+      fileInputRef.current?.click();
+      return;
+    }
     setIsImporting(true);
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -71,6 +88,24 @@ export default function RecipesScreen() {
     }
   }
 
+  async function handleWebFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsImporting(true);
+    try {
+      const text = await file.text();
+      const data: RecipeExportItem[] = JSON.parse(text);
+      if (!Array.isArray(data)) throw new Error('Ungültiges Format – erwartet wird ein JSON-Array.');
+      const { created, skipped } = await importMutation.mutateAsync(data);
+      alert(`Import abgeschlossen: ${created} Rezept(e) importiert, ${skipped} übersprungen.`);
+    } catch (e) {
+      alert(`Import fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
   if (isLoading) {
     return <ActivityIndicator style={styles.center} size="large" color="#2E7D32" />;
   }
@@ -88,6 +123,15 @@ export default function RecipesScreen() {
 
   return (
     <View style={styles.container}>
+      {Platform.OS === 'web' && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          style={{ display: 'none' }}
+          onChange={handleWebFileSelected}
+        />
+      )}
       <FlatList
         data={recipes}
         keyExtractor={item => String(item.id)}
