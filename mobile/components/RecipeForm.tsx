@@ -7,8 +7,8 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
+import { showAlert } from '../lib/alert';
 import { useIngredients, useCreateIngredient } from '../lib/hooks/useRecipes';
 import type { RecipeCreatePayload } from '../lib/types';
 
@@ -70,16 +70,16 @@ export default function RecipeForm({
 
   async function handleAddIngredient() {
     if (!newIngName.trim()) {
-      Alert.alert('Fehlende Angabe', 'Bitte Zutatname eingeben.');
+      showAlert('Fehlende Angabe', 'Bitte Zutatname eingeben.');
       return;
     }
     const amount = parseFloat(newIngAmount.replace(',', '.'));
     if (isNaN(amount) || amount <= 0) {
-      Alert.alert('Fehlende Angabe', 'Bitte eine gültige Menge eingeben.');
+      showAlert('Fehlende Angabe', 'Bitte eine gültige Menge eingeben.');
       return;
     }
     if (!newIngUnit.trim()) {
-      Alert.alert('Fehlende Angabe', 'Bitte Einheit eingeben (z.B. g, ml, Stück).');
+      showAlert('Fehlende Angabe', 'Bitte Einheit eingeben (z.B. g, ml, Stück).');
       return;
     }
 
@@ -96,7 +96,7 @@ export default function RecipeForm({
           const created = await createIngredient.mutateAsync(newIngName.trim());
           ingId = created.id;
         } catch {
-          Alert.alert('Fehler', 'Zutat konnte nicht erstellt werden.');
+          showAlert('Fehler', 'Zutat konnte nicht erstellt werden.');
           return;
         }
       }
@@ -124,12 +124,12 @@ export default function RecipeForm({
 
   async function handleSubmit() {
     if (!name.trim()) {
-      Alert.alert('Fehlende Angabe', 'Bitte Rezeptname eingeben.');
+      showAlert('Fehlende Angabe', 'Bitte Rezeptname eingeben.');
       return;
     }
     const servingsNum = parseInt(servings, 10);
     if (isNaN(servingsNum) || servingsNum < 1) {
-      Alert.alert('Fehlende Angabe', 'Bitte eine gültige Portionsanzahl eingeben.');
+      showAlert('Fehlende Angabe', 'Bitte eine gültige Portionsanzahl eingeben.');
       return;
     }
 
@@ -309,7 +309,7 @@ export default function RecipeForm({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
-  content: { padding: 16, paddingBottom: 48 },
+  content: { padding: 16, paddingBottom: 48, maxWidth: 700, alignSelf: 'center', width: '100%' },
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
