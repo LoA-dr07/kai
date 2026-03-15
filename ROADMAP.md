@@ -119,6 +119,22 @@ Ziel: Sammlung kleinerer Features und Fixes nach Phase 5.
   - Web-Scraping via `recipe-scrapers` (Python-Library, unterstützt 300+ Rezeptseiten via Schema.org)
   - Frontend: "Aus URL importieren"-Button im Rezept-Bereich, URL-Eingabefeld, Vorschau vor dem Speichern
 
+- [x] **Rezept-Tags** – Rezepte mit vordefinierten und benutzerdefinierten Tags versehen
+  - Vordefinierte Tags: Frühstück, Mittagessen, Snack, Abendessen, Dessert
+  - Backend: `Tag`-Modell, `recipe_tags`-Verknüpfungstabelle; `GET /recipes/tags`, `POST /recipes/tags`
+  - Backend: Rezept-Erstellen/Bearbeiten akzeptiert `tag_ids`
+  - Frontend: Tag-Auswahl im Rezept-Formular (Chips + eigene Tags erstellen)
+  - Frontend: Tags auf Rezeptkarten und in der Detailansicht anzeigen
+
+- [x] **Sternebewertungen** – Haushaltsmitglieder vergeben 0–5 Sterne pro Rezept (für spätere KI-Nutzung)
+  - Backend: `RecipeRating`-Modell (recipe_id, user_id, stars); Upsert via `POST /recipes/{id}/ratings`
+  - Frontend: Sterne-Bewertungszeile pro Haushaltsmitglied in der Rezept-Detailansicht
+  - Frontend: Durchschnittsbewertung auf Rezeptkarten (falls bewertet)
+  - Daten stehen für KI-gestützte Wochenplanung bereit
+  - Backend: `POST /recipes/import/url` mit URL als Input (separater Endpunkt, um Konflikt mit JSON-Import zu vermeiden)
+  - Web-Scraping via `recipe-scrapers` (Python-Library, unterstützt 300+ Rezeptseiten via Schema.org)
+  - Frontend: "Aus URL importieren"-Button im Rezept-Bereich, URL-Eingabefeld, Vorschau vor dem Speichern
+
 ---
 
 ## Empfohlener Workflow (Entwicklung mit Claude)

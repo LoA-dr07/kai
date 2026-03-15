@@ -31,6 +31,8 @@ export default function EditRecipeScreen() {
     unit: ing.unit,
   }));
 
+  const initialTagIds = recipe.tags.map(t => t.id);
+
   return (
     <RecipeForm
       initialName={recipe.name}
@@ -38,6 +40,7 @@ export default function EditRecipeScreen() {
       initialServings={recipe.servings}
       initialPrepTime={recipe.prep_time_minutes}
       initialIngredients={initialIngredients}
+      initialTagIds={initialTagIds}
       onSubmit={async data => {
         try {
           await updateRecipe.mutateAsync(data);

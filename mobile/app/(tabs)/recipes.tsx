@@ -340,16 +340,35 @@ export default function RecipesScreen() {
 }
 
 function RecipeCard({ recipe, onPress }: { recipe: Recipe; onPress: () => void }) {
+  const avgRating =
+    recipe.ratings.length > 0
+      ? recipe.ratings.reduce((s, r) => s + r.stars, 0) / recipe.ratings.length
+      : null;
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <Text style={styles.cardTitle}>{recipe.name}</Text>
       {recipe.description ? (
         <Text style={styles.cardDesc} numberOfLines={2}>{recipe.description}</Text>
       ) : null}
+      {recipe.tags.length > 0 && (
+        <View style={styles.cardTagRow}>
+          {recipe.tags.map(tag => (
+            <View key={tag.id} style={[styles.cardTag, !tag.is_predefined && styles.cardTagCustom]}>
+              <Text style={[styles.cardTagText, !tag.is_predefined && styles.cardTagTextCustom]}>
+                {tag.name}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
       <View style={styles.cardMeta}>
         <Chip label={`${recipe.servings} Portionen`} />
         {recipe.prep_time_minutes ? <Chip label={`${recipe.prep_time_minutes} Min.`} /> : null}
         <Chip label={`${recipe.ingredients.length} Zutaten`} />
+        {avgRating !== null && (
+          <Chip label={`${'★'.repeat(Math.round(avgRating))} ${avgRating.toFixed(1)}`} />
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -435,6 +454,18 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   fabText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  cardTagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
+  cardTag: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: '#2E7D32',
+  },
+  cardTagCustom: { backgroundColor: '#EDE7F6', borderColor: '#5C6BC0' },
+  cardTagText: { fontSize: 11, fontWeight: '600', color: '#2E7D32' },
+  cardTagTextCustom: { color: '#5C6BC0' },
 
   // Modal
   modalContainer: { flex: 1, backgroundColor: '#fff' },
