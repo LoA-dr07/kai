@@ -2,7 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.recipe import Recipe, Ingredient, RecipeIngredient
-from app.schemas.recipe import RecipeCreate, RecipeUpdate, RecipeOut, IngredientCreate, IngredientOut
+from app.schemas.recipe import (
+    RecipeCreate, RecipeUpdate, RecipeOut,
+    IngredientCreate, IngredientOut,
+    RecipeExportItem, RecipeExportIngredient, RecipeImportResult,
+)
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
@@ -63,6 +67,61 @@ def create_recipe(payload: RecipeCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(recipe)
     return recipe
+
+
+@router.get("/export", response_model=list[RecipeExportItem])
+def export_recipes(db: Session = Depends(get_db)):
+    recipes = db.query(Recipe).order_by(Recipe.name).all()
+    return [
+        RecipeExportItem(
+            name=r.name,
+            description=r.description,
+            servings=r.servings,
+            prep_time_minutes=r.prep_time_minutes,
+            ingredients=[
+                RecipeExportIngredient(
+                    ingredient_name=ri.ingredient.name,
+                    amount=ri.amount,
+                    unit=ri.unit,
+                )
+                for ri in r.ingredients
+            ],
+        )
+        for r in recipes
+    ]
+
+
+@router.post("/import", response_model=RecipeImportResult)
+def import_recipes(recipes: list[RecipeExportItem], db: Session = Depends(get_db)):
+    created = 0
+    skipped = 0
+    for item in recipes:
+        if db.query(Recipe).filter(Recipe.name == item.name).first():
+            skipped += 1
+            continue
+        recipe = Recipe(
+            name=item.name,
+            description=item.description,
+            servings=item.servings,
+            prep_time_minutes=item.prep_time_minutes,
+        )
+        db.add(recipe)
+        db.flush()
+        for ing in item.ingredients:
+            ingredient = db.query(Ingredient).filter(Ingredient.name == ing.ingredient_name).first()
+            if not ingredient:
+                ingredient = Ingredient(name=ing.ingredient_name)
+                db.add(ingredient)
+                db.flush()
+            db.add(RecipeIngredient(
+                recipe_id=recipe.id,
+                ingredient_id=ingredient.id,
+                amount=ing.amount,
+                unit=ing.unit,
+            ))
+        created += 1
+    db.commit()
+    return RecipeImportResult(created=created, skipped=skipped)
 
 
 @router.get("/{recipe_id}", response_model=RecipeOut)
