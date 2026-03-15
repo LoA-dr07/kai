@@ -2,8 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { useNavigation, useRouter } from 'expo-router';
-import { useCallback, useLayoutEffect } from 'react';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
@@ -19,11 +18,10 @@ import { api } from '../../lib/api';
 
 export default function RecipesScreen() {
   const router = useRouter();
-  const navigation = useNavigation();
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
   const importMutation = useImportRecipes();
 
-  const handleExport = useCallback(async () => {
+  async function handleExport() {
     try {
       const isAvailable = await Sharing.isAvailableAsync();
       if (!isAvailable) {
@@ -43,9 +41,9 @@ export default function RecipesScreen() {
     } catch (e) {
       Alert.alert('Export fehlgeschlagen', e instanceof Error ? e.message : String(e));
     }
-  }, []);
+  }
 
-  const handleImport = useCallback(async () => {
+  async function handleImport() {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: 'application/json',
@@ -62,30 +60,7 @@ export default function RecipesScreen() {
     } catch (e) {
       Alert.alert('Import fehlgeschlagen', e instanceof Error ? e.message : String(e));
     }
-  }, [importMutation]);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            onPress={handleImport}
-            style={styles.headerBtn}
-            accessibilityLabel="Rezepte importieren"
-          >
-            <Ionicons name="download-outline" size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleExport}
-            style={styles.headerBtn}
-            accessibilityLabel="Rezepte exportieren"
-          >
-            <Ionicons name="share-outline" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      ),
-    });
-  }, [navigation, handleExport, handleImport]);
+  }
 
   if (isLoading) {
     return <ActivityIndicator style={styles.center} size="large" color="#2E7D32" />;
@@ -120,9 +95,27 @@ export default function RecipesScreen() {
           <RecipeCard recipe={item} onPress={() => router.push(`/recipe/${item.id}`)} />
         )}
       />
-      <TouchableOpacity style={styles.fab} onPress={() => router.push('/recipe/new')}>
-        <Text style={styles.fabText}>+ Rezept</Text>
-      </TouchableOpacity>
+
+      {/* Action buttons */}
+      <View style={styles.fabGroup}>
+        <TouchableOpacity
+          style={styles.fabSecondary}
+          onPress={handleImport}
+          accessibilityLabel="Rezepte importieren"
+        >
+          <Ionicons name="download-outline" size={22} color="#2E7D32" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.fabSecondary}
+          onPress={handleExport}
+          accessibilityLabel="Rezepte exportieren"
+        >
+          <Ionicons name="share-outline" size={22} color="#2E7D32" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.fab} onPress={() => router.push('/recipe/new')}>
+          <Text style={styles.fabText}>+ Rezept</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -154,15 +147,36 @@ function Chip({ label }: { label: string }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list: { padding: 16, paddingBottom: 96 },
+  list: { padding: 16, paddingBottom: 120 },
   emptyContainer: { alignItems: 'center', marginTop: 80 },
   emptyTitle: { fontSize: 18, fontWeight: '600', color: '#444', marginBottom: 8 },
   emptySubtitle: { fontSize: 15, color: '#888' },
   errorText: { fontSize: 16, color: '#D32F2F', marginBottom: 16 },
   retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#2E7D32' },
   retryBtnText: { color: '#2E7D32', fontSize: 15, fontWeight: '500' },
-  headerButtons: { flexDirection: 'row', marginRight: 4 },
-  headerBtn: { padding: 8 },
+  fabGroup: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  fabSecondary: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: '#2E7D32',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -185,9 +199,6 @@ const styles = StyleSheet.create({
   },
   chipText: { fontSize: 12, color: '#2E7D32', fontWeight: '500' },
   fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
     backgroundColor: '#2E7D32',
     paddingHorizontal: 22,
     paddingVertical: 14,
