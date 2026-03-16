@@ -79,6 +79,7 @@ FastAPI Backend
 |--------|-----|--------------|
 | id | INTEGER PK | |
 | name | VARCHAR(255) | Haushalt-Name |
+| settings | JSONB | KI-Einstellungen (Kochtage, Mahlzeitenzeit, Budget, …) |
 
 #### `users`
 | Spalte | Typ | Beschreibung |
@@ -87,6 +88,7 @@ FastAPI Backend
 | name | VARCHAR(100) | Vollständiger Name |
 | avatar_color | VARCHAR(20) | Hex-Farbe, z.B. `#2E7D32` |
 | short_name | VARCHAR(4) | Kürzel, z.B. `MA`, `PA`, `KI` |
+| preferences | JSONB | Persönliche Präferenzen (Ernährung, Allergien, …) |
 
 #### `household_members` *(Junction)*
 | Spalte | Typ | Beschreibung |
@@ -196,6 +198,7 @@ Household ──< HouseholdMember >── User
 | `0002_phase4_household_users.py` | Neue Tabellen: `users`, `households`, `household_members`, `meal_plan_entry_users`; `household_id` zu Rezepten und Plänen |
 | `0003_phase6_mealtype.py` | `meal_type`-Enum erweitert um `snack` und `dessert` |
 | `0004_phase6_tags_ratings.py` | Neue Tabellen: `tags`, `recipe_tags`, `recipe_ratings` |
+| `0005_phase7_ai_settings.py` | Neue Spalten: `households.settings` (JSONB), `users.preferences` (JSONB) |
 
 Migration ausführen: `alembic upgrade head`
 
