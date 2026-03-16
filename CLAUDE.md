@@ -158,3 +158,13 @@ EXPO_PUBLIC_API_URL=https://xxx.ngrok-free.app
 - `docs/architecture.md` – Datenbankschema, Systemarchitektur
 - `docs/api.md` – Vollständige API-Referenz
 - `docs/frontend.md` – Screens, Hooks, Komponenten
+
+## Dokumentationspflege
+
+**Wichtig:** Nach jeder Änderung am Projekt müssen die betroffenen Dokumentationsdateien aktualisiert werden:
+
+- Neues Datenbankmodell oder Migration → `docs/architecture.md` (Schema, Migrations-Tabelle)
+- Neuer oder geänderter API-Endpunkt → `docs/api.md`
+- Neuer Screen, Hook oder Komponente → `docs/frontend.md`
+- Neuer Befehl, Konvention oder Designentscheidung → `CLAUDE.md`
+- Neue Feature-Phase abgeschlossen → `ROADMAP.md` (Tasks als `[x]` markieren)
