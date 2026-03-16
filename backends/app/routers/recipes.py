@@ -188,7 +188,7 @@ def _find_recipe_jsonld(data) -> dict | None:
 def _scrape_recipe_url(url: str) -> dict:
     """Fetch a page and extract recipe data from JSON-LD structured data."""
     import json
-    import requests
+    import httpx
     from html.parser import HTMLParser
 
     class _JsonLdExtractor(HTMLParser):
@@ -212,7 +212,7 @@ def _scrape_recipe_url(url: str) -> dict:
             if self._in_block:
                 self._buf.append(data)
 
-    resp = requests.get(url, timeout=15, headers={"User-Agent": "Mozilla/5.0"})
+    resp = httpx.get(url, timeout=15, headers={"User-Agent": "Mozilla/5.0"}, follow_redirects=True)
     resp.raise_for_status()
 
     parser = _JsonLdExtractor()
