@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 
@@ -10,6 +11,7 @@ class User(Base):
     name = Column(String(100), nullable=False)
     avatar_color = Column(String(20), nullable=False, default="#2E7D32")  # hex color
     short_name = Column(String(4), nullable=False)  # z.B. "MA", "PA", "KI"
+    preferences = Column(JSONB, nullable=True, default=dict)
 
     households = relationship("HouseholdMember", back_populates="user")
     meal_plan_entries = relationship(

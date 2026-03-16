@@ -13,9 +13,10 @@ mobile/
 │   ├── _layout.tsx         # Root-Layout (QueryClientProvider)
 │   ├── index.tsx           # Weiterleitung → /recipes
 │   ├── (tabs)/
-│   │   ├── _layout.tsx     # Tab-Navigation (Rezepte | Wochenplan)
+│   │   ├── _layout.tsx     # Tab-Navigation (Rezepte | Wochenplan | Einstellungen)
 │   │   ├── recipes.tsx     # Rezeptliste-Screen
-│   │   └── meal-plan.tsx   # Wochenplan-Screen
+│   │   ├── meal-plan.tsx   # Wochenplan-Screen
+│   │   └── settings.tsx    # Einstellungen-Screen (Haushalt + Mitglieder)
 │   └── recipe/
 │       ├── new.tsx         # Neues Rezept erstellen
 │       └── [id]/
@@ -30,7 +31,8 @@ mobile/
 │   └── hooks/              # React Query Custom Hooks
 │       ├── useRecipes.ts   # Rezept-Hooks
 │       ├── useMealPlan.ts  # Wochenplan-Hooks
-│       └── useUsers.ts     # User-Hooks
+│       ├── useUsers.ts     # User-Hooks (inkl. useUpdateUserPreferences)
+│       └── useHousehold.ts # Haushalt-Hooks
 └── assets/                 # Bilder, Icons
 ```
 
@@ -71,6 +73,11 @@ mobile/
 ### `recipe/[id]/cook.tsx` – Koch-Ansicht
 - Vereinfachte Ansicht der Zutaten für die Küche
 
+### `(tabs)/settings.tsx` – Einstellungen
+- **Sektion Haushalt:** Kochtage (Checkbox-Grid Mo–So), warme Mahlzeit (Mittags/Abends/Beides), Tage mit kalten Mahlzeiten, Reste-Häufigkeit (Nie/Manchmal/Oft), Gemeinsames-Essen-Skala (1–5), Kochkenntnisse, bevorzugte Küchen, Wochenbudget
+- **Sektion Haushaltsmitglieder:** Pro Mitglied aufklappbare Karte mit Ernährungsweise, Allergien, ungemochten Zutaten (Freitext-Chips), bevorzugten Küchen, Schärfeverträglichkeit, Portionsgröße
+- Speichern per Button pro Sektion; Feedback via `showAlert`
+
 ---
 
 ## React Query Hooks
@@ -110,6 +117,14 @@ Alle Meal-Plan-Mutations invalidieren `['meal-plans']`.
 | Hook | Typ | Beschreibung |
 |------|-----|--------------|
 | `useUsers()` | Query | Alle Haushaltsmitglieder, `staleTime: 5min` (ändern sich selten) |
+| `useUpdateUserPreferences(userId)` | Mutation | Präferenzen speichern, aktualisiert `['users']` Cache |
+
+### Haushalt-Hooks (`useHousehold.ts`)
+
+| Hook | Typ | Beschreibung |
+|------|-----|--------------|
+| `useHousehold()` | Query | Haushalt mit Einstellungen (Cache-Key: `['household']`, `staleTime: 5min`) |
+| `useUpdateHouseholdSettings()` | Mutation | Einstellungen speichern, aktualisiert `['household']` Cache |
 
 ---
 
