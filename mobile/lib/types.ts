@@ -71,16 +71,46 @@ export interface RecipeUrlPreview {
   ingredients: RecipeExportIngredient[];
 }
 
-// --- Meal Plan ---
+// --- Household & Users ---
 
-export type MealType = 'breakfast' | 'lunch' | 'snack' | 'dinner' | 'dessert';
+export interface UserPreferences {
+  dietary_restrictions: string[]; // "vegetarian"|"vegan"|"pescatarian"|"gluten_free"|"lactose_free"|"low_carb"|"halal"|"kosher"
+  allergies: string[];            // "peanuts"|"tree_nuts"|"dairy"|"eggs"|"wheat"|"shellfish"|"fish"|"soy"|"sesame"
+  disliked_ingredients: string[];
+  liked_cuisines: string[];
+  spice_tolerance: string;        // "mild"|"medium"|"spicy"
+  portion_size: string;           // "small"|"normal"|"large"
+}
 
 export interface User {
   id: number;
   name: string;
   avatar_color: string;
   short_name: string;
+  preferences: UserPreferences;
 }
+
+export interface HouseholdSettings {
+  cooking_days: string[];          // ["monday","tuesday",...]
+  hot_meal_time: string;           // "lunch"|"dinner"|"both"
+  cold_meal_days: string[];
+  leftovers_frequency: string;     // "never"|"sometimes"|"often"
+  shared_meals_importance: number; // 1–5
+  weekly_budget: number | null;
+  preferred_cuisines: string[];
+  cooking_skill_level: string;     // "beginner"|"medium"|"advanced"
+}
+
+export interface Household {
+  id: number;
+  name: string;
+  members: User[];
+  settings: HouseholdSettings;
+}
+
+// --- Meal Plan ---
+
+export type MealType = 'breakfast' | 'lunch' | 'snack' | 'dinner' | 'dessert';
 
 export interface MealPlanEntry {
   id: number;
