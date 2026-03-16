@@ -137,6 +137,22 @@ Ziel: Sammlung kleinerer Features und Fixes nach Phase 5.
 
 ---
 
+---
+
+### Phase 7 – KI-Vorbereitungs-Einstellungen
+
+Ziel: Strukturierte Präferenzdaten auf Haushalts- und Mitgliederebene für zukünftige KI-gestützte Wochenplanung.
+
+**Tasks:**
+- [x] `households.settings` (JSONB): Kochtage, Mahlzeitenzeit, Reste-Häufigkeit, Gemeinsam-Essen-Skala, Budget, Küchen, Kochkenntnisse
+- [x] `users.preferences` (JSONB): Ernährungsweise, Allergien, ungemochte Zutaten, bevorzugte Küchen, Schärfe, Portionsgröße
+- [x] Alembic-Migration `0005_phase7_ai_settings.py`
+- [x] API: `PUT /household/settings`, `PUT /users/{id}/preferences`
+- [x] Frontend: Neuer Tab "Einstellungen" (`mobile/app/(tabs)/settings.tsx`)
+- [x] Hooks: `useHousehold`, `useUpdateHouseholdSettings`, `useUpdateUserPreferences`
+
+---
+
 ## Empfohlener Workflow (Entwicklung mit Claude)
 
 ### Schritt-für-Schritt pro Feature

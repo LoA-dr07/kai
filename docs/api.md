@@ -330,30 +330,103 @@ Mahlzeit-Eintrag entfernen.
 ## Haushalt & User
 
 ### `GET /users`
-Alle Haushaltsmitglieder abrufen.
+Alle Haushaltsmitglieder abrufen (inkl. Präferenzen).
 
 **Response 200:**
 ```json
 [
-  { "id": 1, "name": "Mama", "avatar_color": "#2E7D32", "short_name": "MA" },
-  { "id": 2, "name": "Papa", "avatar_color": "#1565C0", "short_name": "PA" },
-  { "id": 3, "name": "Kind", "avatar_color": "#E65100", "short_name": "KI" }
+  {
+    "id": 1, "name": "Mama", "avatar_color": "#2E7D32", "short_name": "MA",
+    "preferences": {
+      "dietary_restrictions": ["vegetarian"],
+      "allergies": [],
+      "disliked_ingredients": [],
+      "liked_cuisines": ["italian"],
+      "spice_tolerance": "medium",
+      "portion_size": "normal"
+    }
+  }
 ]
 ```
 
+### `PUT /users/{user_id}/preferences`
+Persönliche Präferenzen eines Haushaltsmitglieds speichern (vollständiger Ersatz).
+
+**Request Body:**
+```json
+{
+  "preferences": {
+    "dietary_restrictions": ["vegetarian"],
+    "allergies": ["peanuts"],
+    "disliked_ingredients": ["Rosenkohl"],
+    "liked_cuisines": ["italian", "asian"],
+    "spice_tolerance": "mild",
+    "portion_size": "normal"
+  }
+}
+```
+
+**Response 200:** `UserOut` (mit aktualisierten Präferenzen)
+**Response 404:** User nicht gefunden
+
+Erlaubte Werte:
+- `dietary_restrictions`: `vegetarian`, `vegan`, `pescatarian`, `gluten_free`, `lactose_free`, `low_carb`, `halal`, `kosher`
+- `allergies`: `peanuts`, `tree_nuts`, `dairy`, `eggs`, `wheat`, `shellfish`, `fish`, `soy`, `sesame`
+- `spice_tolerance`: `mild`, `medium`, `spicy`
+- `portion_size`: `small`, `normal`, `large`
+
 ### `GET /household`
-Haushalt mit allen Mitgliedern abrufen.
+Haushalt mit allen Mitgliedern und Einstellungen abrufen.
 
 **Response 200:**
 ```json
 {
   "id": 1,
-  "name": "Unsere Familie",
+  "name": "Unser Haushalt",
   "members": [
-    { "user": { "id": 1, "name": "Mama", "avatar_color": "#2E7D32", "short_name": "MA" } }
-  ]
+    { "id": 1, "name": "Mama", "avatar_color": "#2E7D32", "short_name": "MA", "preferences": {} }
+  ],
+  "settings": {
+    "cooking_days": ["monday","tuesday","wednesday","thursday","friday"],
+    "hot_meal_time": "dinner",
+    "cold_meal_days": [],
+    "leftovers_frequency": "sometimes",
+    "shared_meals_importance": 3,
+    "weekly_budget": null,
+    "preferred_cuisines": [],
+    "cooking_skill_level": "medium"
+  }
 }
 ```
+
+### `PUT /household/settings`
+Haushalts-Einstellungen speichern (vollständiger Ersatz).
+
+**Request Body:**
+```json
+{
+  "settings": {
+    "cooking_days": ["monday","wednesday","friday"],
+    "hot_meal_time": "dinner",
+    "cold_meal_days": ["saturday"],
+    "leftovers_frequency": "often",
+    "shared_meals_importance": 4,
+    "weekly_budget": 120.0,
+    "preferred_cuisines": ["italian","german"],
+    "cooking_skill_level": "medium"
+  }
+}
+```
+
+**Response 200:** `HouseholdOut` (mit aktualisierten Einstellungen)
+**Response 404:** Haushalt nicht gefunden
+
+Erlaubte Werte:
+- `cooking_days` / `cold_meal_days`: `monday`, `tuesday`, `wednesday`, `thursday`, `friday`, `saturday`, `sunday`
+- `hot_meal_time`: `lunch`, `dinner`, `both`
+- `leftovers_frequency`: `never`, `sometimes`, `often`
+- `shared_meals_importance`: `1`–`5`
+- `cooking_skill_level`: `beginner`, `medium`, `advanced`
 
 ---
 
