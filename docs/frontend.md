@@ -24,15 +24,17 @@ mobile/
 │           ├── edit.tsx    # Rezept bearbeiten
 │           └── cook.tsx    # Koch-Ansicht
 ├── components/             # Wiederverwendbare UI-Komponenten
+│   └── AiSuggestionModal.tsx  # KI-Wochenplan-Modal (Eingabe → Laden → Vorschau → Übernehmen)
 ├── lib/
 │   ├── api.ts              # Axios-Client
 │   ├── types.ts            # TypeScript-Interfaces
 │   ├── alert.ts            # Cross-platform Alert-Utility
 │   └── hooks/              # React Query Custom Hooks
-│       ├── useRecipes.ts   # Rezept-Hooks
-│       ├── useMealPlan.ts  # Wochenplan-Hooks
-│       ├── useUsers.ts     # User-Hooks (inkl. useUpdateUserPreferences)
-│       └── useHousehold.ts # Haushalt-Hooks
+│       ├── useRecipes.ts              # Rezept-Hooks
+│       ├── useMealPlan.ts             # Wochenplan-Hooks
+│       ├── useUsers.ts                # User-Hooks (inkl. useUpdateUserPreferences)
+│       ├── useHousehold.ts            # Haushalt-Hooks
+│       └── useAiMealPlanSuggestion.ts # KI-Wochenplan-Hook
 └── assets/                 # Bilder, Icons
 ```
 
@@ -52,7 +54,7 @@ mobile/
 
 ### `(tabs)/meal-plan.tsx` – Wochenplan
 - Zeigt eine Woche als Grid: 7 Tage × 5 Mahlzeiten (Frühstück, Mittagessen, Snack, Abendessen, Dessert)
-- Wochennavigation: vorherige / nächste Woche
+- Wochennavigation: vorherige / nächste Woche; **KI ✨-Button** öffnet den KI-Vorschlagsmodal (`AiSuggestionModal`)
 - Pro Zelle: geplantes Rezept oder Freitext, farbige User-Avatar-Chips
 - Zelle antippen → Bearbeitungsmodal (Rezept auswählen oder Freitext eingeben, User zuweisen)
 - Responsiv: Tablet-Layout ab 768px Breite
@@ -125,6 +127,12 @@ Alle Meal-Plan-Mutations invalidieren `['meal-plans']`.
 |------|-----|--------------|
 | `useHousehold()` | Query | Haushalt mit Einstellungen (Cache-Key: `['household']`, `staleTime: 5min`) |
 | `useUpdateHouseholdSettings()` | Mutation | Einstellungen speichern, aktualisiert `['household']` Cache |
+
+### KI-Hooks (`useAiMealPlanSuggestion.ts`)
+
+| Hook | Typ | Beschreibung |
+|------|-----|--------------|
+| `useAiMealPlanSuggestion()` | Mutation | KI-Wochenplan generieren (`POST /ai/meal-plan-suggestion`), Timeout 60 s |
 
 ---
 

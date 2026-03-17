@@ -14,7 +14,7 @@
 **Nice-to-Have (spätere Phasen)**
 - Einkaufsliste – automatisch aus dem Wochenplan generieren
 - Haushaltsmitglieder einladen / gemeinsam planen
-- KI Unterstützung bei der Wochenplanung
+- ~~KI Unterstützung bei der Wochenplanung~~ ✅ Phase 8
 
 ---
 
@@ -136,6 +136,23 @@ Ziel: Sammlung kleinerer Features und Fixes nach Phase 5.
   - Frontend: "Aus URL importieren"-Button im Rezept-Bereich, URL-Eingabefeld, Vorschau vor dem Speichern
 
 ---
+
+---
+
+### Phase 8 – KI-gestützte Wochenplanung
+
+Ziel: Claude AI generiert automatisch einen vollständigen Wochenplan basierend auf Haushaltspräferenzen, Mitgliederpräferenzen, dem Rezeptbuch und freien Nutzerwünschen.
+
+**Tasks:**
+- [x] Backend: `anthropic`-Paket in `requirements.txt`, `ANTHROPIC_API_KEY` in `backends/.env` eintragen
+- [x] Backend: `backends/app/schemas/ai.py` – `AiMealPlanRequest`, `AiMealPlanSuggestionEntry`, `AiMealPlanSuggestion`
+- [x] Backend: `backends/app/routers/ai.py` – `POST /ai/meal-plan-suggestion` mit Prompt-Aufbau, Claude-Aufruf, Halluzinations-Schutz
+- [x] Backend: Router in `main.py` registrieren
+- [x] Frontend: Typen in `mobile/lib/types.ts` ergänzt
+- [x] Frontend: `useAiMealPlanSuggestion`-Hook (60 s Timeout)
+- [x] Frontend: `AiSuggestionModal`-Komponente (Eingabe → Laden → Vorschau → Übernehmen)
+- [x] Frontend: KI ✨-Button in der Wochennavigation
+- [x] Dokumentation: `docs/api.md`, `docs/frontend.md`, `ROADMAP.md` aktualisiert
 
 ---
 

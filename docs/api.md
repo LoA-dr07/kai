@@ -430,6 +430,48 @@ Erlaubte Werte:
 
 ---
 
+## KI-Mahlzeitenplanung (`/ai`)
+
+### `POST /ai/meal-plan-suggestion`
+KI-gestützten Wochenplan-Vorschlag generieren (via Claude API).
+
+**Voraussetzung:** `ANTHROPIC_API_KEY` in `backends/.env` konfiguriert.
+
+**Request Body:**
+```json
+{
+  "week_start_date": "2026-03-23",
+  "requesting_user_id": 1,
+  "special_wishes": "Bitte viel Pasta diese Woche"
+}
+```
+
+**Response 200:**
+```json
+{
+  "week_start_date": "2026-03-23",
+  "entries": [
+    {
+      "day_of_week": 0,
+      "meal_type": "breakfast",
+      "recipe_id": 3,
+      "recipe_name": "Haferflocken mit Beeren",
+      "custom_meal": null,
+      "assigned_user_ids": [1, 2, 3],
+      "reason": "Schnelles Frühstück für alle"
+    }
+  ]
+}
+```
+
+`day_of_week`: 0=Montag … 6=Sonntag · Die Antwort enthält 35 Einträge (7 Tage × 5 Mahlzeitstypen).
+
+**Response 404:** Nutzer oder Haushalt nicht gefunden
+**Response 503:** `ANTHROPIC_API_KEY` nicht konfiguriert
+**Response 502:** Claude API-Fehler oder ungültige KI-Antwort
+
+---
+
 ## HTTP-Status-Codes
 
 | Code | Bedeutung |
@@ -440,3 +482,5 @@ Erlaubte Werte:
 | 404 | Ressource nicht gefunden |
 | 409 | Konflikt (z.B. Zutat existiert bereits) |
 | 422 | Validierungsfehler / URL nicht auslesbar |
+| 502 | KI-Fehler (Anthropic API oder Antwortformat) |
+| 503 | KI-Funktion nicht konfiguriert (fehlender API-Key) |
