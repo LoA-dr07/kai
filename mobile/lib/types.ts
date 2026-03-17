@@ -145,3 +145,26 @@ export interface MealPlanEntryUpdatePayload {
   custom_meal?: string | null;
   assigned_user_ids?: number[];
 }
+
+// --- AI Meal Plan Suggestion ---
+
+export interface AiMealPlanRequest {
+  week_start_date: string;
+  requesting_user_id: number;
+  special_wishes: string;
+}
+
+export interface AiMealPlanSuggestionEntry {
+  day_of_week: number;
+  meal_type: MealType;
+  recipe_id: number | null;
+  recipe_name: string | null;
+  custom_meal: string | null;
+  assigned_user_ids: number[];
+  reason: string | null;
+}
+
+export interface AiMealPlanSuggestion {
+  week_start_date: string;
+  entries: AiMealPlanSuggestionEntry[];
+}

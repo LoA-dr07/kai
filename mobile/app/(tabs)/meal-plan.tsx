@@ -21,7 +21,8 @@ import {
 } from '../../lib/hooks/useMealPlan';
 import { useRecipes } from '../../lib/hooks/useRecipes';
 import { useUsers } from '../../lib/hooks/useUsers';
-import type { MealPlanEntry, MealType, User } from '../../lib/types';
+import AiSuggestionModal from '../../components/AiSuggestionModal';
+import type { MealPlanEntry, MealType, User, AiMealPlanSuggestionEntry } from '../../lib/types';
 
 // --- Datums-Hilfsfunktionen ---
 
@@ -121,6 +122,7 @@ export default function MealPlanScreen() {
 
   const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(new Date()));
   const [modalVisible, setModalVisible] = useState(false);
+  const [aiModalVisible, setAiModalVisible] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{
     dayIndex: number;
     mealType: MealType;
@@ -239,6 +241,35 @@ export default function MealPlanScreen() {
     ]);
   };
 
+  const handleApplyAiSuggestion = async (suggestedEntries: AiMealPlanSuggestionEntry[]) => {
+    let planId = currentPlan?.id;
+    if (!planId) {
+      const newPlan = await createPlan.mutateAsync({
+        name: `KW ${weekNum} ${year}`,
+        week_start_date: weekStartIso,
+      });
+      planId = newPlan.id;
+    }
+
+    // Determine already-occupied slots to avoid overwriting
+    const occupiedSlots = new Set(
+      (currentPlan?.entries ?? []).map(e => `${e.day_of_week}:${e.meal_type}`)
+    );
+
+    for (const entry of suggestedEntries) {
+      const slotKey = `${entry.day_of_week}:${entry.meal_type}`;
+      if (occupiedSlots.has(slotKey)) continue;
+      await addEntry.mutateAsync({
+        planId,
+        day_of_week: entry.day_of_week,
+        meal_type: entry.meal_type,
+        recipe_id: entry.recipe_id,
+        custom_meal: entry.custom_meal,
+        assigned_user_ids: entry.assigned_user_ids,
+      });
+    }
+  };
+
   const filteredRecipes =
     recipes?.filter(r => r.name.toLowerCase().includes(searchText.toLowerCase())) ?? [];
 
@@ -256,9 +287,14 @@ export default function MealPlanScreen() {
           <Text style={styles.navArrow}>‹</Text>
         </TouchableOpacity>
         <Text style={styles.weekLabel}>KW {weekNum}, {year}</Text>
-        <TouchableOpacity onPress={() => navigateWeek(1)} style={styles.navBtn}>
-          <Text style={styles.navArrow}>›</Text>
-        </TouchableOpacity>
+        <View style={styles.weekNavRight}>
+          <TouchableOpacity onPress={() => setAiModalVisible(true)} style={styles.aiBtn}>
+            <Text style={styles.aiBtnText}>KI ✨</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigateWeek(1)} style={styles.navBtn}>
+            <Text style={styles.navArrow}>›</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {isLoading ? (
@@ -440,6 +476,16 @@ export default function MealPlanScreen() {
           )}
         </View>
       </Modal>
+
+      {/* KI-Vorschlag Modal */}
+      <AiSuggestionModal
+        visible={aiModalVisible}
+        weekStartIso={weekStartIso}
+        users={users}
+        recipes={recipes ?? []}
+        onClose={() => setAiModalVisible(false)}
+        onApply={handleApplyAiSuggestion}
+      />
     </View>
   );
 }
@@ -466,6 +512,15 @@ const styles = StyleSheet.create({
   navBtn: { paddingHorizontal: 16, paddingVertical: 8 },
   navArrow: { fontSize: 28, color: GREEN, lineHeight: 32 },
   weekLabel: { fontSize: 17, fontWeight: '700', color: '#1A1A1A' },
+  weekNavRight: { flexDirection: 'row', alignItems: 'center' },
+  aiBtn: {
+    backgroundColor: GREEN,
+    borderRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginRight: 2,
+  },
+  aiBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
   scrollContent: { padding: 12, gap: 10 },
   scrollContentWide: { maxWidth: 1200, alignSelf: 'center', width: '100%' },
