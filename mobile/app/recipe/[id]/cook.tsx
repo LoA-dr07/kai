@@ -90,13 +90,15 @@ export default function CookScreen() {
       <View style={styles.root}>
         {isSplit ? (
           // ── Split-Layout ──────────────────────────────────────────
-          <View style={styles.splitContainer}>
-            <View style={[styles.panel, styles.panelLeft]}>
-              {ingredientsPanel}
-            </View>
-            <View style={styles.divider} />
-            <View style={[styles.panel, styles.panelRight]}>
-              {descriptionPanel}
+          <View style={styles.splitWrapper}>
+            <View style={styles.splitContainer}>
+              <View style={[styles.panel, styles.panelLeft]}>
+                {ingredientsPanel}
+              </View>
+              <View style={styles.divider} />
+              <View style={[styles.panel, styles.panelRight]}>
+                {descriptionPanel}
+              </View>
             </View>
           </View>
         ) : (
@@ -146,9 +148,15 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 16, color: '#D32F2F' },
 
   // ── Split ───────────────────────────────────────────────────────
+  splitWrapper: {
+    flex: 1,
+    alignItems: 'center',
+  },
   splitContainer: {
     flex: 1,
     flexDirection: 'row',
+    maxWidth: 1400,
+    width: '100%',
   },
   panel: { flex: 1 },
   panelLeft: {
