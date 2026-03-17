@@ -120,6 +120,11 @@ export default function MealPlanScreen() {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
 
+  const CONTENT_PADDING = 12;
+  const CARD_GAP = 10;
+  const containerWidth = Math.min(width, 1200 + CONTENT_PADDING * 2) - CONTENT_PADDING * 2;
+  const dayCardWidth = isWide ? (containerWidth - CARD_GAP) / 2 : undefined;
+
   const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(new Date()));
   const [modalVisible, setModalVisible] = useState(false);
   const [aiModalVisible, setAiModalVisible] = useState(false);
@@ -308,7 +313,7 @@ export default function MealPlanScreen() {
             const dateStr = date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
 
             return (
-              <View key={dayIdx} style={[styles.dayCard, isWide && styles.dayCardWide]}>
+              <View key={dayIdx} style={[styles.dayCard, isWide && { width: dayCardWidth }]}>
                 <View style={styles.dayHeader}>
                   <Text style={styles.dayName}>{dayName}</Text>
                   <Text style={styles.dayDate}>{dateStr}</Text>
@@ -379,7 +384,7 @@ export default function MealPlanScreen() {
         presentationStyle="pageSheet"
         onRequestClose={closeModal}
       >
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, isWide && styles.modalContainerWide]}>
           {/* Header */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
@@ -538,7 +543,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BORDER,
   },
-  dayCardWide: { width: 'calc(50% - 5px)' as any },
   dayHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -590,6 +594,7 @@ const styles = StyleSheet.create({
   addRowText: { fontSize: 13, color: '#AAA' },
 
   modalContainer: { flex: 1, backgroundColor: '#fff' },
+  modalContainerWide: { maxWidth: 680, width: '100%', alignSelf: 'center' },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
