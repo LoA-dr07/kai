@@ -8,6 +8,7 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { showAlert } from '../lib/alert';
 import { useAiMealPlanSuggestion } from '../lib/hooks/useAiMealPlanSuggestion';
@@ -52,6 +53,9 @@ export default function AiSuggestionModal({
   onClose,
   onApply,
 }: AiSuggestionModalProps) {
+  const { width } = useWindowDimensions();
+  const isWide = width >= 768;
+
   const [phase, setPhase] = useState<Phase>('input');
   const [requestingUserId, setRequestingUserId] = useState<number>(users[0]?.id ?? 0);
   const [specialWishes, setSpecialWishes] = useState('');
@@ -110,7 +114,7 @@ export default function AiSuggestionModal({
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, isWide && styles.containerWide]}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>KI-Wochenplan</Text>
@@ -243,6 +247,7 @@ export default function AiSuggestionModal({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+  containerWide: { maxWidth: 680, width: '100%', alignSelf: 'center' },
 
   header: {
     flexDirection: 'row',

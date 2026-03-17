@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { useHousehold, useUpdateHouseholdSettings } from '../../lib/hooks/useHousehold';
 import { useUsers, useUpdateUserPreferences } from '../../lib/hooks/useUsers';
@@ -410,6 +410,8 @@ function MemberPreferencesForm({ user }: { user: User }) {
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function SettingsScreen() {
+  const { width } = useWindowDimensions();
+  const isWide = width >= 768;
   const { data: household, isLoading: loadingHousehold } = useHousehold();
   const { data: users, isLoading: loadingUsers } = useUsers();
 
@@ -424,13 +426,31 @@ export default function SettingsScreen() {
   const settings: HouseholdSettings = household?.settings ?? DEFAULT_HOUSEHOLD_SETTINGS;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <HouseholdSettingsForm initialSettings={settings} />
-
-      <Text style={styles.membersHeading}>Haushaltsmitglieder</Text>
-      {(users ?? []).map(user => (
-        <MemberPreferencesForm key={user.id} user={user} />
-      ))}
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, isWide && styles.contentWide]}
+    >
+      {isWide ? (
+        <View style={styles.wideLayout}>
+          <View style={styles.wideCol}>
+            <HouseholdSettingsForm initialSettings={settings} />
+          </View>
+          <View style={styles.wideCol}>
+            <Text style={styles.membersHeading}>Haushaltsmitglieder</Text>
+            {(users ?? []).map(user => (
+              <MemberPreferencesForm key={user.id} user={user} />
+            ))}
+          </View>
+        </View>
+      ) : (
+        <>
+          <HouseholdSettingsForm initialSettings={settings} />
+          <Text style={styles.membersHeading}>Haushaltsmitglieder</Text>
+          {(users ?? []).map(user => (
+            <MemberPreferencesForm key={user.id} user={user} />
+          ))}
+        </>
+      )}
     </ScrollView>
   );
 }
@@ -440,6 +460,9 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
   content: { padding: 16, paddingBottom: 40 },
+  contentWide: { maxWidth: 960, alignSelf: 'center', width: '100%' },
+  wideLayout: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
+  wideCol: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   card: {

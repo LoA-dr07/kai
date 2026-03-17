@@ -23,7 +23,8 @@ import { api } from '../../lib/api';
 export default function RecipesScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const numColumns = width >= 768 ? 2 : 1;
+  const numColumns = width >= 1024 ? 3 : width >= 768 ? 2 : 1;
+  const isWide = width >= 768;
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
   const importMutation = useImportRecipes();
   const [isExporting, setIsExporting] = useState(false);
@@ -257,7 +258,7 @@ export default function RecipesScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setUrlModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, isWide && styles.modalContainerWide]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Rezept aus URL importieren</Text>
             <TouchableOpacity onPress={() => setUrlModalVisible(false)}>
@@ -469,6 +470,7 @@ const styles = StyleSheet.create({
 
   // Modal
   modalContainer: { flex: 1, backgroundColor: '#fff' },
+  modalContainerWide: { maxWidth: 680, width: '100%', alignSelf: 'center' },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
