@@ -119,11 +119,13 @@ function AvatarBadges({ entry, users }: { entry: MealPlanEntry; users: User[] })
 export default function MealPlanScreen() {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
+  const isDesktop = width >= 1024;
 
   const CONTENT_PADDING = 12;
   const CARD_GAP = 10;
+  const numDayCols = isDesktop ? 3 : isWide ? 2 : 1;
   const containerWidth = Math.min(width, 1200 + CONTENT_PADDING * 2) - CONTENT_PADDING * 2;
-  const dayCardWidth = isWide ? (containerWidth - CARD_GAP) / 2 : undefined;
+  const dayCardWidth = isWide ? (containerWidth - CARD_GAP * (numDayCols - 1)) / numDayCols : undefined;
 
   const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(new Date()));
   const [modalVisible, setModalVisible] = useState(false);
@@ -315,7 +317,7 @@ export default function MealPlanScreen() {
             return (
               <View key={dayIdx} style={[styles.dayCard, isWide && { width: dayCardWidth }]}>
                 <View style={styles.dayHeader}>
-                  <Text style={styles.dayName}>{dayName}</Text>
+                  <Text style={styles.dayName}>{isWide ? dayName : DAYS_SHORT[dayIdx]}</Text>
                   <Text style={styles.dayDate}>{dateStr}</Text>
                 </View>
 
@@ -528,7 +530,7 @@ const styles = StyleSheet.create({
   aiBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
   scrollContent: { padding: 12, gap: 10 },
-  scrollContentWide: { maxWidth: 1200, alignSelf: 'center', width: '100%' },
+  scrollContentWide: { maxWidth: 1400, alignSelf: 'center', width: '100%' },
 
   dayGrid: {
     flexDirection: 'row',
@@ -551,7 +553,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
-  dayName: { fontSize: 15, fontWeight: '700', color: GREEN },
+  dayName: { fontSize: 14, fontWeight: '700', color: GREEN },
   dayDate: { fontSize: 13, color: '#555' },
 
   mealSection: {

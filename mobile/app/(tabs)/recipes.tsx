@@ -23,7 +23,7 @@ import { api } from '../../lib/api';
 export default function RecipesScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const numColumns = width >= 1024 ? 3 : width >= 768 ? 2 : 1;
+  const numColumns = width >= 1400 ? 4 : width >= 1024 ? 3 : width >= 768 ? 2 : 1;
   const isWide = width >= 768;
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
   const importMutation = useImportRecipes();
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { padding: 16, paddingBottom: 120 },
-  listWide: { maxWidth: 1200, alignSelf: 'center', width: '100%' },
+  listWide: { maxWidth: 1600, alignSelf: 'center', width: '100%' },
   columnWrapper: { gap: 12 },
   emptyContainer: { alignItems: 'center', marginTop: 80 },
   emptyTitle: { fontSize: 18, fontWeight: '600', color: '#444', marginBottom: 8 },
