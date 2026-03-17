@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import recipes, meal_plans, users, household
+from app.routers import recipes, meal_plans, users, household, ai
 
 app = FastAPI(title="Meal Planner API")
 
@@ -15,6 +15,7 @@ app.include_router(recipes.router)
 app.include_router(meal_plans.router)
 app.include_router(users.router)
 app.include_router(household.router)
+app.include_router(ai.router)
 
 
 @app.get("/health")
