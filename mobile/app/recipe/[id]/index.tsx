@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { showAlert } from '../../../lib/alert';
@@ -66,6 +67,9 @@ export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const recipeId = Number(id);
+  const { width } = useWindowDimensions();
+  const isWide = width >= 768;
+  const isNarrow = width < 400;
 
   const { data: recipe, isLoading, error } = useRecipe(recipeId);
   const { data: users = [] } = useUsers();
@@ -112,7 +116,7 @@ export default function RecipeDetailScreen() {
   return (
     <>
       <Stack.Screen options={{ title: recipe.name }} />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, isWide && styles.contentWide]}>
         {recipe.description ? (
           <Text style={styles.description}>{recipe.description}</Text>
         ) : null}
@@ -167,21 +171,21 @@ export default function RecipeDetailScreen() {
           </View>
         )}
 
-        <View style={styles.actions}>
+        <View style={[styles.actions, isNarrow && styles.actionsNarrow]}>
           <TouchableOpacity
-            style={styles.cookBtn}
+            style={[styles.cookBtn, isNarrow && styles.actionBtnFull]}
             onPress={() => router.push(`/recipe/${recipeId}/cook`)}
           >
             <Text style={styles.cookBtnText}>Kochen</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.editBtn}
+            style={[styles.editBtn, isNarrow && styles.actionBtnFull]}
             onPress={() => router.push(`/recipe/${recipeId}/edit`)}
           >
             <Text style={styles.editBtnText}>Bearbeiten</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.deleteBtn}
+            style={[styles.deleteBtn, isNarrow && styles.actionBtnFull]}
             onPress={handleDelete}
             disabled={deleteRecipe.isPending}
           >
@@ -211,6 +215,7 @@ const GREEN = '#2E7D32';
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   content: { padding: 20, paddingBottom: 48 },
+  contentWide: { maxWidth: 800, alignSelf: 'center', width: '100%' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { fontSize: 16, color: '#D32F2F' },
   description: {
@@ -296,6 +301,8 @@ const styles = StyleSheet.create({
 
   // Actions
   actions: { flexDirection: 'row', gap: 12 },
+  actionsNarrow: { flexDirection: 'column' },
+  actionBtnFull: { flex: undefined, width: '100%' },
   cookBtn: {
     flex: 1,
     backgroundColor: '#1B5E20',
