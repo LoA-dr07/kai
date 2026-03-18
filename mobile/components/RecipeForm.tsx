@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
+  type TextInput as TextInputType,
 } from 'react-native';
 import { showAlert } from '../lib/alert';
 import { useIngredients, useCreateIngredient, useTags, useCreateTag } from '../lib/hooks/useRecipes';
@@ -55,6 +56,9 @@ export default function RecipeForm({
   const [newIngUnit, setNewIngUnit] = useState('');
   const [selectedIngId, setSelectedIngId] = useState<number | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const amountInputRef = useRef<TextInputType>(null);
+  const unitInputRef = useRef<TextInputType>(null);
 
   const { data: ingredients } = useIngredients();
   const createIngredient = useCreateIngredient();
@@ -333,6 +337,11 @@ export default function RecipeForm({
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder="Zutatname"
+              returnKeyType="next"
+              onSubmitEditing={() => {
+                setShowSuggestions(false);
+                amountInputRef.current?.focus();
+              }}
             />
             {showSuggestions && suggestions.length > 0 && (
               <View style={styles.dropdown}>
@@ -352,20 +361,26 @@ export default function RecipeForm({
           <View style={[styles.row, styles.mt8]}>
             <View style={styles.flex1}>
               <TextInput
+                ref={amountInputRef}
                 style={styles.input}
                 value={newIngAmount}
                 onChangeText={setNewIngAmount}
                 placeholder="Menge"
                 keyboardType="decimal-pad"
+                returnKeyType="next"
+                onSubmitEditing={() => unitInputRef.current?.focus()}
               />
             </View>
             <View style={styles.gap} />
             <View style={styles.flex1}>
               <TextInput
+                ref={unitInputRef}
                 style={styles.input}
                 value={newIngUnit}
                 onChangeText={setNewIngUnit}
                 placeholder="Einheit (g, ml, …)"
+                returnKeyType="done"
+                onSubmitEditing={handleAddIngredient}
               />
             </View>
           </View>
