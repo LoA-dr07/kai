@@ -15,6 +15,7 @@ export interface Tag {
   id: number;
   name: string;
   is_predefined: boolean;
+  category: string | null;
 }
 
 export interface RecipeRating {
