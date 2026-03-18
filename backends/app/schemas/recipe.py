@@ -10,6 +10,10 @@ class IngredientCreate(IngredientBase):
     pass
 
 
+class IngredientUpdate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+
+
 class IngredientOut(IngredientBase):
     id: int
 
