@@ -202,6 +202,39 @@ def _find_recipe_jsonld(data) -> dict | None:
     return None
 
 
+def _parse_instructions(raw) -> str | None:
+    """Extract plain text from recipeInstructions (string, list of strings or HowToStep dicts)."""
+    if not raw:
+        return None
+    if isinstance(raw, str):
+        return raw.strip() or None
+    steps = []
+    for i, item in enumerate(raw, 1):
+        if isinstance(item, str):
+            text = item.strip()
+        elif isinstance(item, dict):
+            text = (item.get("text") or "").strip()
+        else:
+            continue
+        if text:
+            steps.append(f"{i}. {text}")
+    return "\n".join(steps) or None
+
+
+_KNOWN_UNITS = {
+    "g", "kg", "mg",
+    "ml", "l", "cl", "dl",
+    "el", "tl",
+    "stück", "stk", "stk.",
+    "prise", "bund", "tasse",
+    "becher", "packung", "pck.", "pck", "pkg.", "pkg", "pkt.",
+    "dose", "glas", "zweig", "zehe", "scheibe", "blatt", "handvoll",
+}
+
+import re as _re
+_NUMBER_RE = _re.compile(r'^(\d+(?:[.,]\d+)?)\s*(.*)', _re.DOTALL)
+
+
 def _scrape_recipe_url(url: str) -> dict:
     """Fetch a page and extract recipe data from JSON-LD structured data."""
     import json
@@ -232,8 +265,16 @@ def _scrape_recipe_url(url: str) -> dict:
     resp = httpx.get(url, timeout=15, headers={"User-Agent": "Mozilla/5.0"}, follow_redirects=True)
     resp.raise_for_status()
 
+    # Detect charset from HTML meta tag to handle pages with ISO-8859-1 / Windows-1252 encoding
+    charset_match = _re.search(rb'charset=["\']?\s*([^"\'\s;>]+)', resp.content[:4096], _re.IGNORECASE)
+    if charset_match:
+        detected_encoding = charset_match.group(1).decode('ascii', errors='ignore')
+        html_text = resp.content.decode(detected_encoding, errors='replace')
+    else:
+        html_text = resp.text
+
     parser = _JsonLdExtractor()
-    parser.feed(resp.text)
+    parser.feed(html_text)
 
     for block in parser.blocks:
         try:
@@ -261,7 +302,7 @@ def import_recipe_from_url(payload: RecipeUrlImport):
         name = name[0] if name else "Unbekanntes Rezept"
 
     try:
-        description = recipe_data.get("description") or None
+        description = _parse_instructions(recipe_data.get("recipeInstructions"))
     except Exception:
         description = None
 
@@ -271,19 +312,23 @@ def import_recipe_from_url(payload: RecipeUrlImport):
             line = str(line).strip()
             if not line:
                 continue
-            parts = line.split(None, 2)
-            if len(parts) == 3:
-                try:
-                    amount = float(parts[0].replace(",", "."))
+            m = _NUMBER_RE.match(line)
+            if m:
+                amount = float(m.group(1).replace(",", "."))
+                rest = m.group(2).strip()
+                first_word, _, remainder = rest.partition(" ")
+                if first_word.lower().rstrip(".") in _KNOWN_UNITS and remainder:
                     raw_ingredients.append(
-                        RecipeExportIngredient(ingredient_name=parts[2], amount=amount, unit=parts[1])
+                        RecipeExportIngredient(ingredient_name=remainder.strip(), amount=amount, unit=first_word)
                     )
-                    continue
-                except ValueError:
-                    pass
-            raw_ingredients.append(
-                RecipeExportIngredient(ingredient_name=line, amount=1.0, unit="Stück")
-            )
+                else:
+                    raw_ingredients.append(
+                        RecipeExportIngredient(ingredient_name=rest, amount=amount, unit="Stück")
+                    )
+            else:
+                raw_ingredients.append(
+                    RecipeExportIngredient(ingredient_name=line, amount=1.0, unit="Stück")
+                )
     except Exception:
         pass
 
