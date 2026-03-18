@@ -108,6 +108,7 @@ FastAPI Backend
 | id | INTEGER PK | |
 | name | VARCHAR(100) UNIQUE | Tag-Name |
 | is_predefined | BOOLEAN | Vordefiniert oder benutzerdefiniert |
+| category | VARCHAR(50) NULL | Kategorie: `meal_type`, `family`, oder NULL (custom) |
 
 #### `recipes`
 | Spalte | Typ | Beschreibung |
@@ -199,6 +200,7 @@ Household ──< HouseholdMember >── User
 | `0003_phase6_mealtype.py` | `meal_type`-Enum erweitert um `snack` und `dessert` |
 | `0004_phase6_tags_ratings.py` | Neue Tabellen: `tags`, `recipe_tags`, `recipe_ratings` |
 | `0005_phase7_ai_settings.py` | Neue Spalten: `households.settings` (JSONB), `users.preferences` (JSONB) |
+| `0006_add_tag_category_family_members.py` | Neue Spalte `tags.category`; Familienmitglieder-Tags (Mama, Papa, Kind) |
 
 Migration ausführen: `alembic upgrade head`
 
@@ -209,4 +211,5 @@ Migration ausführen: `alembic upgrade head`
 `backends/app/db/seed.py` legt an:
 - 1 Haushalt
 - 3 User (vordefiniert, kein Login nötig)
-- Vordefinierte Tags: Frühstück, Mittagessen, Snack, Abendessen, Dessert
+- Vordefinierte Tags (Mahlzeiten-Typ): Frühstück, Mittagessen, Snack, Abendessen, Dessert
+- Vordefinierte Tags (Familienmitglieder): Mama, Papa, Kind

@@ -173,7 +173,8 @@ export default function RecipeForm({
     await onSubmit(payload);
   }
 
-  const predefinedTags = tags.filter(t => t.is_predefined);
+  const mealTypeTags = tags.filter(t => t.is_predefined && t.category === 'meal_type');
+  const familyTags = tags.filter(t => t.is_predefined && t.category === 'family');
   const customTags = tags.filter(t => !t.is_predefined);
 
   return (
@@ -238,7 +239,7 @@ export default function RecipeForm({
 
         <Text style={styles.tagGroupLabel}>Mahlzeiten-Typ</Text>
         <View style={styles.tagRow}>
-          {predefinedTags.map(tag => {
+          {mealTypeTags.map(tag => {
             const selected = selectedTagIds.includes(tag.id);
             return (
               <TouchableOpacity
@@ -253,6 +254,28 @@ export default function RecipeForm({
             );
           })}
         </View>
+
+        {familyTags.length > 0 && (
+          <>
+            <Text style={[styles.tagGroupLabel, { marginTop: 12 }]}>Familienmitglieder</Text>
+            <View style={styles.tagRow}>
+              {familyTags.map(tag => {
+                const selected = selectedTagIds.includes(tag.id);
+                return (
+                  <TouchableOpacity
+                    key={tag.id}
+                    style={[styles.tagChip, styles.tagChipFamily, selected && styles.tagChipFamilySelected]}
+                    onPress={() => toggleTag(tag.id)}
+                  >
+                    <Text style={[styles.tagChipText, styles.tagChipFamilyText, selected && styles.tagChipTextSelected]}>
+                      {tag.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
 
         {customTags.length > 0 && (
           <>
@@ -447,6 +470,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   tagChipSelected: { backgroundColor: GREEN },
+  tagChipFamily: { borderColor: '#E65100' },
+  tagChipFamilySelected: { backgroundColor: '#E65100', borderColor: '#E65100' },
+  tagChipFamilyText: { color: '#E65100' },
   tagChipCustom: { borderColor: '#5C6BC0' },
   tagChipCustomSelected: { backgroundColor: '#5C6BC0', borderColor: '#5C6BC0' },
   tagChipText: { fontSize: 13, fontWeight: '600', color: GREEN },

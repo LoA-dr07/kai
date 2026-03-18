@@ -63,6 +63,10 @@ mobile/
 - Verwendet `RecipeForm`-Komponente
 - Speichert via `useCreateRecipe()`
 
+### `components/RecipeForm.tsx` – Rezeptformular
+- Tag-Auswahl in drei Gruppen: **Mahlzeiten-Typ** (grün), **Familienmitglieder** (orange), **Eigene Tags** (lila)
+- Gruppierung erfolgt über `tag.category`: `meal_type` → Mahlzeiten-Typ, `family` → Familienmitglieder, `null` → Eigene Tags
+
 ### `recipe/[id]/index.tsx` – Rezeptdetail
 - Vollständige Rezeptinfos: Zutaten, Tags, Sternebewertungen pro User
 - Bewertung pro Haushaltsmitglied (1–5 Sterne, 0 = nicht bewertet)

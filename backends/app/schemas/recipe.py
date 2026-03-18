@@ -39,6 +39,7 @@ class TagOut(BaseModel):
     id: int
     name: str
     is_predefined: bool
+    category: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
