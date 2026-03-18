@@ -3,13 +3,15 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   StyleSheet,
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
+import { useState } from 'react';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { showAlert } from '../../../lib/alert';
-import { useRecipe, useDeleteRecipe, useRateRecipe } from '../../../lib/hooks/useRecipes';
+import { useRecipe, useDeleteRecipe, useRateRecipe, useUpdateIngredient } from '../../../lib/hooks/useRecipes';
 import { useUsers } from '../../../lib/hooks/useUsers';
 import type { Tag, User } from '../../../lib/types';
 
@@ -75,6 +77,10 @@ export default function RecipeDetailScreen() {
   const { data: users = [] } = useUsers();
   const deleteRecipe = useDeleteRecipe();
   const rateRecipe = useRateRecipe(recipeId);
+  const updateIngredient = useUpdateIngredient();
+
+  const [editingIngId, setEditingIngId] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState('');
 
   if (isLoading) {
     return <ActivityIndicator style={styles.center} size="large" color="#2E7D32" />;
@@ -108,6 +114,42 @@ export default function RecipeDetailScreen() {
 
   function handleRate(userId: number, stars: number) {
     rateRecipe.mutate({ user_id: userId, stars });
+  }
+
+  function startEditIngredient(ingId: number, currentName: string) {
+    setEditingIngId(ingId);
+    setEditingName(currentName);
+  }
+
+  function cancelEditIngredient() {
+    setEditingIngId(null);
+    setEditingName('');
+  }
+
+  function confirmEditIngredient(ingId: number) {
+    const trimmed = editingName.trim();
+    if (!trimmed) {
+      cancelEditIngredient();
+      return;
+    }
+    updateIngredient.mutate(
+      { id: ingId, name: trimmed },
+      {
+        onSuccess: () => {
+          setEditingIngId(null);
+          setEditingName('');
+        },
+        onError: (err: any) => {
+          const is409 = err?.response?.status === 409;
+          showAlert(
+            'Fehler',
+            is409
+              ? 'Eine Zutat mit diesem Namen existiert bereits.'
+              : 'Die Zutat konnte nicht umbenannt werden.',
+          );
+        },
+      },
+    );
   }
 
   const getRating = (userId: number) =>
@@ -160,14 +202,51 @@ export default function RecipeDetailScreen() {
         {recipe.ingredients.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Zutaten</Text>
-            {recipe.ingredients.map(ing => (
-              <View key={ing.id} style={styles.ingRow}>
-                <Text style={styles.ingName}>{ing.ingredient.name}</Text>
-                <Text style={styles.ingAmount}>
-                  {ing.amount} {ing.unit}
-                </Text>
-              </View>
-            ))}
+            {recipe.ingredients.map(ing => {
+              const isEditing = editingIngId === ing.ingredient.id;
+              const isSaving = isEditing && updateIngredient.isPending;
+              return (
+                <View key={ing.id} style={styles.ingRow}>
+                  {isEditing ? (
+                    <View style={styles.ingEditRow}>
+                      <TextInput
+                        style={styles.ingEditInput}
+                        value={editingName}
+                        onChangeText={setEditingName}
+                        autoFocus
+                        onSubmitEditing={() => confirmEditIngredient(ing.ingredient.id)}
+                        returnKeyType="done"
+                      />
+                      {isSaving ? (
+                        <ActivityIndicator size="small" color={GREEN} style={styles.ingEditBtn} />
+                      ) : (
+                        <>
+                          <TouchableOpacity
+                            style={styles.ingEditBtn}
+                            onPress={() => confirmEditIngredient(ing.ingredient.id)}
+                          >
+                            <Text style={styles.ingConfirmText}>✓</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.ingEditBtn}
+                            onPress={cancelEditIngredient}
+                          >
+                            <Text style={styles.ingCancelText}>✕</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                    </View>
+                  ) : (
+                    <TouchableOpacity onPress={() => startEditIngredient(ing.ingredient.id, ing.ingredient.name)}>
+                      <Text style={styles.ingName}>{ing.ingredient.name}</Text>
+                    </TouchableOpacity>
+                  )}
+                  <Text style={styles.ingAmount}>
+                    {ing.amount} {ing.unit}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
         )}
 
@@ -298,6 +377,19 @@ const styles = StyleSheet.create({
   },
   ingName: { fontSize: 15, color: '#1A1A1A' },
   ingAmount: { fontSize: 15, color: '#666' },
+  ingEditRow: { flex: 1, flexDirection: 'row', alignItems: 'center', marginRight: 8 },
+  ingEditInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1A1A1A',
+    borderBottomWidth: 1.5,
+    borderBottomColor: GREEN,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+  },
+  ingEditBtn: { paddingHorizontal: 8, paddingVertical: 4 },
+  ingConfirmText: { fontSize: 18, color: GREEN, fontWeight: '700' },
+  ingCancelText: { fontSize: 16, color: '#888' },
 
   // Actions
   actions: { flexDirection: 'row', gap: 12 },
