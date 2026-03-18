@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,13 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import DraggableFlatList, { ScaleDecorator, type RenderItemParams } from 'react-native-draggable-flatlist';
 import { showAlert } from '../lib/alert';
 import { useIngredients, useCreateIngredient, useTags, useCreateTag } from '../lib/hooks/useRecipes';
 import type { RecipeCreatePayload, Tag } from '../lib/types';
 
 export interface FormIngredient {
+  key: string;
   ingredient_id: number;
   ingredient_name: string;
   amount: string;
@@ -49,6 +51,7 @@ export default function RecipeForm({
   const [formIngredients, setFormIngredients] = useState<FormIngredient[]>(initialIngredients);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>(initialTagIds);
   const [newCustomTag, setNewCustomTag] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
 
   const [newIngName, setNewIngName] = useState('');
   const [newIngAmount, setNewIngAmount] = useState('');
@@ -129,6 +132,7 @@ export default function RecipeForm({
     setFormIngredients(prev => [
       ...prev,
       {
+        key: `${ingId}_${Date.now()}`,
         ingredient_id: ingId!,
         ingredient_name: newIngName.trim(),
         amount: newIngAmount,
@@ -173,6 +177,29 @@ export default function RecipeForm({
     await onSubmit(payload);
   }
 
+  const renderIngredient = useCallback(
+    ({ item, drag, isActive, getIndex }: RenderItemParams<FormIngredient>) => {
+      const index = getIndex() ?? 0;
+      return (
+        <ScaleDecorator activeScale={1.03}>
+          <View style={[styles.ingRow, isActive && styles.ingRowActive]}>
+            <TouchableOpacity onLongPress={drag} style={styles.dragHandle} hitSlop={8}>
+              <Text style={styles.dragHandleText}>⠿</Text>
+            </TouchableOpacity>
+            <Text style={styles.ingName}>{item.ingredient_name}</Text>
+            <Text style={styles.ingAmount}>
+              {item.amount} {item.unit}
+            </Text>
+            <TouchableOpacity onPress={() => removeIngredient(index)} style={styles.removeBtn}>
+              <Text style={styles.removeBtnText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        </ScaleDecorator>
+      );
+    },
+    [],
+  );
+
   const mealTypeTags = tags.filter(t => t.is_predefined && t.category === 'meal_type');
   const familyTags = tags.filter(t => t.is_predefined && t.category === 'family');
   const customTags = tags.filter(t => !t.is_predefined);
@@ -182,6 +209,7 @@ export default function RecipeForm({
       style={styles.container}
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
+      scrollEnabled={!isDragging}
     >
       {/* Basis-Infos */}
       <View style={styles.card}>
@@ -328,17 +356,15 @@ export default function RecipeForm({
         {formIngredients.length === 0 ? (
           <Text style={styles.noIngredients}>Noch keine Zutaten hinzugefügt.</Text>
         ) : (
-          formIngredients.map((ing, index) => (
-            <View key={index} style={styles.ingRow}>
-              <Text style={styles.ingName}>{ing.ingredient_name}</Text>
-              <Text style={styles.ingAmount}>
-                {ing.amount} {ing.unit}
-              </Text>
-              <TouchableOpacity onPress={() => removeIngredient(index)} style={styles.removeBtn}>
-                <Text style={styles.removeBtnText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          ))
+          <DraggableFlatList
+            data={formIngredients}
+            keyExtractor={item => item.key}
+            renderItem={renderIngredient}
+            onDragBegin={() => setIsDragging(true)}
+            onDragEnd={({ data }) => { setFormIngredients(data); setIsDragging(false); }}
+            scrollEnabled={false}
+            activationDistance={5}
+          />
         )}
 
         <View style={styles.addIngSection}>
@@ -496,7 +522,19 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
+    backgroundColor: '#fff',
   },
+  ingRowActive: {
+    backgroundColor: '#F1F8E9',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  dragHandle: { paddingHorizontal: 8, paddingVertical: 6 },
+  dragHandleText: { fontSize: 18, color: '#BDBDBD' },
   ingName: { flex: 1, fontSize: 15, color: '#1A1A1A' },
   ingAmount: { fontSize: 15, color: '#555', marginRight: 10 },
   removeBtn: { padding: 6 },
