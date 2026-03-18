@@ -6,10 +6,19 @@ Familien-Mahlzeitenplaner für gemeinsame Nutzung im Haushalt (3 Mitglieder).
 Features: Rezeptverwaltung, Wochenplanung, Haushaltsmitglieder, Import/Export, Tags, Sternebewertungen.
 
 **Stack:** FastAPI + PostgreSQL (Backend) · React Native / Expo + Expo Web (Frontend)
+**Entwicklungsumgebung:** Windows (PowerShell · `.\venv\Scripts\Activate.ps1`)
 
 ---
 
 ## Befehle
+
+### Alles auf einmal starten (Backend + Web-Frontend)
+```powershell
+.\start.ps1
+# Backend:  http://localhost:8000  (API-Docs: /docs)
+# Frontend: http://localhost:8081
+# Stoppen:  Ctrl+C
+```
 
 ### Backend starten
 ```powershell
