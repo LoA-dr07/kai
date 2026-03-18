@@ -25,6 +25,7 @@ export default function EditRecipeScreen() {
   }
 
   const initialIngredients = recipe.ingredients.map(ing => ({
+    key: `${ing.ingredient_id}_init`,
     ingredient_id: ing.ingredient_id,
     ingredient_name: ing.ingredient.name,
     amount: String(ing.amount),
