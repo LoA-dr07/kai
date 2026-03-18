@@ -11,6 +11,14 @@ Features: Rezeptverwaltung, Wochenplanung, Haushaltsmitglieder, Import/Export, T
 
 ## Befehle
 
+### Alles auf einmal starten (Backend + Web-Frontend)
+```bash
+./start.sh
+# Backend:  http://localhost:8000  (API-Docs: /docs)
+# Frontend: http://localhost:8081
+# Stoppen:  Ctrl+C
+```
+
 ### Backend starten
 ```powershell
 cd backends
