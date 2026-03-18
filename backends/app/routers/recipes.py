@@ -4,7 +4,7 @@ from app.db.session import get_db
 from app.models.recipe import Recipe, Ingredient, RecipeIngredient, Tag, RecipeRating
 from app.schemas.recipe import (
     RecipeCreate, RecipeUpdate, RecipeOut,
-    IngredientCreate, IngredientOut,
+    IngredientCreate, IngredientUpdate, IngredientOut,
     TagCreate, TagOut,
     RecipeRatingOut, RecipeRatingUpsert,
     RecipeExportItem, RecipeExportIngredient, RecipeImportResult,
@@ -40,6 +40,23 @@ def create_ingredient(payload: IngredientCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail="Ingredient already exists")
     ingredient = Ingredient(name=payload.name)
     db.add(ingredient)
+    db.commit()
+    db.refresh(ingredient)
+    return ingredient
+
+
+@router.patch("/ingredients/{ingredient_id}", response_model=IngredientOut)
+def update_ingredient(ingredient_id: int, payload: IngredientUpdate, db: Session = Depends(get_db)):
+    ingredient = db.get(Ingredient, ingredient_id)
+    if not ingredient:
+        raise HTTPException(status_code=404, detail="Ingredient not found")
+    duplicate = db.query(Ingredient).filter(
+        Ingredient.name == payload.name,
+        Ingredient.id != ingredient_id,
+    ).first()
+    if duplicate:
+        raise HTTPException(status_code=409, detail="Ingredient name already exists")
+    ingredient.name = payload.name
     db.commit()
     db.refresh(ingredient)
     return ingredient

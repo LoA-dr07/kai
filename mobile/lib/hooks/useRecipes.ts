@@ -62,6 +62,18 @@ export function useCreateIngredient() {
   });
 }
 
+export function useUpdateIngredient() {
+  const qc = useQueryClient();
+  return useMutation<Ingredient, Error, { id: number; name: string }>({
+    mutationFn: ({ id, name }) =>
+      api.patch(`/recipes/ingredients/${id}`, { name }).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ingredients'] });
+      qc.invalidateQueries({ queryKey: ['recipes'] });
+    },
+  });
+}
+
 export function useTags() {
   return useQuery<Tag[]>({
     queryKey: ['tags'],
