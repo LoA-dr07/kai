@@ -48,7 +48,7 @@ Alle Rezepte abrufen (alphabetisch sortiert).
   "ingredients": [
     { "id": 1, "ingredient_id": 2, "ingredient_name": "Hackfleisch", "amount": 500, "unit": "g" }
   ],
-  "tags": [{ "id": 1, "name": "Mittagessen", "is_predefined": true }],
+  "tags": [{ "id": 1, "name": "Mittagessen", "is_predefined": true, "category": "meal_type" }],
   "ratings": [{ "id": 1, "recipe_id": 1, "user_id": 1, "stars": 4 }]
 }]
 ```
@@ -201,14 +201,17 @@ Alle Tags abrufen (vordefinierte zuerst, dann alphabetisch).
 
 **Response 200:**
 ```json
-[{ "id": 1, "name": "Mittagessen", "is_predefined": true }]
+[
+  { "id": 1, "name": "Mittagessen", "is_predefined": true, "category": "meal_type" },
+  { "id": 6, "name": "Mama", "is_predefined": true, "category": "family" }
+]
 ```
 
 ### `POST /recipes/tags`
 Neuen benutzerdefinierten Tag erstellen (idempotent – gibt bestehenden zurück).
 
 **Request Body:** `{ "name": "Vegan" }`
-**Response 201:** `{ "id": 5, "name": "Vegan", "is_predefined": false }`
+**Response 201:** `{ "id": 9, "name": "Vegan", "is_predefined": false, "category": null }`
 
 ---
 
