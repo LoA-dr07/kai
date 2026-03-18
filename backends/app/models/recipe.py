@@ -18,6 +18,7 @@ class Tag(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False, unique=True)
     is_predefined = Column(Boolean, nullable=False, default=False)
+    category = Column(String(50), nullable=True)
 
     recipes = relationship("Recipe", secondary="recipe_tags", back_populates="tags")
 
