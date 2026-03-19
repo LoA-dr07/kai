@@ -60,6 +60,13 @@ export default function RecipeForm({
   const [selectedIngId, setSelectedIngId] = useState<number | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editAmount, setEditAmount] = useState('');
+  const [editUnit, setEditUnit] = useState('');
+  const [editSelectedIngId, setEditSelectedIngId] = useState<number | null>(null);
+  const [editShowSuggestions, setEditShowSuggestions] = useState(false);
+
   const amountInputRef = useRef<TextInputType>(null);
   const unitInputRef = useRef<TextInputType>(null);
 
@@ -75,10 +82,64 @@ export default function RecipeForm({
           .slice(0, 5)
       : [];
 
+  const editSuggestions =
+    editName.length >= 1
+      ? (ingredients ?? [])
+          .filter(i => i.name.toLowerCase().includes(editName.toLowerCase()))
+          .slice(0, 5)
+      : [];
+
   function selectSuggestion(id: number, ingName: string) {
     setNewIngName(ingName);
     setSelectedIngId(id);
     setShowSuggestions(false);
+  }
+
+  function startEditIngredient(item: FormIngredient) {
+    setEditingKey(item.key);
+    setEditName(item.ingredient_name);
+    setEditAmount(item.amount);
+    setEditUnit(item.unit);
+    setEditSelectedIngId(null);
+    setEditShowSuggestions(false);
+  }
+
+  function cancelEditIngredient() {
+    setEditingKey(null);
+    setEditShowSuggestions(false);
+  }
+
+  function confirmEditIngredient() {
+    if (!editName.trim()) { cancelEditIngredient(); return; }
+    const amount = parseFloat(editAmount.replace(',', '.'));
+    if (isNaN(amount) || amount <= 0) {
+      showAlert('Fehlende Angabe', 'Bitte eine gültige Menge eingeben.');
+      return;
+    }
+    if (!editUnit.trim()) {
+      showAlert('Fehlende Angabe', 'Bitte Einheit eingeben (z.B. g, ml, Stück).');
+      return;
+    }
+
+    let ingId: number | null = editSelectedIngId;
+    if (!ingId) {
+      const exact = (ingredients ?? []).find(
+        i => i.name.toLowerCase() === editName.trim().toLowerCase(),
+      );
+      if (exact) ingId = exact.id;
+    }
+
+    setFormIngredients(prev => prev.map(item => {
+      if (item.key !== editingKey) return item;
+      return {
+        ...item,
+        ingredient_id: ingId ?? item.ingredient_id,
+        ingredient_name: editName.trim(),
+        amount: editAmount,
+        unit: editUnit.trim(),
+      };
+    }));
+    cancelEditIngredient();
   }
 
   function toggleTag(id: number) {
@@ -184,13 +245,78 @@ export default function RecipeForm({
   const renderIngredient = useCallback(
     ({ item, drag, isActive, getIndex }: RenderItemParams<FormIngredient>) => {
       const index = getIndex() ?? 0;
+      const isEditing = item.key === editingKey;
+
+      if (isEditing) {
+        return (
+          <ScaleDecorator activeScale={1.0}>
+            <View style={[styles.ingRow, styles.ingRowEditing]}>
+              <View style={[styles.flex1, { zIndex: 10 }]}>
+                <TextInput
+                  style={styles.input}
+                  value={editName}
+                  onChangeText={text => {
+                    setEditName(text);
+                    setEditSelectedIngId(null);
+                    setEditShowSuggestions(true);
+                  }}
+                  autoFocus
+                  placeholder="Zutatname"
+                  returnKeyType="next"
+                />
+                {editShowSuggestions && editSuggestions.length > 0 && (
+                  <View style={styles.dropdown}>
+                    {editSuggestions.map(s => (
+                      <TouchableOpacity
+                        key={s.id}
+                        style={styles.dropdownItem}
+                        onPress={() => {
+                          setEditName(s.name);
+                          setEditSelectedIngId(s.id);
+                          setEditShowSuggestions(false);
+                        }}
+                      >
+                        <Text style={styles.dropdownText}>{s.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+              <TextInput
+                style={[styles.input, styles.ingEditSmall]}
+                value={editAmount}
+                onChangeText={setEditAmount}
+                keyboardType="decimal-pad"
+                placeholder="Menge"
+              />
+              <TextInput
+                style={[styles.input, styles.ingEditUnit]}
+                value={editUnit}
+                onChangeText={setEditUnit}
+                placeholder="Einheit"
+                returnKeyType="done"
+                onSubmitEditing={confirmEditIngredient}
+              />
+              <TouchableOpacity onPress={confirmEditIngredient} style={styles.ingEditBtn}>
+                <Text style={styles.ingConfirmText}>✓</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={cancelEditIngredient} style={styles.ingEditBtn}>
+                <Text style={styles.ingCancelText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          </ScaleDecorator>
+        );
+      }
+
       return (
         <ScaleDecorator activeScale={1.03}>
           <View style={[styles.ingRow, isActive && styles.ingRowActive]}>
             <TouchableOpacity onLongPress={drag} style={styles.dragHandle} hitSlop={8}>
               <Text style={styles.dragHandleText}>⠿</Text>
             </TouchableOpacity>
-            <Text style={styles.ingName}>{item.ingredient_name}</Text>
+            <TouchableOpacity style={styles.flex1} onPress={() => startEditIngredient(item)}>
+              <Text style={styles.ingName}>{item.ingredient_name}</Text>
+            </TouchableOpacity>
             <Text style={styles.ingAmount}>
               {item.amount} {item.unit}
             </Text>
@@ -201,7 +327,7 @@ export default function RecipeForm({
         </ScaleDecorator>
       );
     },
-    [],
+    [editingKey, editName, editAmount, editUnit, editSelectedIngId, editShowSuggestions, editSuggestions],
   );
 
   const mealTypeTags = tags.filter(t => t.is_predefined && t.category === 'meal_type');
@@ -548,12 +674,22 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 6,
   },
+  ingRowEditing: {
+    flexWrap: 'wrap',
+    paddingVertical: 8,
+    gap: 6,
+  },
   dragHandle: { paddingHorizontal: 8, paddingVertical: 6 },
   dragHandleText: { fontSize: 18, color: '#BDBDBD' },
   ingName: { flex: 1, fontSize: 15, color: '#1A1A1A' },
   ingAmount: { fontSize: 15, color: '#555', marginRight: 10 },
   removeBtn: { padding: 6 },
   removeBtnText: { color: '#D32F2F', fontSize: 16, fontWeight: '700' },
+  ingEditSmall: { width: 64, marginLeft: 6 },
+  ingEditUnit: { width: 72, marginLeft: 6 },
+  ingEditBtn: { paddingHorizontal: 8, paddingVertical: 4 },
+  ingConfirmText: { fontSize: 18, color: GREEN, fontWeight: '700' },
+  ingCancelText: { fontSize: 16, color: '#888' },
   addIngSection: { marginTop: 16 },
   addIngLabel: { fontSize: 14, fontWeight: '600', color: '#444', marginBottom: 8 },
   suggestionsWrapper: { zIndex: 10 },

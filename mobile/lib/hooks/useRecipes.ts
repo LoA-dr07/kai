@@ -74,6 +74,22 @@ export function useUpdateIngredient() {
   });
 }
 
+export function useUpdateRecipeIngredient(recipeId: number) {
+  const qc = useQueryClient();
+  return useMutation<
+    any,
+    Error,
+    { recipeIngredientId: number; ingredient_id?: number; amount?: number; unit?: string }
+  >({
+    mutationFn: ({ recipeIngredientId, ...payload }) =>
+      api.patch(`/recipes/${recipeId}/ingredients/${recipeIngredientId}`, payload).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['recipes', recipeId] });
+      qc.invalidateQueries({ queryKey: ['recipes'] });
+    },
+  });
+}
+
 export function useTags() {
   return useQuery<Tag[]>({
     queryKey: ['tags'],
