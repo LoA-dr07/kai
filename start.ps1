@@ -4,7 +4,7 @@
 #
 # Requires: Python 3, Node.js / npm
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
 $RootDir     = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BackendDir  = Join-Path $RootDir "backends"
@@ -26,7 +26,7 @@ $backendJob = Start-Job -Name "Backend" -ScriptBlock {
     param($dir, $venv)
     Set-Location $dir
     & "$venv\Scripts\Activate.ps1"
-    uvicorn app.main:app --reload --host 0.0.0.0
+    uvicorn app.main:app --reload --host 0.0.0.0 2>&1
 } -ArgumentList $BackendDir, $VenvDir
 
 # ── 3. Start frontend job ─────────────────────────────────────────────────────
@@ -34,7 +34,7 @@ Write-Host "[FRONTEND] Starting Expo web on http://localhost:8081 ..." -Foregrou
 $frontendJob = Start-Job -Name "Frontend" -ScriptBlock {
     param($dir)
     Set-Location $dir
-    npx expo start --web --non-interactive
+    npx expo start --web --non-interactive 2>&1
 } -ArgumentList $FrontendDir
 
 Write-Host ""
