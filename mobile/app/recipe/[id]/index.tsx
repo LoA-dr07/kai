@@ -11,7 +11,7 @@ import {
 import { useState } from 'react';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { showAlert } from '../../../lib/alert';
-import { useRecipe, useDeleteRecipe, useRateRecipe, useUpdateIngredient } from '../../../lib/hooks/useRecipes';
+import { useRecipe, useDeleteRecipe, useRateRecipe, useUpdateIngredient, useUpdateRecipeIngredient, useIngredients } from '../../../lib/hooks/useRecipes';
 import { useUsers } from '../../../lib/hooks/useUsers';
 import type { Tag, User } from '../../../lib/types';
 
@@ -75,12 +75,21 @@ export default function RecipeDetailScreen() {
 
   const { data: recipe, isLoading, error } = useRecipe(recipeId);
   const { data: users = [] } = useUsers();
+  const { data: allIngredients = [] } = useIngredients();
   const deleteRecipe = useDeleteRecipe();
   const rateRecipe = useRateRecipe(recipeId);
   const updateIngredient = useUpdateIngredient();
+  const updateRecipeIngredient = useUpdateRecipeIngredient(recipeId);
 
+  const [editingRecipeIngId, setEditingRecipeIngId] = useState<number | null>(null);
   const [editingIngId, setEditingIngId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [editingSelectedIngId, setEditingSelectedIngId] = useState<number | null>(null);
+  const [editingShowSuggestions, setEditingShowSuggestions] = useState(false);
+
+  const editingSuggestions = editingName.length >= 1
+    ? allIngredients.filter(i => i.name.toLowerCase().includes(editingName.toLowerCase())).slice(0, 5)
+    : [];
 
   if (isLoading) {
     return <ActivityIndicator style={styles.center} size="large" color="#2E7D32" />;
@@ -116,40 +125,61 @@ export default function RecipeDetailScreen() {
     rateRecipe.mutate({ user_id: userId, stars });
   }
 
-  function startEditIngredient(ingId: number, currentName: string) {
+  function startEditIngredient(recipeIngId: number, ingId: number, currentName: string) {
+    setEditingRecipeIngId(recipeIngId);
     setEditingIngId(ingId);
     setEditingName(currentName);
+    setEditingSelectedIngId(null);
+    setEditingShowSuggestions(false);
   }
 
   function cancelEditIngredient() {
+    setEditingRecipeIngId(null);
     setEditingIngId(null);
     setEditingName('');
+    setEditingSelectedIngId(null);
+    setEditingShowSuggestions(false);
   }
 
-  function confirmEditIngredient(ingId: number) {
+  function confirmEditIngredient() {
     const trimmed = editingName.trim();
     if (!trimmed) {
       cancelEditIngredient();
       return;
     }
-    updateIngredient.mutate(
-      { id: ingId, name: trimmed },
-      {
-        onSuccess: () => {
-          setEditingIngId(null);
-          setEditingName('');
+
+    // Check if name matches an existing ingredient (selected from dropdown or typed exactly)
+    const matched = editingSelectedIngId !== null
+      ? allIngredients.find(i => i.id === editingSelectedIngId)
+      : allIngredients.find(i => i.name.toLowerCase() === trimmed.toLowerCase());
+
+    if (matched && matched.id !== editingIngId) {
+      // Replace the RecipeIngredient's reference to point to the existing ingredient
+      updateRecipeIngredient.mutate(
+        { recipeIngredientId: editingRecipeIngId!, ingredient_id: matched.id },
+        {
+          onSuccess: () => cancelEditIngredient(),
+          onError: () => showAlert('Fehler', 'Zutat konnte nicht geändert werden.'),
         },
-        onError: (err: any) => {
-          const is409 = err?.response?.status === 409;
-          showAlert(
-            'Fehler',
-            is409
-              ? 'Eine Zutat mit diesem Namen existiert bereits.'
-              : 'Die Zutat konnte nicht umbenannt werden.',
-          );
+      );
+    } else {
+      // Rename the ingredient itself
+      updateIngredient.mutate(
+        { id: editingIngId!, name: trimmed },
+        {
+          onSuccess: () => cancelEditIngredient(),
+          onError: (err: any) => {
+            const is409 = err?.response?.status === 409;
+            showAlert(
+              'Fehler',
+              is409
+                ? 'Eine Zutat mit diesem Namen existiert bereits.'
+                : 'Die Zutat konnte nicht umbenannt werden.',
+            );
+          },
         },
-      },
-    );
+      );
+    }
   }
 
   const getRating = (userId: number) =>
@@ -203,27 +233,50 @@ export default function RecipeDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Zutaten</Text>
             {recipe.ingredients.map(ing => {
-              const isEditing = editingIngId === ing.ingredient.id;
-              const isSaving = isEditing && updateIngredient.isPending;
+              const isEditing = editingRecipeIngId === ing.id;
+              const isSaving = isEditing && (updateIngredient.isPending || updateRecipeIngredient.isPending);
               return (
                 <View key={ing.id} style={styles.ingRow}>
                   {isEditing ? (
                     <View style={styles.ingEditRow}>
-                      <TextInput
-                        style={styles.ingEditInput}
-                        value={editingName}
-                        onChangeText={setEditingName}
-                        autoFocus
-                        onSubmitEditing={() => confirmEditIngredient(ing.ingredient.id)}
-                        returnKeyType="done"
-                      />
+                      <View style={styles.ingEditInputWrapper}>
+                        <TextInput
+                          style={styles.ingEditInput}
+                          value={editingName}
+                          onChangeText={text => {
+                            setEditingName(text);
+                            setEditingSelectedIngId(null);
+                            setEditingShowSuggestions(true);
+                          }}
+                          autoFocus
+                          onSubmitEditing={confirmEditIngredient}
+                          returnKeyType="done"
+                        />
+                        {editingShowSuggestions && editingSuggestions.length > 0 && (
+                          <View style={styles.dropdown}>
+                            {editingSuggestions.map(s => (
+                              <TouchableOpacity
+                                key={s.id}
+                                style={styles.dropdownItem}
+                                onPress={() => {
+                                  setEditingName(s.name);
+                                  setEditingSelectedIngId(s.id);
+                                  setEditingShowSuggestions(false);
+                                }}
+                              >
+                                <Text style={styles.dropdownText}>{s.name}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        )}
+                      </View>
                       {isSaving ? (
                         <ActivityIndicator size="small" color={GREEN} style={styles.ingEditBtn} />
                       ) : (
                         <>
                           <TouchableOpacity
                             style={styles.ingEditBtn}
-                            onPress={() => confirmEditIngredient(ing.ingredient.id)}
+                            onPress={confirmEditIngredient}
                           >
                             <Text style={styles.ingConfirmText}>✓</Text>
                           </TouchableOpacity>
@@ -237,7 +290,7 @@ export default function RecipeDetailScreen() {
                       )}
                     </View>
                   ) : (
-                    <TouchableOpacity onPress={() => startEditIngredient(ing.ingredient.id, ing.ingredient.name)}>
+                    <TouchableOpacity onPress={() => startEditIngredient(ing.id, ing.ingredient.id, ing.ingredient.name)}>
                       <Text style={styles.ingName}>{ing.ingredient.name}</Text>
                     </TouchableOpacity>
                   )}
@@ -378,6 +431,7 @@ const styles = StyleSheet.create({
   ingName: { fontSize: 15, color: '#1A1A1A' },
   ingAmount: { fontSize: 15, color: '#666' },
   ingEditRow: { flex: 1, flexDirection: 'row', alignItems: 'center', marginRight: 8 },
+  ingEditInputWrapper: { flex: 1, zIndex: 10 },
   ingEditInput: {
     flex: 1,
     fontSize: 15,
@@ -390,6 +444,24 @@ const styles = StyleSheet.create({
   ingEditBtn: { paddingHorizontal: 8, paddingVertical: 4 },
   ingConfirmText: { fontSize: 18, color: GREEN, fontWeight: '700' },
   ingCancelText: { fontSize: 16, color: '#888' },
+  dropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    zIndex: 100,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+  },
+  dropdownItem: { borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
+  dropdownText: { padding: 12, fontSize: 15, color: '#1A1A1A' },
 
   // Actions
   actions: { flexDirection: 'row', gap: 12 },
