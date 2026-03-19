@@ -5,6 +5,7 @@ from app.models.recipe import Recipe, Ingredient, RecipeIngredient, Tag, RecipeR
 from app.schemas.recipe import (
     RecipeCreate, RecipeUpdate, RecipeOut,
     IngredientCreate, IngredientUpdate, IngredientOut,
+    RecipeIngredientUpdate, RecipeIngredientOut,
     TagCreate, TagOut,
     RecipeRatingOut, RecipeRatingUpsert,
     RecipeExportItem, RecipeExportIngredient, RecipeImportResult,
@@ -60,6 +61,32 @@ def update_ingredient(ingredient_id: int, payload: IngredientUpdate, db: Session
     db.commit()
     db.refresh(ingredient)
     return ingredient
+
+
+@router.patch("/{recipe_id}/ingredients/{recipe_ingredient_id}", response_model=RecipeIngredientOut)
+def update_recipe_ingredient(
+    recipe_id: int,
+    recipe_ingredient_id: int,
+    payload: RecipeIngredientUpdate,
+    db: Session = Depends(get_db),
+):
+    ri = db.query(RecipeIngredient).filter(
+        RecipeIngredient.id == recipe_ingredient_id,
+        RecipeIngredient.recipe_id == recipe_id,
+    ).first()
+    if not ri:
+        raise HTTPException(status_code=404, detail="RecipeIngredient not found")
+    if payload.ingredient_id is not None:
+        if not db.get(Ingredient, payload.ingredient_id):
+            raise HTTPException(status_code=404, detail="Ingredient not found")
+        ri.ingredient_id = payload.ingredient_id
+    if payload.amount is not None:
+        ri.amount = payload.amount
+    if payload.unit is not None:
+        ri.unit = payload.unit
+    db.commit()
+    db.refresh(ri)
+    return ri
 
 
 # --- Tags ---

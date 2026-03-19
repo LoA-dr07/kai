@@ -30,6 +30,12 @@ class RecipeIngredientCreate(RecipeIngredientBase):
     pass
 
 
+class RecipeIngredientUpdate(BaseModel):
+    ingredient_id: Optional[int] = None
+    amount: Optional[float] = Field(default=None, gt=0)
+    unit: Optional[str] = Field(default=None, min_length=1, max_length=50)
+
+
 class RecipeIngredientOut(RecipeIngredientBase):
     id: int
     ingredient: IngredientOut
