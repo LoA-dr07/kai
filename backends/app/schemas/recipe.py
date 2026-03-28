@@ -118,6 +118,7 @@ class RecipeExportItem(BaseModel):
     servings: int = 2
     prep_time_minutes: Optional[int] = None
     ingredients: list[RecipeExportIngredient] = []
+    ratings: list[RecipeRatingOut] = []
 
 
 class RecipeImportResult(BaseModel):
