@@ -57,6 +57,7 @@ export interface RecipeExportItem {
   servings: number;
   prep_time_minutes?: number | null;
   ingredients: RecipeExportIngredient[];
+  ratings?: RecipeRating[];
 }
 
 export interface RecipeImportResult {
