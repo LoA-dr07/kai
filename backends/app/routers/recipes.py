@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.recipe import Recipe, Ingredient, RecipeIngredient, Tag, RecipeRating
+from app.models.user import User
 from app.schemas.recipe import (
     RecipeCreate, RecipeUpdate, RecipeOut,
     IngredientCreate, IngredientUpdate, IngredientOut,
@@ -159,6 +160,10 @@ def export_recipes(db: Session = Depends(get_db)):
                 )
                 for ri in r.ingredients
             ],
+            ratings=[
+                RecipeRatingOut(user_id=rating.user_id, stars=rating.stars)
+                for rating in r.ratings
+            ],
         )
         for r in recipes
     ]
@@ -191,6 +196,14 @@ def import_recipes(recipes: list[RecipeExportItem], db: Session = Depends(get_db
                 ingredient_id=ingredient.id,
                 amount=ing.amount,
                 unit=ing.unit,
+            ))
+        for rating in item.ratings:
+            if not db.get(User, rating.user_id):
+                continue  # skip if user doesn't exist in this DB
+            db.add(RecipeRating(
+                recipe_id=recipe.id,
+                user_id=rating.user_id,
+                stars=rating.stars,
             ))
         created += 1
     db.commit()
