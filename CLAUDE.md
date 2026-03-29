@@ -45,7 +45,8 @@ ngrok http 8000
 
 # Terminal 3: Expo
 cd mobile
-npx expo start --tunnel
+npx expo start --go --tunnel
+# Alternativ: npm run mobile
 ```
 
 ### Tests
