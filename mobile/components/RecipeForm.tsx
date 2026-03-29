@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   type TextInput as TextInputType,
 } from 'react-native';
-import DraggableFlatList, { ScaleDecorator, type RenderItemParams } from 'react-native-draggable-flatlist';
 import { showAlert } from '../lib/alert';
 import { useIngredients, useCreateIngredient, useTags, useCreateTag } from '../lib/hooks/useRecipes';
 import type { RecipeCreatePayload, Tag } from '../lib/types';
@@ -52,7 +51,6 @@ export default function RecipeForm({
   const [formIngredients, setFormIngredients] = useState<FormIngredient[]>(initialIngredients);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>(initialTagIds);
   const [newCustomTag, setNewCustomTag] = useState('');
-  const [isDragging, setIsDragging] = useState(false);
 
   const [newIngName, setNewIngName] = useState('');
   const [newIngAmount, setNewIngAmount] = useState('');
@@ -140,6 +138,14 @@ export default function RecipeForm({
       };
     }));
     cancelEditIngredient();
+  }
+
+  function moveIngredient(index: number, direction: 'up' | 'down') {
+    const newList = [...formIngredients];
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= newList.length) return;
+    [newList[index], newList[swapIndex]] = [newList[swapIndex], newList[index]];
+    setFormIngredients(newList);
   }
 
   function toggleTag(id: number) {
@@ -242,94 +248,6 @@ export default function RecipeForm({
     await onSubmit(payload);
   }
 
-  const renderIngredient = useCallback(
-    ({ item, drag, isActive, getIndex }: RenderItemParams<FormIngredient>) => {
-      const index = getIndex() ?? 0;
-      const isEditing = item.key === editingKey;
-
-      if (isEditing) {
-        return (
-          <ScaleDecorator activeScale={1.0}>
-            <View style={[styles.ingRow, styles.ingRowEditing]}>
-              <View style={[styles.flex1, { zIndex: 10 }]}>
-                <TextInput
-                  style={styles.input}
-                  value={editName}
-                  onChangeText={text => {
-                    setEditName(text);
-                    setEditSelectedIngId(null);
-                    setEditShowSuggestions(true);
-                  }}
-                  autoFocus
-                  placeholder="Zutatname"
-                  returnKeyType="next"
-                />
-                {editShowSuggestions && editSuggestions.length > 0 && (
-                  <View style={styles.dropdown}>
-                    {editSuggestions.map(s => (
-                      <TouchableOpacity
-                        key={s.id}
-                        style={styles.dropdownItem}
-                        onPress={() => {
-                          setEditName(s.name);
-                          setEditSelectedIngId(s.id);
-                          setEditShowSuggestions(false);
-                        }}
-                      >
-                        <Text style={styles.dropdownText}>{s.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              </View>
-              <TextInput
-                style={[styles.input, styles.ingEditSmall]}
-                value={editAmount}
-                onChangeText={setEditAmount}
-                keyboardType="decimal-pad"
-                placeholder="Menge"
-              />
-              <TextInput
-                style={[styles.input, styles.ingEditUnit]}
-                value={editUnit}
-                onChangeText={setEditUnit}
-                placeholder="Einheit"
-                returnKeyType="done"
-                onSubmitEditing={confirmEditIngredient}
-              />
-              <TouchableOpacity onPress={confirmEditIngredient} style={styles.ingEditBtn}>
-                <Text style={styles.ingConfirmText}>✓</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={cancelEditIngredient} style={styles.ingEditBtn}>
-                <Text style={styles.ingCancelText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          </ScaleDecorator>
-        );
-      }
-
-      return (
-        <ScaleDecorator activeScale={1.03}>
-          <View style={[styles.ingRow, isActive && styles.ingRowActive]}>
-            <TouchableOpacity onLongPress={drag} style={styles.dragHandle} hitSlop={8}>
-              <Text style={styles.dragHandleText}>⠿</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.flex1} onPress={() => startEditIngredient(item)}>
-              <Text style={styles.ingName}>{item.ingredient_name}</Text>
-            </TouchableOpacity>
-            <Text style={styles.ingAmount}>
-              {item.amount} {item.unit}
-            </Text>
-            <TouchableOpacity onPress={() => removeIngredient(index)} style={styles.removeBtn}>
-              <Text style={styles.removeBtnText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-        </ScaleDecorator>
-      );
-    },
-    [editingKey, editName, editAmount, editUnit, editSelectedIngId, editShowSuggestions, editSuggestions],
-  );
-
   const mealTypeTags = tags.filter(t => t.is_predefined && t.category === 'meal_type');
   const familyTags = tags.filter(t => t.is_predefined && t.category === 'family');
   const customTags = tags.filter(t => !t.is_predefined);
@@ -339,7 +257,6 @@ export default function RecipeForm({
       style={styles.container}
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
-      scrollEnabled={!isDragging}
     >
       {/* Basis-Infos */}
       <View style={styles.card}>
@@ -486,15 +403,97 @@ export default function RecipeForm({
         {formIngredients.length === 0 ? (
           <Text style={styles.noIngredients}>Noch keine Zutaten hinzugefügt.</Text>
         ) : (
-          <DraggableFlatList
-            data={formIngredients}
-            keyExtractor={item => item.key}
-            renderItem={renderIngredient}
-            onDragBegin={() => setIsDragging(true)}
-            onDragEnd={({ data }) => { setFormIngredients(data); setIsDragging(false); }}
-            scrollEnabled={false}
-            activationDistance={5}
-          />
+          formIngredients.map((item, index) => {
+            const isEditing = item.key === editingKey;
+            if (isEditing) {
+              return (
+                <View key={item.key} style={[styles.ingRow, styles.ingRowEditing]}>
+                  <View style={[styles.flex1, { zIndex: 10 }]}>
+                    <TextInput
+                      style={styles.input}
+                      value={editName}
+                      onChangeText={text => {
+                        setEditName(text);
+                        setEditSelectedIngId(null);
+                        setEditShowSuggestions(true);
+                      }}
+                      autoFocus
+                      placeholder="Zutatname"
+                      returnKeyType="next"
+                    />
+                    {editShowSuggestions && editSuggestions.length > 0 && (
+                      <View style={styles.dropdown}>
+                        {editSuggestions.map(s => (
+                          <TouchableOpacity
+                            key={s.id}
+                            style={styles.dropdownItem}
+                            onPress={() => {
+                              setEditName(s.name);
+                              setEditSelectedIngId(s.id);
+                              setEditShowSuggestions(false);
+                            }}
+                          >
+                            <Text style={styles.dropdownText}>{s.name}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                  <TextInput
+                    style={[styles.input, styles.ingEditSmall]}
+                    value={editAmount}
+                    onChangeText={setEditAmount}
+                    keyboardType="decimal-pad"
+                    placeholder="Menge"
+                  />
+                  <TextInput
+                    style={[styles.input, styles.ingEditUnit]}
+                    value={editUnit}
+                    onChangeText={setEditUnit}
+                    placeholder="Einheit"
+                    returnKeyType="done"
+                    onSubmitEditing={confirmEditIngredient}
+                  />
+                  <TouchableOpacity onPress={confirmEditIngredient} style={styles.ingEditBtn}>
+                    <Text style={styles.ingConfirmText}>✓</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={cancelEditIngredient} style={styles.ingEditBtn}>
+                    <Text style={styles.ingCancelText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            }
+
+            return (
+              <View key={item.key} style={styles.ingRow}>
+                <View style={styles.moveButtons}>
+                  <TouchableOpacity
+                    onPress={() => moveIngredient(index, 'up')}
+                    disabled={index === 0}
+                    style={styles.moveBtn}
+                  >
+                    <Text style={[styles.moveBtnText, index === 0 && styles.moveBtnDisabled]}>▲</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => moveIngredient(index, 'down')}
+                    disabled={index === formIngredients.length - 1}
+                    style={styles.moveBtn}
+                  >
+                    <Text style={[styles.moveBtnText, index === formIngredients.length - 1 && styles.moveBtnDisabled]}>▼</Text>
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity style={styles.flex1} onPress={() => startEditIngredient(item)}>
+                  <Text style={styles.ingName}>{item.ingredient_name}</Text>
+                </TouchableOpacity>
+                <Text style={styles.ingAmount}>
+                  {item.amount} {item.unit}
+                </Text>
+                <TouchableOpacity onPress={() => removeIngredient(index)} style={styles.removeBtn}>
+                  <Text style={styles.removeBtnText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })
         )}
 
         <View style={styles.addIngSection}>
@@ -665,22 +664,15 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F0F0F0',
     backgroundColor: '#fff',
   },
-  ingRowActive: {
-    backgroundColor: '#F1F8E9',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
-  },
   ingRowEditing: {
     flexWrap: 'wrap',
     paddingVertical: 8,
     gap: 6,
   },
-  dragHandle: { paddingHorizontal: 8, paddingVertical: 6 },
-  dragHandleText: { fontSize: 18, color: '#BDBDBD' },
+  moveButtons: { flexDirection: 'column', marginRight: 4 },
+  moveBtn: { padding: 2 },
+  moveBtnText: { fontSize: 12, color: '#888' },
+  moveBtnDisabled: { color: '#DDD' },
   ingName: { flex: 1, fontSize: 15, color: '#1A1A1A' },
   ingAmount: { fontSize: 15, color: '#555', marginRight: 10 },
   removeBtn: { padding: 6 },
