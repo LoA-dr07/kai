@@ -38,14 +38,22 @@ npx expo start --web
 
 ### Mobile App starten
 ```powershell
-# Terminal 1: Backend (s.o.)
-# Terminal 2: ngrok-Tunnel
-ngrok http 8000
-# ngrok-URL in mobile/.env eintragen: EXPO_PUBLIC_API_URL=https://xxx.ngrok-free.app
+# Voraussetzung: PC und Handy im selben WLAN
 
-# Terminal 3: Expo
+# Terminal 1: Backend (s.o.)
+# – bereits mit --host 0.0.0.0, also im LAN erreichbar
+
+# Terminal 2: Expo (LAN-Modus)
 cd mobile
-npx expo start --tunnel
+# .env: EXPO_PUBLIC_API_URL=http://<LAN-IP-des-PCs>:8000
+# LAN-IP ermitteln: ipconfig → "IPv4-Adresse" unter dem WLAN-Adapter
+$env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.178.83"; npx expo start --go --lan
+# Alternativ: npm run mobile
+# (IP in mobile/package.json → "mobile"-Script anpassen falls sie sich ändert)
+
+# Beim ersten Mal: Windows-Firewall muss eingehende Verbindungen auf Port 8081 (TCP) erlauben
+# – Windows fragt automatisch nach, oder manuell:
+# Windows-Defender-Firewall → Eingehende Regel → Port 8081 TCP zulassen
 ```
 
 ### Tests
@@ -145,8 +153,8 @@ DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/meal_planner
 # Web / lokale Entwicklung:
 EXPO_PUBLIC_API_URL=http://localhost:8000
 
-# Mobile via ngrok:
-EXPO_PUBLIC_API_URL=https://xxx.ngrok-free.app
+# Mobile via LAN (Expo Go, selbes WLAN):
+EXPO_PUBLIC_API_URL=http://192.168.x.x:8000  # LAN-IP des PCs (ipconfig)
 ```
 
 ---
@@ -155,7 +163,7 @@ EXPO_PUBLIC_API_URL=https://xxx.ngrok-free.app
 
 - **Keine Authentifizierung**: Bewusste Entscheidung – Haushalt teilt eine gemeinsame App-Instanz (3 User als Seed-Daten, kein Login)
 - **CORS offen**: `allow_origins=["*"]` – für Entwicklung und Einzel-Haushalt-Betrieb akzeptabel
-- **ngrok-URL ändert sich** bei jedem Neustart → `mobile/.env` muss manuell aktualisiert werden
+- **LAN-IP des PCs** in `mobile/.env` eintragen (`EXPO_PUBLIC_API_URL=http://<LAN-IP>:8000`) und in `mobile/package.json` → `"mobile"`-Script (`REACT_NATIVE_PACKAGER_HOSTNAME`). LAN-IP ermitteln: `ipconfig` → IPv4-Adresse des WLAN-Adapters. Ändert sich nur bei DHCP-Wechsel – statische IP im Router empfohlen.
 - **`MealPlanEntry`**: Entweder `recipe_id` (Rezept) oder `custom_meal` (Freitext), nicht beides
 
 ---
