@@ -12,3 +12,5 @@ mobile/dist/
 # Allgemein
 .DS_Store
 *.log
+# Database backups
+backups/
