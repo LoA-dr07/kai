@@ -47,8 +47,9 @@ npx expo start --web
 cd mobile
 # .env: EXPO_PUBLIC_API_URL=http://<LAN-IP-des-PCs>:8000
 # LAN-IP ermitteln: ipconfig → "IPv4-Adresse" unter dem WLAN-Adapter
-npx expo start --go --lan
+$env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.178.83"; npx expo start --go --lan
 # Alternativ: npm run mobile
+# (IP in mobile/package.json → "mobile"-Script anpassen falls sie sich ändert)
 
 # Beim ersten Mal: Windows-Firewall muss eingehende Verbindungen auf Port 8081 (TCP) erlauben
 # – Windows fragt automatisch nach, oder manuell:
@@ -162,7 +163,7 @@ EXPO_PUBLIC_API_URL=http://192.168.x.x:8000  # LAN-IP des PCs (ipconfig)
 
 - **Keine Authentifizierung**: Bewusste Entscheidung – Haushalt teilt eine gemeinsame App-Instanz (3 User als Seed-Daten, kein Login)
 - **CORS offen**: `allow_origins=["*"]` – für Entwicklung und Einzel-Haushalt-Betrieb akzeptabel
-- **LAN-IP des PCs** in `mobile/.env` eintragen (`EXPO_PUBLIC_API_URL=http://<LAN-IP>:8000`). LAN-IP ermitteln: `ipconfig` → IPv4-Adresse des WLAN-Adapters. Ändert sich nur bei DHCP-Wechsel – statische IP im Router empfohlen.
+- **LAN-IP des PCs** in `mobile/.env` eintragen (`EXPO_PUBLIC_API_URL=http://<LAN-IP>:8000`) und in `mobile/package.json` → `"mobile"`-Script (`REACT_NATIVE_PACKAGER_HOSTNAME`). LAN-IP ermitteln: `ipconfig` → IPv4-Adresse des WLAN-Adapters. Ändert sich nur bei DHCP-Wechsel – statische IP im Router empfohlen.
 - **`MealPlanEntry`**: Entweder `recipe_id` (Rezept) oder `custom_meal` (Freitext), nicht beides
 
 ---
