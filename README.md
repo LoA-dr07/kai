@@ -109,6 +109,10 @@ EXPO_PUBLIC_API_URL=https://abc123.ngrok-free.app
 > Die ngrok-URL ändert sich bei jedem Neustart von ngrok — dann muss die `.env` entsprechend aktualisiert werden.
 > `localhost` oder die LAN-IP funktionieren **nicht** zuverlässig, wenn das Handy über Tunnel verbunden ist.
 
+> **Wichtig:** Falls sich deine WLAN-IP mal ändert (z.B. nach Router-Neustart), musst du die `192.168.178.83` an zwei Stellen anpassen:
+> - `mobile/package.json` → `"mobile"`-Script
+> - `mobile/.env` → `EXPO_PUBLIC_API_URL`
+
 ### 4. Expo starten
 
 ```powershell
