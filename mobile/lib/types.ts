@@ -77,6 +77,20 @@ export interface RecipeUrlPreview {
   ingredients: RecipeExportIngredient[];
 }
 
+// --- User management ---
+
+export interface UserCreate {
+  name: string;
+  avatar_color: string;
+  short_name: string;
+}
+
+export interface UserUpdate {
+  name?: string;
+  avatar_color?: string;
+  short_name?: string;
+}
+
 // --- Household & Users ---
 
 export interface UserPreferences {

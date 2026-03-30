@@ -83,8 +83,12 @@ mobile/
 
 ### `(tabs)/settings.tsx` – Einstellungen
 - **Sektion Haushalt:** Kochtage (Checkbox-Grid Mo–So), warme Mahlzeit (Mittags/Abends/Beides), Tage mit kalten Mahlzeiten, Reste-Häufigkeit (Nie/Manchmal/Oft), Gemeinsames-Essen-Skala (1–5), Kochkenntnisse, bevorzugte Küchen, Wochenbudget
-- **Sektion Haushaltsmitglieder:** Pro Mitglied aufklappbare Karte mit Ernährungsweise, Allergien, ungemochten Zutaten (Freitext-Chips), bevorzugten Küchen, Schärfeverträglichkeit, Portionsgröße
-- Speichern per Button pro Sektion; Feedback via `showAlert`
+- **Sektion Haushaltsmitglieder:** Pro Mitglied eine Karte mit:
+  - **Name bearbeiten** (Stift-Icon): Inline-Editierung von Name, Kürzel (max 4 Zeichen) und Farbe (8 vordefinierte Farben) → `useUpdateUser`; der zugehörige `family`-Tag an Rezepten wird automatisch umbenannt
+  - **Mitglied löschen** (Mülleimer-Icon mit `showConfirm`): entfernt User + family-Tag + alle Rezept-Zuordnungen → `useDeleteUser`
+  - Präferenz-Felder: Ernährungsweise, Allergien, ungemochte Zutaten (Freitext-Tag-Input), bevorzugte Küchen, Schärfeverträglichkeit, Portionsgröße → `useUpdateUserPreferences`
+- **„+ Mitglied hinzufügen"**-Button im Sektions-Header öffnet `AddMemberForm`-Karte: Name, Kürzel (auto-generiert), Farbauswahl → `useCreateUser`; erstellt gleichzeitig family-Tag
+- Feedback via `showAlert` / `showConfirm` aus `mobile/lib/alert.ts`
 
 ---
 
@@ -124,7 +128,10 @@ Alle Meal-Plan-Mutations invalidieren `['meal-plans']`.
 
 | Hook | Typ | Beschreibung |
 |------|-----|--------------|
-| `useUsers()` | Query | Alle Haushaltsmitglieder, `staleTime: 5min` (ändern sich selten) |
+| `useUsers()` | Query | Alle Haushaltsmitglieder, `staleTime: 5min` |
+| `useCreateUser()` | Mutation | Neues Mitglied anlegen (`POST /users`), invalidiert `['users']` + `['household']` |
+| `useUpdateUser(userId)` | Mutation | Name/Kürzel/Farbe ändern (`PATCH /users/{id}`), invalidiert `['users']`, `['household']`, `['recipes']` |
+| `useDeleteUser()` | Mutation | Mitglied löschen (`DELETE /users/{id}`), invalidiert `['users']`, `['household']`, `['recipes']` |
 | `useUpdateUserPreferences(userId)` | Mutation | Präferenzen speichern, aktualisiert `['users']` Cache |
 
 ### Haushalt-Hooks (`useHousehold.ts`)
@@ -207,6 +214,10 @@ showAlert('Löschen?', 'Das Rezept wird gelöscht.', [
   { text: 'Abbrechen', style: 'cancel' },
   { text: 'Löschen', style: 'destructive', onPress: () => deleteRecipe() },
 ]);
+
+// Kurzform für Ja/Nein-Dialog
+import { showConfirm } from '../lib/alert';
+showConfirm('Mitglied löschen', 'Wirklich löschen?', () => deleteUser());
 ```
 
 Auf Web: `window.alert()` / `window.confirm()`
