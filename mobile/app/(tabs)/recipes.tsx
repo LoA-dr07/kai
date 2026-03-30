@@ -18,6 +18,15 @@ import {
 } from 'react-native';
 import { useImportRecipes, useRecipes } from '../../lib/hooks/useRecipes';
 import type { Recipe, RecipeExportItem, RecipeUrlPreview } from '../../lib/types';
+
+const RATING_LABELS: Record<number, string> = {
+  0: 'Nie',
+  1: 'Selten',
+  2: 'Gelegentlich',
+  3: 'Gerne',
+  4: 'Häufig',
+  5: 'Sehr häufig',
+};
 import { api } from '../../lib/api';
 
 export default function RecipesScreen() {
@@ -368,7 +377,7 @@ function RecipeCard({ recipe, onPress }: { recipe: Recipe; onPress: () => void }
         {recipe.prep_time_minutes ? <Chip label={`${recipe.prep_time_minutes} Min.`} /> : null}
         <Chip label={`${recipe.ingredients.length} Zutaten`} />
         {avgRating !== null && (
-          <Chip label={`${'★'.repeat(Math.round(avgRating))} ${avgRating.toFixed(1)}`} />
+          <Chip label={`${'★'.repeat(Math.round(avgRating))} ${avgRating.toFixed(1)} · ${RATING_LABELS[Math.round(avgRating)]}`} />
         )}
       </View>
     </TouchableOpacity>
