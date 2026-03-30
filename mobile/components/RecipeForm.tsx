@@ -57,6 +57,7 @@ export default function RecipeForm({
   const [newIngUnit, setNewIngUnit] = useState('');
   const [selectedIngId, setSelectedIngId] = useState<number | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionIndex, setSuggestionIndex] = useState(-1);
 
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -64,7 +65,9 @@ export default function RecipeForm({
   const [editUnit, setEditUnit] = useState('');
   const [editSelectedIngId, setEditSelectedIngId] = useState<number | null>(null);
   const [editShowSuggestions, setEditShowSuggestions] = useState(false);
+  const [editSuggestionIndex, setEditSuggestionIndex] = useState(-1);
 
+  const nameInputRef = useRef<TextInputType>(null);
   const amountInputRef = useRef<TextInputType>(null);
   const unitInputRef = useRef<TextInputType>(null);
 
@@ -91,6 +94,8 @@ export default function RecipeForm({
     setNewIngName(ingName);
     setSelectedIngId(id);
     setShowSuggestions(false);
+    setSuggestionIndex(-1);
+    amountInputRef.current?.focus();
   }
 
   function startEditIngredient(item: FormIngredient) {
@@ -105,6 +110,7 @@ export default function RecipeForm({
   function cancelEditIngredient() {
     setEditingKey(null);
     setEditShowSuggestions(false);
+    setEditSuggestionIndex(-1);
   }
 
   function confirmEditIngredient() {
@@ -215,6 +221,8 @@ export default function RecipeForm({
     setNewIngUnit('');
     setSelectedIngId(null);
     setShowSuggestions(false);
+    setSuggestionIndex(-1);
+    setTimeout(() => nameInputRef.current?.focus(), 50);
   }
 
   function removeIngredient(index: number) {
@@ -416,21 +424,41 @@ export default function RecipeForm({
                         setEditName(text);
                         setEditSelectedIngId(null);
                         setEditShowSuggestions(true);
+                        setEditSuggestionIndex(-1);
                       }}
                       autoFocus
                       placeholder="Zutatname"
                       returnKeyType="next"
+                      // @ts-ignore – web-only prop
+                      onKeyDown={(e: React.KeyboardEvent) => {
+                        if (!editShowSuggestions || editSuggestions.length === 0) return;
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          setEditSuggestionIndex(i => Math.min(i + 1, editSuggestions.length - 1));
+                        } else if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          setEditSuggestionIndex(i => Math.max(i - 1, -1));
+                        } else if (e.key === 'Enter' && editSuggestionIndex >= 0) {
+                          e.preventDefault();
+                          const s = editSuggestions[editSuggestionIndex];
+                          setEditName(s.name);
+                          setEditSelectedIngId(s.id);
+                          setEditShowSuggestions(false);
+                          setEditSuggestionIndex(-1);
+                        }
+                      }}
                     />
                     {editShowSuggestions && editSuggestions.length > 0 && (
                       <View style={styles.dropdown}>
-                        {editSuggestions.map(s => (
+                        {editSuggestions.map((s, index) => (
                           <TouchableOpacity
                             key={s.id}
-                            style={styles.dropdownItem}
+                            style={[styles.dropdownItem, index === editSuggestionIndex && styles.dropdownItemHighlighted]}
                             onPress={() => {
                               setEditName(s.name);
                               setEditSelectedIngId(s.id);
                               setEditShowSuggestions(false);
+                              setEditSuggestionIndex(-1);
                             }}
                           >
                             <Text style={styles.dropdownText}>{s.name}</Text>
@@ -501,28 +529,45 @@ export default function RecipeForm({
 
           <View style={styles.suggestionsWrapper}>
             <TextInput
+              ref={nameInputRef}
               style={styles.input}
               value={newIngName}
               onChangeText={text => {
                 setNewIngName(text);
                 setSelectedIngId(null);
                 setShowSuggestions(true);
+                setSuggestionIndex(-1);
               }}
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               placeholder="Zutatname"
               returnKeyType="next"
               onSubmitEditing={() => {
+                if (suggestionIndex >= 0 && suggestions[suggestionIndex]) return;
                 setShowSuggestions(false);
                 amountInputRef.current?.focus();
+              }}
+              // @ts-ignore – web-only prop
+              onKeyDown={(e: React.KeyboardEvent) => {
+                if (!showSuggestions || suggestions.length === 0) return;
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setSuggestionIndex(i => Math.min(i + 1, suggestions.length - 1));
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setSuggestionIndex(i => Math.max(i - 1, -1));
+                } else if (e.key === 'Enter' && suggestionIndex >= 0) {
+                  e.preventDefault();
+                  selectSuggestion(suggestions[suggestionIndex].id, suggestions[suggestionIndex].name);
+                }
               }}
             />
             {showSuggestions && suggestions.length > 0 && (
               <View style={styles.dropdown}>
-                {suggestions.map(s => (
+                {suggestions.map((s, index) => (
                   <TouchableOpacity
                     key={s.id}
-                    style={styles.dropdownItem}
+                    style={[styles.dropdownItem, index === suggestionIndex && styles.dropdownItemHighlighted]}
                     onPress={() => selectSuggestion(s.id, s.name)}
                   >
                     <Text style={styles.dropdownText}>{s.name}</Text>
@@ -706,6 +751,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F5F5F5',
   },
+  dropdownItemHighlighted: { backgroundColor: '#E8F5E9' },
   dropdownText: { fontSize: 15, color: '#1A1A1A' },
   addIngBtn: {
     marginTop: 10,
