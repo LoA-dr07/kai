@@ -60,6 +60,10 @@ export default function RecipeForm({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionIndex, setSuggestionIndex] = useState(-1);
 
+  const [ingNameError, setIngNameError] = useState('');
+  const [ingAmountError, setIngAmountError] = useState('');
+  const [ingUnitError, setIngUnitError] = useState('');
+
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editAmount, setEditAmount] = useState('');
@@ -67,6 +71,8 @@ export default function RecipeForm({
   const [editSelectedIngId, setEditSelectedIngId] = useState<number | null>(null);
   const [editShowSuggestions, setEditShowSuggestions] = useState(false);
   const [editSuggestionIndex, setEditSuggestionIndex] = useState(-1);
+  const [editAmountError, setEditAmountError] = useState('');
+  const [editUnitError, setEditUnitError] = useState('');
 
   const nameInputRef = useRef<TextInputType>(null);
   const amountInputRef = useRef<TextInputType>(null);
@@ -106,23 +112,27 @@ export default function RecipeForm({
     setEditUnit(item.unit);
     setEditSelectedIngId(null);
     setEditShowSuggestions(false);
+    setEditAmountError('');
+    setEditUnitError('');
   }
 
   function cancelEditIngredient() {
     setEditingKey(null);
     setEditShowSuggestions(false);
     setEditSuggestionIndex(-1);
+    setEditAmountError('');
+    setEditUnitError('');
   }
 
   function confirmEditIngredient() {
     if (!editName.trim()) { cancelEditIngredient(); return; }
     const amount = parseFloat(editAmount.replace(',', '.'));
     if (isNaN(amount) || amount <= 0) {
-      showAlert('Fehlende Angabe', 'Bitte eine gültige Menge eingeben.');
+      setEditAmountError('Bitte eine gültige Menge eingeben.');
       return;
     }
     if (!editUnit.trim()) {
-      showAlert('Fehlende Angabe', 'Bitte Einheit eingeben (z.B. g, ml, Stück).');
+      setEditUnitError('Bitte Einheit eingeben (z.B. g, ml, Stück).');
       return;
     }
 
@@ -174,17 +184,21 @@ export default function RecipeForm({
   }
 
   async function handleAddIngredient() {
+    setIngNameError('');
+    setIngAmountError('');
+    setIngUnitError('');
+
     if (!newIngName.trim()) {
-      showAlert('Fehlende Angabe', 'Bitte Zutatname eingeben.');
+      setIngNameError('Bitte Zutatname eingeben.');
       return;
     }
     const amount = parseFloat(newIngAmount.replace(',', '.'));
     if (isNaN(amount) || amount <= 0) {
-      showAlert('Fehlende Angabe', 'Bitte eine gültige Menge eingeben.');
+      setIngAmountError('Bitte eine gültige Menge eingeben.');
       return;
     }
     if (!newIngUnit.trim()) {
-      showAlert('Fehlende Angabe', 'Bitte Einheit eingeben (z.B. g, ml, Stück).');
+      setIngUnitError('Bitte Einheit eingeben (z.B. g, ml, Stück).');
       return;
     }
 
@@ -223,6 +237,9 @@ export default function RecipeForm({
     setSelectedIngId(null);
     setShowSuggestions(false);
     setSuggestionIndex(-1);
+    setIngNameError('');
+    setIngAmountError('');
+    setIngUnitError('');
     setTimeout(() => nameInputRef.current?.focus(), 50);
   }
 
@@ -468,6 +485,7 @@ export default function RecipeForm({
                       </View>
                     )}
                   </View>
+<<<<<<< claude/add-button-tooltips-NCSCd
                   <TextInput
                     style={[styles.input, styles.ingEditSmall]}
                     value={editAmount}
@@ -493,6 +511,35 @@ export default function RecipeForm({
                       <Text style={styles.ingCancelText}>✕</Text>
                     </TouchableOpacity>
                   </Tooltip>
+=======
+                  <View>
+                    <TextInput
+                      style={[styles.input, styles.ingEditSmall, editAmountError ? styles.inputError : undefined]}
+                      value={editAmount}
+                      onChangeText={text => { setEditAmount(text); setEditAmountError(''); }}
+                      keyboardType="decimal-pad"
+                      placeholder="Menge"
+                    />
+                    {editAmountError ? <Text style={styles.fieldError}>{editAmountError}</Text> : null}
+                  </View>
+                  <View>
+                    <TextInput
+                      style={[styles.input, styles.ingEditUnit, editUnitError ? styles.inputError : undefined]}
+                      value={editUnit}
+                      onChangeText={text => { setEditUnit(text); setEditUnitError(''); }}
+                      placeholder="Einheit"
+                      returnKeyType="done"
+                      onSubmitEditing={confirmEditIngredient}
+                    />
+                    {editUnitError ? <Text style={styles.fieldError}>{editUnitError}</Text> : null}
+                  </View>
+                  <TouchableOpacity onPress={confirmEditIngredient} style={styles.ingEditBtn}>
+                    <Text style={styles.ingConfirmText}>✓</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={cancelEditIngredient} style={styles.ingEditBtn}>
+                    <Text style={styles.ingCancelText}>✕</Text>
+                  </TouchableOpacity>
+>>>>>>> main
                 </View>
               );
             }
@@ -541,13 +588,14 @@ export default function RecipeForm({
           <View style={styles.suggestionsWrapper}>
             <TextInput
               ref={nameInputRef}
-              style={styles.input}
+              style={[styles.input, ingNameError ? styles.inputError : undefined]}
               value={newIngName}
               onChangeText={text => {
                 setNewIngName(text);
                 setSelectedIngId(null);
                 setShowSuggestions(true);
                 setSuggestionIndex(-1);
+                setIngNameError('');
               }}
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
@@ -587,31 +635,34 @@ export default function RecipeForm({
               </View>
             )}
           </View>
+          {ingNameError ? <Text style={styles.fieldError}>{ingNameError}</Text> : null}
 
           <View style={[styles.row, styles.mt8]}>
             <View style={styles.flex1}>
               <TextInput
                 ref={amountInputRef}
-                style={styles.input}
+                style={[styles.input, ingAmountError ? styles.inputError : undefined]}
                 value={newIngAmount}
-                onChangeText={setNewIngAmount}
+                onChangeText={text => { setNewIngAmount(text); setIngAmountError(''); }}
                 placeholder="Menge"
                 keyboardType="decimal-pad"
                 returnKeyType="next"
                 onSubmitEditing={() => unitInputRef.current?.focus()}
               />
+              {ingAmountError ? <Text style={styles.fieldError}>{ingAmountError}</Text> : null}
             </View>
             <View style={styles.gap} />
             <View style={styles.flex1}>
               <TextInput
                 ref={unitInputRef}
-                style={styles.input}
+                style={[styles.input, ingUnitError ? styles.inputError : undefined]}
                 value={newIngUnit}
-                onChangeText={setNewIngUnit}
+                onChangeText={text => { setNewIngUnit(text); setIngUnitError(''); }}
                 placeholder="Einheit (g, ml, …)"
                 returnKeyType="done"
                 onSubmitEditing={handleAddIngredient}
               />
+              {ingUnitError ? <Text style={styles.fieldError}>{ingUnitError}</Text> : null}
             </View>
           </View>
 
@@ -773,6 +824,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addIngBtnText: { color: GREEN, fontSize: 15, fontWeight: '600' },
+  fieldError: { fontSize: 12, color: '#D32F2F', marginTop: 3, marginLeft: 2 },
+  inputError: { borderColor: '#D32F2F' },
 
   // Submit
   submitBtn: {
