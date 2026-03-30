@@ -152,6 +152,7 @@ export default function RecipesScreen() {
         description: urlPreview.description,
         servings: urlPreview.servings,
         prep_time_minutes: urlPreview.prep_time_minutes,
+        source_url: urlPreview.source_url,
         ingredients: urlPreview.ingredients,
       };
       const { created, skipped } = await importMutation.mutateAsync([exportItem]);

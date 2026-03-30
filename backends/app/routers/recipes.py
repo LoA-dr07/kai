@@ -152,6 +152,7 @@ def export_recipes(db: Session = Depends(get_db)):
             description=r.description,
             servings=r.servings,
             prep_time_minutes=r.prep_time_minutes,
+            source_url=r.source_url,
             ingredients=[
                 RecipeExportIngredient(
                     ingredient_name=ri.ingredient.name,
@@ -182,6 +183,7 @@ def import_recipes(recipes: list[RecipeExportItem], db: Session = Depends(get_db
             description=item.description,
             servings=item.servings,
             prep_time_minutes=item.prep_time_minutes,
+            source_url=item.source_url,
         )
         db.add(recipe)
         db.flush()
@@ -391,6 +393,7 @@ def import_recipe_from_url(payload: RecipeUrlImport):
         description=description,
         servings=servings,
         prep_time_minutes=prep_minutes,
+        source_url=payload.url,
         ingredients=raw_ingredients,
     )
 

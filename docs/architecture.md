@@ -118,6 +118,7 @@ FastAPI Backend
 | description | TEXT | Freitext-Beschreibung |
 | servings | INTEGER | Portionen (default: 2) |
 | prep_time_minutes | INTEGER | Zubereitungszeit |
+| source_url | VARCHAR(2048) | Quell-URL (Web-Import, optional) |
 | household_id | INTEGER FK → households.id | Haushalt-Zuordnung |
 
 #### `recipe_ingredients` *(Junction)*
@@ -201,6 +202,7 @@ Household ──< HouseholdMember >── User
 | `0004_phase6_tags_ratings.py` | Neue Tabellen: `tags`, `recipe_tags`, `recipe_ratings` |
 | `0005_phase7_ai_settings.py` | Neue Spalten: `households.settings` (JSONB), `users.preferences` (JSONB) |
 | `0006_add_tag_category_family_members.py` | Neue Spalte `tags.category`; Familienmitglieder-Tags (Mama, Papa, Kind) |
+| `0007_add_recipe_source_url.py` | Neue Spalte `recipes.source_url` (VARCHAR 2048, nullable) |
 
 Migration ausführen: `alembic upgrade head`
 

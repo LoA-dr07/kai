@@ -79,6 +79,7 @@ class RecipeBase(BaseModel):
     description: Optional[str] = None
     servings: int = Field(default=2, ge=1)
     prep_time_minutes: Optional[int] = Field(default=None, ge=1)
+    source_url: Optional[str] = None
 
 
 class RecipeCreate(RecipeBase):
@@ -91,6 +92,7 @@ class RecipeUpdate(BaseModel):
     description: Optional[str] = None
     servings: Optional[int] = Field(default=None, ge=1)
     prep_time_minutes: Optional[int] = Field(default=None, ge=1)
+    source_url: Optional[str] = None
     ingredients: Optional[list[RecipeIngredientCreate]] = None
     tag_ids: Optional[list[int]] = None
 
@@ -117,6 +119,7 @@ class RecipeExportItem(BaseModel):
     description: Optional[str] = None
     servings: int = 2
     prep_time_minutes: Optional[int] = None
+    source_url: Optional[str] = None
     ingredients: list[RecipeExportIngredient] = []
     ratings: list[RecipeRatingOut] = []
 
@@ -135,4 +138,5 @@ class RecipeUrlPreview(BaseModel):
     description: Optional[str] = None
     servings: int = 2
     prep_time_minutes: Optional[int] = None
+    source_url: Optional[str] = None
     ingredients: list[RecipeExportIngredient] = []

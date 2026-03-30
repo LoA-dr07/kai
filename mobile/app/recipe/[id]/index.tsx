@@ -6,12 +6,13 @@ import {
   TextInput,
   StyleSheet,
   ActivityIndicator,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
 import { useState } from 'react';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { showAlert } from '../../../lib/alert';
-import { useRecipe, useDeleteRecipe, useRateRecipe, useUpdateIngredient, useUpdateRecipeIngredient, useIngredients } from '../../../lib/hooks/useRecipes';
+import { useRecipe, useDeleteRecipe, useRateRecipe, useUpdateIngredient, useUpdateRecipeIngredient, useIngredients, useUpdateRecipe } from '../../../lib/hooks/useRecipes';
 import { useUsers } from '../../../lib/hooks/useUsers';
 import type { Tag, User } from '../../../lib/types';
 
@@ -80,12 +81,17 @@ export default function RecipeDetailScreen() {
   const rateRecipe = useRateRecipe(recipeId);
   const updateIngredient = useUpdateIngredient();
   const updateRecipeIngredient = useUpdateRecipeIngredient(recipeId);
+  const updateRecipe = useUpdateRecipe(recipeId);
 
   const [editingRecipeIngId, setEditingRecipeIngId] = useState<number | null>(null);
   const [editingIngId, setEditingIngId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState('');
   const [editingSelectedIngId, setEditingSelectedIngId] = useState<number | null>(null);
   const [editingShowSuggestions, setEditingShowSuggestions] = useState(false);
+
+  const [isEditingSourceUrl, setIsEditingSourceUrl] = useState(false);
+  const [editSourceUrl, setEditSourceUrl] = useState('');
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   const editingSuggestions = editingName.length >= 1
     ? allIngredients.filter(i => i.name.toLowerCase().includes(editingName.toLowerCase())).slice(0, 5)
@@ -182,6 +188,46 @@ export default function RecipeDetailScreen() {
     }
   }
 
+  function handleCopySourceUrl() {
+    if (!recipe.source_url) return;
+    if (Platform.OS === 'web') {
+      navigator.clipboard?.writeText(recipe.source_url).then(() => {
+        setCopyFeedback(true);
+        setTimeout(() => setCopyFeedback(false), 2000);
+      });
+    } else {
+      showAlert('Quell-URL', recipe.source_url);
+    }
+  }
+
+  function handleEditSourceUrl() {
+    showAlert(
+      'Quell-URL ändern',
+      'Möchtest du die Quell-URL dieses Rezepts bearbeiten?',
+      [
+        { text: 'Abbrechen', style: 'cancel' },
+        {
+          text: 'Bearbeiten',
+          onPress: () => {
+            setEditSourceUrl(recipe!.source_url ?? '');
+            setIsEditingSourceUrl(true);
+          },
+        },
+      ],
+    );
+  }
+
+  function confirmEditSourceUrl() {
+    const trimmed = editSourceUrl.trim();
+    updateRecipe.mutate(
+      { source_url: trimmed || null },
+      {
+        onSuccess: () => setIsEditingSourceUrl(false),
+        onError: () => showAlert('Fehler', 'Quell-URL konnte nicht gespeichert werden.'),
+      },
+    );
+  }
+
   const getRating = (userId: number) =>
     recipe.ratings.find(r => r.user_id === userId)?.stars ?? 0;
 
@@ -191,6 +237,51 @@ export default function RecipeDetailScreen() {
       <ScrollView style={styles.container} contentContainerStyle={[styles.content, isWide && styles.contentWide]}>
         {recipe.description ? (
           <Text style={styles.description}>{recipe.description}</Text>
+        ) : null}
+
+        {/* Quelle */}
+        {(recipe.source_url || isEditingSourceUrl) ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Quelle</Text>
+            {isEditingSourceUrl ? (
+              <View style={styles.sourceEditRow}>
+                <TextInput
+                  style={styles.sourceEditInput}
+                  value={editSourceUrl}
+                  onChangeText={setEditSourceUrl}
+                  autoFocus
+                  placeholder="https://..."
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                  onSubmitEditing={confirmEditSourceUrl}
+                  returnKeyType="done"
+                />
+                {updateRecipe.isPending ? (
+                  <ActivityIndicator size="small" color={GREEN} style={styles.sourceBtn} />
+                ) : (
+                  <>
+                    <TouchableOpacity style={styles.sourceBtn} onPress={confirmEditSourceUrl}>
+                      <Text style={styles.ingConfirmText}>✓</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.sourceBtn} onPress={() => setIsEditingSourceUrl(false)}>
+                      <Text style={styles.ingCancelText}>✕</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            ) : (
+              <View style={styles.sourceRow}>
+                <Text selectable style={styles.sourceUrl} numberOfLines={2}>{recipe.source_url}</Text>
+                <TouchableOpacity style={styles.sourceIconBtn} onPress={handleCopySourceUrl}>
+                  <Text style={styles.sourceIconText}>{copyFeedback ? '✓' : '⎘'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.sourceIconBtn} onPress={handleEditSourceUrl}>
+                  <Text style={styles.sourceIconText}>✎</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         ) : null}
 
         <View style={styles.metaRow}>
@@ -462,6 +553,23 @@ const styles = StyleSheet.create({
   },
   dropdownItem: { borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
   dropdownText: { padding: 12, fontSize: 15, color: '#1A1A1A' },
+
+  // Source URL
+  sourceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sourceUrl: { flex: 1, fontSize: 14, color: '#1565C0', lineHeight: 20 },
+  sourceIconBtn: { padding: 6 },
+  sourceIconText: { fontSize: 18, color: '#555' },
+  sourceEditRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  sourceEditInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1A1A1A',
+    borderBottomWidth: 1.5,
+    borderBottomColor: GREEN,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  sourceBtn: { paddingHorizontal: 8, paddingVertical: 4 },
 
   // Actions
   actions: { flexDirection: 'row', gap: 12 },
