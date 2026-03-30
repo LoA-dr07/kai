@@ -12,6 +12,7 @@ import {
 import { showAlert } from '../lib/alert';
 import { useIngredients, useCreateIngredient, useTags, useCreateTag } from '../lib/hooks/useRecipes';
 import type { RecipeCreatePayload, Tag } from '../lib/types';
+import { Tooltip } from './Tooltip';
 
 export interface FormIngredient {
   key: string;
@@ -484,6 +485,33 @@ export default function RecipeForm({
                       </View>
                     )}
                   </View>
+<<<<<<< claude/add-button-tooltips-NCSCd
+                  <TextInput
+                    style={[styles.input, styles.ingEditSmall]}
+                    value={editAmount}
+                    onChangeText={setEditAmount}
+                    keyboardType="decimal-pad"
+                    placeholder="Menge"
+                  />
+                  <TextInput
+                    style={[styles.input, styles.ingEditUnit]}
+                    value={editUnit}
+                    onChangeText={setEditUnit}
+                    placeholder="Einheit"
+                    returnKeyType="done"
+                    onSubmitEditing={confirmEditIngredient}
+                  />
+                  <Tooltip label="Bestätigen">
+                    <TouchableOpacity onPress={confirmEditIngredient} style={styles.ingEditBtn}>
+                      <Text style={styles.ingConfirmText}>✓</Text>
+                    </TouchableOpacity>
+                  </Tooltip>
+                  <Tooltip label="Abbrechen">
+                    <TouchableOpacity onPress={cancelEditIngredient} style={styles.ingEditBtn}>
+                      <Text style={styles.ingCancelText}>✕</Text>
+                    </TouchableOpacity>
+                  </Tooltip>
+=======
                   <View>
                     <TextInput
                       style={[styles.input, styles.ingEditSmall, editAmountError ? styles.inputError : undefined]}
@@ -511,6 +539,7 @@ export default function RecipeForm({
                   <TouchableOpacity onPress={cancelEditIngredient} style={styles.ingEditBtn}>
                     <Text style={styles.ingCancelText}>✕</Text>
                   </TouchableOpacity>
+>>>>>>> main
                 </View>
               );
             }
@@ -518,20 +547,24 @@ export default function RecipeForm({
             return (
               <View key={item.key} style={styles.ingRow}>
                 <View style={styles.moveButtons}>
-                  <TouchableOpacity
-                    onPress={() => moveIngredient(index, 'up')}
-                    disabled={index === 0}
-                    style={styles.moveBtn}
-                  >
-                    <Text style={[styles.moveBtnText, index === 0 && styles.moveBtnDisabled]}>▲</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => moveIngredient(index, 'down')}
-                    disabled={index === formIngredients.length - 1}
-                    style={styles.moveBtn}
-                  >
-                    <Text style={[styles.moveBtnText, index === formIngredients.length - 1 && styles.moveBtnDisabled]}>▼</Text>
-                  </TouchableOpacity>
+                  <Tooltip label="Nach oben verschieben" position="right">
+                    <TouchableOpacity
+                      onPress={() => moveIngredient(index, 'up')}
+                      disabled={index === 0}
+                      style={styles.moveBtn}
+                    >
+                      <Text style={[styles.moveBtnText, index === 0 && styles.moveBtnDisabled]}>▲</Text>
+                    </TouchableOpacity>
+                  </Tooltip>
+                  <Tooltip label="Nach unten verschieben" position="right">
+                    <TouchableOpacity
+                      onPress={() => moveIngredient(index, 'down')}
+                      disabled={index === formIngredients.length - 1}
+                      style={styles.moveBtn}
+                    >
+                      <Text style={[styles.moveBtnText, index === formIngredients.length - 1 && styles.moveBtnDisabled]}>▼</Text>
+                    </TouchableOpacity>
+                  </Tooltip>
                 </View>
                 <TouchableOpacity style={styles.flex1} onPress={() => startEditIngredient(item)}>
                   <Text style={styles.ingName}>{item.ingredient_name}</Text>
@@ -539,9 +572,11 @@ export default function RecipeForm({
                 <Text style={styles.ingAmount}>
                   {item.amount} {item.unit}
                 </Text>
-                <TouchableOpacity onPress={() => removeIngredient(index)} style={styles.removeBtn}>
-                  <Text style={styles.removeBtnText}>✕</Text>
-                </TouchableOpacity>
+                <Tooltip label="Zutat entfernen" position="left">
+                  <TouchableOpacity onPress={() => removeIngredient(index)} style={styles.removeBtn}>
+                    <Text style={styles.removeBtnText}>✕</Text>
+                  </TouchableOpacity>
+                </Tooltip>
               </View>
             );
           })

@@ -13,6 +13,7 @@ import { useHousehold, useUpdateHouseholdSettings } from '../../lib/hooks/useHou
 import { useUsers, useUpdateUserPreferences } from '../../lib/hooks/useUsers';
 import { showAlert } from '../../lib/alert';
 import type { HouseholdSettings, UserPreferences, User } from '../../lib/types';
+import { Tooltip } from '../../components/Tooltip';
 
 const GREEN = '#2E7D32';
 const LIGHT_GREEN = '#E8F5E9';
@@ -215,9 +216,11 @@ function TagInput({
           onSubmitEditing={add}
           returnKeyType="done"
         />
-        <TouchableOpacity style={styles.tagAddBtn} onPress={add}>
-          <Text style={styles.tagAddBtnText}>+</Text>
-        </TouchableOpacity>
+        <Tooltip label="Tag hinzufügen">
+          <TouchableOpacity style={styles.tagAddBtn} onPress={add}>
+            <Text style={styles.tagAddBtnText}>+</Text>
+          </TouchableOpacity>
+        </Tooltip>
       </View>
       <View style={styles.chipWrap}>
         {values.map(v => (
