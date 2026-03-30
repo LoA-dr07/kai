@@ -29,6 +29,7 @@ export interface Recipe {
   description: string | null;
   servings: number;
   prep_time_minutes: number | null;
+  source_url: string | null;
   ingredients: RecipeIngredient[];
   tags: Tag[];
   ratings: RecipeRating[];
@@ -39,6 +40,7 @@ export interface RecipeCreatePayload {
   description?: string | null;
   servings?: number;
   prep_time_minutes?: number | null;
+  source_url?: string | null;
   ingredients?: { ingredient_id: number; amount: number; unit: string }[];
   tag_ids?: number[];
 }
@@ -56,6 +58,7 @@ export interface RecipeExportItem {
   description?: string | null;
   servings: number;
   prep_time_minutes?: number | null;
+  source_url?: string | null;
   ingredients: RecipeExportIngredient[];
   ratings?: RecipeRating[];
 }
@@ -70,6 +73,7 @@ export interface RecipeUrlPreview {
   description?: string | null;
   servings: number;
   prep_time_minutes?: number | null;
+  source_url?: string | null;
   ingredients: RecipeExportIngredient[];
 }
 

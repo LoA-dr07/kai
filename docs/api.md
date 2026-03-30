@@ -44,6 +44,7 @@ Alle Rezepte abrufen (alphabetisch sortiert).
   "description": "Klassisches Nudelgericht",
   "servings": 4,
   "prep_time_minutes": 45,
+  "source_url": null,
   "household_id": 1,
   "ingredients": [
     { "id": 1, "ingredient_id": 2, "ingredient_name": "Hackfleisch", "amount": 500, "unit": "g" }
@@ -147,6 +148,7 @@ Rezept von einer URL einlesen (via `recipe-scrapers`, unterstützt 300+ Rezeptse
   "description": "...",
   "servings": 4,
   "prep_time_minutes": 30,
+  "source_url": "https://example.com/rezept",
   "ingredients": [
     { "ingredient_name": "Mehl", "amount": 200, "unit": "g" }
   ]
