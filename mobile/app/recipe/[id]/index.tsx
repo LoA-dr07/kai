@@ -15,6 +15,7 @@ import { showAlert } from '../../../lib/alert';
 import { useRecipe, useDeleteRecipe, useRateRecipe, useUpdateIngredient, useUpdateRecipeIngredient, useIngredients, useUpdateRecipe } from '../../../lib/hooks/useRecipes';
 import { useUsers } from '../../../lib/hooks/useUsers';
 import type { Tag, User } from '../../../lib/types';
+import { Tooltip } from '../../../components/Tooltip';
 
 // --- Konstanten ---
 
@@ -60,22 +61,25 @@ function StarRow({
       <Text style={styles.userName}>{user.name}</Text>
       <View style={styles.starsWrapper}>
         <View style={styles.starsContainer}>
-          <TouchableOpacity
-            onPress={() => onRate(user.id, 0)}
-            hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-          >
-            <Text style={[styles.neverBtn, stars === 0 && styles.neverBtnActive]}>✕</Text>
-          </TouchableOpacity>
-          {[1, 2, 3, 4, 5].map(n => (
+          <Tooltip label="Bewertung entfernen">
             <TouchableOpacity
-              key={n}
-              onPress={() => onRate(user.id, n)}
+              onPress={() => onRate(user.id, 0)}
               hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
             >
-              <Text style={[styles.star, n <= filledStars && filledStars > 0 && styles.starFilled]}>
-                {n <= filledStars && filledStars > 0 ? '★' : '☆'}
-              </Text>
+              <Text style={[styles.neverBtn, stars === 0 && styles.neverBtnActive]}>✕</Text>
             </TouchableOpacity>
+          </Tooltip>
+          {[1, 2, 3, 4, 5].map(n => (
+            <Tooltip key={n} label={`${n} ${n === 1 ? 'Stern' : 'Sterne'}`}>
+              <TouchableOpacity
+                onPress={() => onRate(user.id, n)}
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+              >
+                <Text style={[styles.star, n <= filledStars && filledStars > 0 && styles.starFilled]}>
+                  {n <= filledStars && filledStars > 0 ? '★' : '☆'}
+                </Text>
+              </TouchableOpacity>
+            </Tooltip>
           ))}
         </View>
         {label !== null && (
@@ -285,24 +289,32 @@ export default function RecipeDetailScreen() {
                   <ActivityIndicator size="small" color={GREEN} style={styles.sourceBtn} />
                 ) : (
                   <>
-                    <TouchableOpacity style={styles.sourceBtn} onPress={confirmEditSourceUrl}>
-                      <Text style={styles.ingConfirmText}>✓</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.sourceBtn} onPress={() => setIsEditingSourceUrl(false)}>
-                      <Text style={styles.ingCancelText}>✕</Text>
-                    </TouchableOpacity>
+                    <Tooltip label="Bestätigen">
+                      <TouchableOpacity style={styles.sourceBtn} onPress={confirmEditSourceUrl}>
+                        <Text style={styles.ingConfirmText}>✓</Text>
+                      </TouchableOpacity>
+                    </Tooltip>
+                    <Tooltip label="Abbrechen">
+                      <TouchableOpacity style={styles.sourceBtn} onPress={() => setIsEditingSourceUrl(false)}>
+                        <Text style={styles.ingCancelText}>✕</Text>
+                      </TouchableOpacity>
+                    </Tooltip>
                   </>
                 )}
               </View>
             ) : (
               <View style={styles.sourceRow}>
                 <Text selectable style={styles.sourceUrl} numberOfLines={2}>{recipe.source_url}</Text>
-                <TouchableOpacity style={styles.sourceIconBtn} onPress={handleCopySourceUrl}>
-                  <Text style={styles.sourceIconText}>{copyFeedback ? '✓' : '⎘'}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.sourceIconBtn} onPress={handleEditSourceUrl}>
-                  <Text style={styles.sourceIconText}>✎</Text>
-                </TouchableOpacity>
+                <Tooltip label="URL kopieren">
+                  <TouchableOpacity style={styles.sourceIconBtn} onPress={handleCopySourceUrl}>
+                    <Text style={styles.sourceIconText}>{copyFeedback ? '✓' : '⎘'}</Text>
+                  </TouchableOpacity>
+                </Tooltip>
+                <Tooltip label="URL bearbeiten">
+                  <TouchableOpacity style={styles.sourceIconBtn} onPress={handleEditSourceUrl}>
+                    <Text style={styles.sourceIconText}>✎</Text>
+                  </TouchableOpacity>
+                </Tooltip>
               </View>
             )}
           </View>
@@ -389,18 +401,22 @@ export default function RecipeDetailScreen() {
                         <ActivityIndicator size="small" color={GREEN} style={styles.ingEditBtn} />
                       ) : (
                         <>
-                          <TouchableOpacity
-                            style={styles.ingEditBtn}
-                            onPress={confirmEditIngredient}
-                          >
-                            <Text style={styles.ingConfirmText}>✓</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.ingEditBtn}
-                            onPress={cancelEditIngredient}
-                          >
-                            <Text style={styles.ingCancelText}>✕</Text>
-                          </TouchableOpacity>
+                          <Tooltip label="Bestätigen">
+                            <TouchableOpacity
+                              style={styles.ingEditBtn}
+                              onPress={confirmEditIngredient}
+                            >
+                              <Text style={styles.ingConfirmText}>✓</Text>
+                            </TouchableOpacity>
+                          </Tooltip>
+                          <Tooltip label="Abbrechen">
+                            <TouchableOpacity
+                              style={styles.ingEditBtn}
+                              onPress={cancelEditIngredient}
+                            >
+                              <Text style={styles.ingCancelText}>✕</Text>
+                            </TouchableOpacity>
+                          </Tooltip>
                         </>
                       )}
                     </View>

@@ -23,6 +23,7 @@ import { useRecipes } from '../../lib/hooks/useRecipes';
 import { useUsers } from '../../lib/hooks/useUsers';
 import AiSuggestionModal from '../../components/AiSuggestionModal';
 import type { MealPlanEntry, MealType, User, AiMealPlanSuggestionEntry } from '../../lib/types';
+import { Tooltip } from '../../components/Tooltip';
 
 // --- Datums-Hilfsfunktionen ---
 
@@ -290,17 +291,21 @@ export default function MealPlanScreen() {
     <View style={styles.root}>
       {/* Wochennavigation */}
       <View style={styles.weekNav}>
-        <TouchableOpacity onPress={() => navigateWeek(-1)} style={styles.navBtn}>
-          <Text style={styles.navArrow}>‹</Text>
-        </TouchableOpacity>
+        <Tooltip label="Vorherige Woche" position="bottom">
+          <TouchableOpacity onPress={() => navigateWeek(-1)} style={styles.navBtn}>
+            <Text style={styles.navArrow}>‹</Text>
+          </TouchableOpacity>
+        </Tooltip>
         <Text style={styles.weekLabel}>KW {weekNum}, {year}</Text>
         <View style={styles.weekNavRight}>
           <TouchableOpacity onPress={() => setAiModalVisible(true)} style={styles.aiBtn}>
             <Text style={styles.aiBtnText}>KI ✨</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigateWeek(1)} style={styles.navBtn}>
-            <Text style={styles.navArrow}>›</Text>
-          </TouchableOpacity>
+          <Tooltip label="Nächste Woche" position="bottom">
+            <TouchableOpacity onPress={() => navigateWeek(1)} style={styles.navBtn}>
+              <Text style={styles.navArrow}>›</Text>
+            </TouchableOpacity>
+          </Tooltip>
         </View>
       </View>
 
@@ -348,15 +353,17 @@ export default function MealPlanScreen() {
                               </Text>
                               <AvatarBadges entry={entry} users={users} />
                             </View>
-                            <TouchableOpacity
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                              onPress={e => {
-                                e.stopPropagation();
-                                handleDelete(entry);
-                              }}
-                            >
-                              <Text style={styles.deleteBtn}>✕</Text>
-                            </TouchableOpacity>
+                            <Tooltip label="Eintrag löschen" position="left">
+                              <TouchableOpacity
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                onPress={e => {
+                                  e.stopPropagation();
+                                  handleDelete(entry);
+                                }}
+                              >
+                                <Text style={styles.deleteBtn}>✕</Text>
+                              </TouchableOpacity>
+                            </Tooltip>
                           </TouchableOpacity>
                         );
                       })}
