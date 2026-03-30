@@ -24,7 +24,9 @@ mobile/
 │           ├── edit.tsx    # Rezept bearbeiten
 │           └── cook.tsx    # Koch-Ansicht
 ├── components/             # Wiederverwendbare UI-Komponenten
-│   └── AiSuggestionModal.tsx  # KI-Wochenplan-Modal (Eingabe → Laden → Vorschau → Übernehmen)
+│   ├── AiSuggestionModal.tsx  # KI-Wochenplan-Modal (Eingabe → Laden → Vorschau → Übernehmen)
+│   ├── RecipeForm.tsx         # Rezeptformular (Neu + Bearbeiten)
+│   └── Tooltip.tsx            # Hover-Tooltip für icon-only Buttons (Web) + accessibilityLabel (Mobile)
 ├── lib/
 │   ├── api.ts              # Axios-Client
 │   ├── types.ts            # TypeScript-Interfaces
@@ -209,6 +211,39 @@ showAlert('Löschen?', 'Das Rezept wird gelöscht.', [
 
 Auf Web: `window.alert()` / `window.confirm()`
 Auf Mobile: `Alert.alert()` aus React Native
+
+---
+
+## Plattform-Utility: Tooltip (`mobile/components/Tooltip.tsx`)
+
+Wrapper-Komponente für Buttons ohne sichtbaren Text (icon-only). Zeigt auf Web beim Hover ein Tooltip-Bubble; auf Mobile wird ausschließlich `accessibilityLabel` gesetzt.
+
+**Props:**
+
+| Prop | Typ | Default | Beschreibung |
+|------|-----|---------|--------------|
+| `label` | `string` | — | Tooltip-Text (Deutsch). Wird auch als `accessibilityLabel` verwendet. |
+| `children` | `ReactNode` | — | Der zu wrappende Button |
+| `position` | `'top' \| 'bottom' \| 'left' \| 'right'` | `'top'` | Richtung des Tooltip-Bubbles |
+
+**Positionierung:**
+- `'top'` (Standard): Tooltip erscheint oberhalb – für Buttons in der Mitte der Seite
+- `'bottom'`: Tooltip erscheint unterhalb – für Buttons am oberen Bildschirmrand (z.B. Navigationsleiste)
+- `'left'`: Tooltip erscheint links – für Buttons am rechten Rand
+- `'right'`: Tooltip erscheint rechts – für Buttons am linken Rand
+
+**Verwendung:**
+```tsx
+import { Tooltip } from '../components/Tooltip';
+
+<Tooltip label="Rezepte exportieren (JSON)">
+  <TouchableOpacity onPress={handleExport}>
+    <Ionicons name="share-outline" size={22} />
+  </TouchableOpacity>
+</Tooltip>
+```
+
+**Konvention:** Jeder Button ohne sichtbaren Textlabel muss mit `<Tooltip>` gewrappt werden (siehe CLAUDE.md → Plattform-Kompatibilität).
 
 ---
 

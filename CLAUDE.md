@@ -134,6 +134,7 @@ backends/        ← FastAPI (Python)
 - **Nie** `Alert.alert()` direkt verwenden → stattdessen `showAlert` / `showConfirm` aus `mobile/lib/alert.ts`
 - Datei-Operationen: `expo-document-picker`, `expo-file-system`, `expo-sharing` (Web-Compat geprüft)
 - Responsive Breakpoint: `width >= 768` → Grid-Layout
+- **Buttons ohne sichtbaren Text** (nur Icons oder Symbole) müssen stets mit `<Tooltip label="...">` aus `mobile/components/Tooltip.tsx` gewrappt werden – zeigt Hover-Erklärung auf Web, setzt `accessibilityLabel` auf Mobile. Position-Prop: `'left'` für Buttons am rechten Rand, `'right'` für Buttons am linken Rand, `'bottom'` für Buttons am oberen Bildschirmrand, Standard `'top'` sonst.
 
 ### Sprache
 - UI-Texte: **Deutsch**

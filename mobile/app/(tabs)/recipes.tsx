@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { useImportRecipes, useRecipes } from '../../lib/hooks/useRecipes';
 import type { Recipe, RecipeExportItem, RecipeUrlPreview } from '../../lib/types';
+import { Tooltip } from '../../components/Tooltip';
 
 const RATING_LABELS: Record<number, string> = {
   0: 'Nie',
@@ -229,33 +230,39 @@ export default function RecipesScreen() {
 
       {/* Action buttons */}
       <View style={styles.fabGroup}>
-        <TouchableOpacity
-          style={styles.fabSecondary}
-          onPress={openUrlModal}
-          accessibilityLabel="Rezept aus URL importieren"
-        >
-          <Ionicons name="link-outline" size={22} color="#2E7D32" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.fabSecondary}
-          onPress={handleImport}
-          disabled={isImporting}
-          accessibilityLabel="Rezepte importieren"
-        >
-          {isImporting
-            ? <ActivityIndicator size="small" color="#2E7D32" />
-            : <Ionicons name="download-outline" size={22} color="#2E7D32" />}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.fabSecondary}
-          onPress={handleExport}
-          disabled={isExporting}
-          accessibilityLabel="Rezepte exportieren"
-        >
-          {isExporting
-            ? <ActivityIndicator size="small" color="#2E7D32" />
-            : <Ionicons name="share-outline" size={22} color="#2E7D32" />}
-        </TouchableOpacity>
+        <Tooltip label="Rezept aus URL importieren">
+          <TouchableOpacity
+            style={styles.fabSecondary}
+            onPress={openUrlModal}
+            accessibilityLabel="Rezept aus URL importieren"
+          >
+            <Ionicons name="link-outline" size={22} color="#2E7D32" />
+          </TouchableOpacity>
+        </Tooltip>
+        <Tooltip label="Rezepte importieren (JSON)">
+          <TouchableOpacity
+            style={styles.fabSecondary}
+            onPress={handleImport}
+            disabled={isImporting}
+            accessibilityLabel="Rezepte importieren"
+          >
+            {isImporting
+              ? <ActivityIndicator size="small" color="#2E7D32" />
+              : <Ionicons name="download-outline" size={22} color="#2E7D32" />}
+          </TouchableOpacity>
+        </Tooltip>
+        <Tooltip label="Rezepte exportieren (JSON)">
+          <TouchableOpacity
+            style={styles.fabSecondary}
+            onPress={handleExport}
+            disabled={isExporting}
+            accessibilityLabel="Rezepte exportieren"
+          >
+            {isExporting
+              ? <ActivityIndicator size="small" color="#2E7D32" />
+              : <Ionicons name="share-outline" size={22} color="#2E7D32" />}
+          </TouchableOpacity>
+        </Tooltip>
         <TouchableOpacity style={styles.fab} onPress={() => router.push('/recipe/new')}>
           <Text style={styles.fabText}>+ Rezept</Text>
         </TouchableOpacity>
