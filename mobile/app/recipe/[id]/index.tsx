@@ -15,6 +15,17 @@ import { useRecipe, useDeleteRecipe, useRateRecipe, useUpdateIngredient, useUpda
 import { useUsers } from '../../../lib/hooks/useUsers';
 import type { Tag, User } from '../../../lib/types';
 
+// --- Konstanten ---
+
+const RATING_LABELS: Record<number, string> = {
+  0: 'Nie',
+  1: 'Selten',
+  2: 'Gelegentlich',
+  3: 'Gerne',
+  4: 'Häufig',
+  5: 'Sehr häufig',
+};
+
 // --- Hilfkomponenten ---
 
 function TagChip({ tag }: { tag: Tag }) {
@@ -33,30 +44,43 @@ function StarRow({
   onRate,
 }: {
   user: User;
-  stars: number;
+  stars: number | null;
   recipeId: number;
   onRate: (userId: number, stars: number) => void;
 }) {
+  const filledStars = stars ?? 0;
+  const label = stars !== null ? RATING_LABELS[stars] : null;
+
   return (
     <View style={styles.starRow}>
       <View style={[styles.avatarBadge, { backgroundColor: user.avatar_color }]}>
         <Text style={styles.avatarText}>{user.short_name}</Text>
       </View>
       <Text style={styles.userName}>{user.name}</Text>
-      <View style={styles.starsContainer}>
-        {[1, 2, 3, 4, 5].map(n => (
+      <View style={styles.starsWrapper}>
+        <View style={styles.starsContainer}>
           <TouchableOpacity
-            key={n}
-            onPress={() => onRate(user.id, stars === n ? 0 : n)}
+            onPress={() => onRate(user.id, 0)}
             hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
           >
-            <Text style={[styles.star, n <= stars && styles.starFilled]}>
-              {n <= stars ? '★' : '☆'}
-            </Text>
+            <Text style={[styles.neverBtn, stars === 0 && styles.neverBtnActive]}>✕</Text>
           </TouchableOpacity>
-        ))}
-        {stars > 0 && (
-          <Text style={styles.starsValue}>{stars}/5</Text>
+          {[1, 2, 3, 4, 5].map(n => (
+            <TouchableOpacity
+              key={n}
+              onPress={() => onRate(user.id, n)}
+              hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+            >
+              <Text style={[styles.star, n <= filledStars && filledStars > 0 && styles.starFilled]}>
+                {n <= filledStars && filledStars > 0 ? '★' : '☆'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        {label !== null && (
+          <Text style={[styles.ratingLabel, stars === 0 && styles.ratingLabelNever]}>
+            {label}
+          </Text>
         )}
       </View>
     </View>
@@ -182,8 +206,8 @@ export default function RecipeDetailScreen() {
     }
   }
 
-  const getRating = (userId: number) =>
-    recipe.ratings.find(r => r.user_id === userId)?.stars ?? 0;
+  const getRating = (userId: number): number | null =>
+    recipe.ratings.find(r => r.user_id === userId)?.stars ?? null;
 
   return (
     <>
@@ -414,10 +438,14 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: 12, color: '#fff', fontWeight: '700' },
   userName: { fontSize: 15, color: '#1A1A1A', flex: 1 },
+  starsWrapper: { flexDirection: 'column', alignItems: 'flex-end' },
   starsContainer: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   star: { fontSize: 24, color: '#DDD' },
   starFilled: { color: '#FFC107' },
-  starsValue: { fontSize: 12, color: '#888', marginLeft: 4 },
+  neverBtn: { fontSize: 15, color: '#CCC', fontWeight: '700', marginRight: 2 },
+  neverBtnActive: { color: '#C62828' },
+  ratingLabel: { fontSize: 11, color: '#888', marginTop: 2 },
+  ratingLabelNever: { color: '#C62828', fontWeight: '600' },
 
   // Ingredients
   ingRow: {
