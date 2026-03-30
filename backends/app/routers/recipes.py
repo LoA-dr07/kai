@@ -187,12 +187,16 @@ def import_recipes(recipes: list[RecipeExportItem], db: Session = Depends(get_db
         )
         db.add(recipe)
         db.flush()
+        seen_ingredient_ids: set[int] = set()
         for ing in item.ingredients:
             ingredient = db.query(Ingredient).filter(Ingredient.name == ing.ingredient_name).first()
             if not ingredient:
                 ingredient = Ingredient(name=ing.ingredient_name)
                 db.add(ingredient)
                 db.flush()
+            if ingredient.id in seen_ingredient_ids:
+                continue  # skip duplicate ingredient within the same recipe
+            seen_ingredient_ids.add(ingredient.id)
             db.add(RecipeIngredient(
                 recipe_id=recipe.id,
                 ingredient_id=ingredient.id,
