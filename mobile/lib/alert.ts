@@ -11,6 +11,22 @@ type AlertButton = {
  * On web: uses window.alert / window.confirm.
  * On native: delegates to React Native's Alert.alert.
  */
+/**
+ * Cross-platform confirm helper.
+ * Calls onConfirm if the user confirms, onCancel otherwise.
+ */
+export function showConfirm(
+  title: string,
+  message: string,
+  onConfirm: () => void,
+  onCancel?: () => void
+): void {
+  showAlert(title, message, [
+    { text: 'Abbrechen', style: 'cancel', onPress: onCancel },
+    { text: 'Bestätigen', style: 'destructive', onPress: onConfirm },
+  ]);
+}
+
 export function showAlert(title: string, message?: string, buttons?: AlertButton[]): void {
   if (Platform.OS === 'web') {
     const fullMessage = message ? `${title}\n\n${message}` : title;

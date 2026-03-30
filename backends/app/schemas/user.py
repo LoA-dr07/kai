@@ -1,5 +1,5 @@
-from pydantic import BaseModel, model_validator
-from typing import Any
+from pydantic import BaseModel, Field, model_validator
+from typing import Any, Optional
 
 
 class UserPreferences(BaseModel):
@@ -13,6 +13,18 @@ class UserPreferences(BaseModel):
 
 class UserPreferencesUpdate(BaseModel):
     preferences: UserPreferences
+
+
+class UserCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    avatar_color: str = "#2E7D32"
+    short_name: str = Field(..., min_length=1, max_length=4)
+
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    avatar_color: Optional[str] = None
+    short_name: Optional[str] = Field(None, min_length=1, max_length=4)
 
 
 class UserOut(BaseModel):

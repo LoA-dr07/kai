@@ -354,6 +354,44 @@ Alle Haushaltsmitglieder abrufen (inkl. Präferenzen).
 ]
 ```
 
+### `POST /users`
+Neues Haushaltsmitglied anlegen. Erstellt gleichzeitig einen `category='family'`-Tag mit dem gleichen Namen, der Rezepten zugewiesen werden kann.
+
+**Request Body:**
+```json
+{ "name": "Oma", "avatar_color": "#00838F", "short_name": "OM" }
+```
+
+**Response 201:** `UserOut`
+**Fehler:** 409 wenn der Name bereits als family-Tag vergeben ist und nicht zugeordnet werden kann.
+
+---
+
+### `PATCH /users/{user_id}`
+Name, Kürzel und/oder Farbe eines Haushaltsmitglieds ändern. Bei Namensänderung wird der zugehörige `family`-Tag automatisch umbenannt (alle Rezept-Zuordnungen bleiben erhalten).
+
+**Request Body** (alle Felder optional):
+```json
+{ "name": "Anna", "short_name": "AN", "avatar_color": "#C62828" }
+```
+
+**Response 200:** `UserOut` (aktualisiert)
+**Response 404:** User nicht gefunden
+
+---
+
+### `DELETE /users/{user_id}`
+Haushaltsmitglied löschen. Folgende Daten werden dabei entfernt:
+- Der zugehörige `family`-Tag (und damit alle Rezept-Zuordnungen über diesen Tag)
+- Alle Bewertungen (`recipe_ratings`) des Users (DB-CASCADE)
+- Alle Wochenplan-Zuordnungen (`meal_plan_entry_users`) des Users (DB-CASCADE)
+- Die Haushaltsmitgliedschaft (`household_members`) (DB-CASCADE)
+
+**Response 204:** Kein Inhalt
+**Response 404:** User nicht gefunden
+
+---
+
 ### `PUT /users/{user_id}/preferences`
 Persönliche Präferenzen eines Haushaltsmitglieds speichern (vollständiger Ersatz).
 

@@ -10,8 +10,14 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useHousehold, useUpdateHouseholdSettings } from '../../lib/hooks/useHousehold';
-import { useUsers, useUpdateUserPreferences } from '../../lib/hooks/useUsers';
-import { showAlert } from '../../lib/alert';
+import {
+  useUsers,
+  useUpdateUserPreferences,
+  useUpdateUser,
+  useDeleteUser,
+  useCreateUser,
+} from '../../lib/hooks/useUsers';
+import { showAlert, showConfirm } from '../../lib/alert';
 import type { HouseholdSettings, UserPreferences, User } from '../../lib/types';
 import { Tooltip } from '../../components/Tooltip';
 
@@ -19,6 +25,18 @@ const GREEN = '#2E7D32';
 const LIGHT_GREEN = '#E8F5E9';
 const BORDER = '#E0E0E0';
 const BG = '#F8F9FA';
+const RED = '#C62828';
+
+const AVATAR_COLORS = [
+  '#1565C0',
+  '#6A1B9A',
+  '#E65100',
+  '#2E7D32',
+  '#C62828',
+  '#00838F',
+  '#4E342E',
+  '#37474F',
+];
 
 // ─── Default values ───────────────────────────────────────────────────────────
 
@@ -196,11 +214,13 @@ function TagInput({
   placeholder: string;
 }) {
   const [input, setInput] = useState('');
+  // Guard against null/undefined from API
+  const safeValues = Array.isArray(values) ? values : [];
 
   const add = () => {
     const trimmed = input.trim();
-    if (trimmed && !values.includes(trimmed)) {
-      onChange([...values, trimmed]);
+    if (trimmed && !safeValues.includes(trimmed)) {
+      onChange([...safeValues, trimmed]);
     }
     setInput('');
   };
@@ -214,25 +234,48 @@ function TagInput({
           onChangeText={setInput}
           placeholder={placeholder}
           onSubmitEditing={add}
+          blurOnSubmit={false}
           returnKeyType="done"
         />
-        <Tooltip label="Tag hinzufügen">
+        <Tooltip label="Zutat hinzufügen">
           <TouchableOpacity style={styles.tagAddBtn} onPress={add}>
             <Text style={styles.tagAddBtnText}>+</Text>
           </TouchableOpacity>
         </Tooltip>
       </View>
       <View style={styles.chipWrap}>
-        {values.map(v => (
+        {safeValues.map(v => (
           <TouchableOpacity
             key={v}
             style={[styles.chip, styles.chipActive]}
-            onPress={() => onChange(values.filter(x => x !== v))}
+            onPress={() => onChange(safeValues.filter(x => x !== v))}
           >
             <Text style={styles.chipTextActive}>{v} ✕</Text>
           </TouchableOpacity>
         ))}
       </View>
+    </View>
+  );
+}
+
+// ─── Color picker ─────────────────────────────────────────────────────────────
+
+function ColorPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (c: string) => void;
+}) {
+  return (
+    <View style={styles.colorRow}>
+      {AVATAR_COLORS.map(c => (
+        <TouchableOpacity
+          key={c}
+          style={[styles.colorDot, { backgroundColor: c }, value === c && styles.colorDotActive]}
+          onPress={() => onChange(c)}
+        />
+      ))}
     </View>
   );
 }
@@ -328,35 +371,157 @@ function HouseholdSettingsForm({ initialSettings }: { initialSettings: Household
 
 // ─── Member Preferences Form ─────────────────────────────────────────────────
 
-function MemberPreferencesForm({ user }: { user: User }) {
+function MemberPreferencesForm({
+  user,
+  onDeleted,
+}: {
+  user: User;
+  onDeleted: (userId: number) => void;
+}) {
   const [form, setForm] = useState<UserPreferences>(
     user.preferences ?? DEFAULT_USER_PREFERENCES
   );
-  const { mutate, isPending } = useUpdateUserPreferences(user.id);
+  const [editMode, setEditMode] = useState(false);
+  const [editName, setEditName] = useState(user.name);
+  const [editShortName, setEditShortName] = useState(user.short_name);
+  const [editColor, setEditColor] = useState(user.avatar_color);
+
+  const { mutate: savePrefs, isPending: savingPrefs } = useUpdateUserPreferences(user.id);
+  const { mutate: updateUser, isPending: savingUser } = useUpdateUser(user.id);
+  const { mutate: deleteUser, isPending: deleting } = useDeleteUser();
 
   useEffect(() => {
     setForm(user.preferences ?? DEFAULT_USER_PREFERENCES);
+    setEditName(user.name);
+    setEditShortName(user.short_name);
+    setEditColor(user.avatar_color);
   }, [user]);
 
   const set = <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) =>
     setForm(prev => ({ ...prev, [key]: value }));
 
-  const save = () => {
-    mutate(form, {
+  const savePreferences = () => {
+    savePrefs(form, {
       onSuccess: () => showAlert('Gespeichert', `Präferenzen für ${user.name} gespeichert.`),
       onError: () => showAlert('Fehler', 'Präferenzen konnten nicht gespeichert werden.'),
     });
   };
 
+  const saveUserEdit = () => {
+    const trimmedName = editName.trim();
+    const trimmedShort = editShortName.trim();
+    if (!trimmedName || !trimmedShort) {
+      showAlert('Fehler', 'Name und Kürzel dürfen nicht leer sein.');
+      return;
+    }
+    updateUser(
+      { name: trimmedName, short_name: trimmedShort, avatar_color: editColor },
+      {
+        onSuccess: () => setEditMode(false),
+        onError: () => showAlert('Fehler', 'Name konnte nicht gespeichert werden.'),
+      }
+    );
+  };
+
+  const handleDelete = () => {
+    showConfirm(
+      'Mitglied löschen',
+      `${user.name} wirklich löschen? Alle zugehörigen Rezept-Tags werden ebenfalls entfernt.`,
+      () => {
+        deleteUser(user.id, {
+          onSuccess: () => onDeleted(user.id),
+          onError: () => showAlert('Fehler', 'Mitglied konnte nicht gelöscht werden.'),
+        });
+      }
+    );
+  };
+
   return (
     <View style={styles.card}>
+      {/* Header */}
       <View style={styles.memberHeader}>
-        <View style={[styles.avatar, { backgroundColor: user.avatar_color }]}>
-          <Text style={styles.avatarText}>{user.short_name}</Text>
+        <View style={[styles.avatar, { backgroundColor: editMode ? editColor : user.avatar_color }]}>
+          <Text style={styles.avatarText}>{editMode ? editShortName.toUpperCase().slice(0, 4) || '?' : user.short_name}</Text>
         </View>
-        <Text style={styles.memberName}>{user.name}</Text>
+        {editMode ? (
+          <View style={styles.memberEditFields}>
+            <TextInput
+              style={[styles.input, styles.memberNameInput]}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Name"
+              maxLength={100}
+            />
+            <TextInput
+              style={[styles.input, styles.memberShortInput]}
+              value={editShortName}
+              onChangeText={setEditShortName}
+              placeholder="Kürzel"
+              maxLength={4}
+              autoCapitalize="characters"
+            />
+          </View>
+        ) : (
+          <Text style={styles.memberName}>{user.name}</Text>
+        )}
+        <View style={styles.memberActions}>
+          {editMode ? (
+            <>
+              <TouchableOpacity
+                style={[styles.iconBtn, styles.iconBtnGreen]}
+                onPress={saveUserEdit}
+                disabled={savingUser}
+              >
+                {savingUser ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.iconBtnText}>✓</Text>
+                )}
+              </TouchableOpacity>
+              <Tooltip label="Abbrechen" position="left">
+                <TouchableOpacity
+                  style={[styles.iconBtn, styles.iconBtnGray]}
+                  onPress={() => {
+                    setEditMode(false);
+                    setEditName(user.name);
+                    setEditShortName(user.short_name);
+                    setEditColor(user.avatar_color);
+                  }}
+                >
+                  <Text style={styles.iconBtnText}>✕</Text>
+                </TouchableOpacity>
+              </Tooltip>
+            </>
+          ) : (
+            <>
+              <Tooltip label="Name bearbeiten" position="left">
+                <TouchableOpacity style={[styles.iconBtn, styles.iconBtnGray]} onPress={() => setEditMode(true)}>
+                  <Text style={styles.iconBtnText}>✎</Text>
+                </TouchableOpacity>
+              </Tooltip>
+              <Tooltip label="Mitglied löschen" position="left">
+                <TouchableOpacity style={[styles.iconBtn, styles.iconBtnRed]} onPress={handleDelete} disabled={deleting}>
+                  {deleting ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.iconBtnText}>🗑</Text>
+                  )}
+                </TouchableOpacity>
+              </Tooltip>
+            </>
+          )}
+        </View>
       </View>
 
+      {/* Color picker in edit mode */}
+      {editMode && (
+        <View style={styles.colorPickerSection}>
+          <FieldLabel label="Farbe" />
+          <ColorPicker value={editColor} onChange={setEditColor} />
+        </View>
+      )}
+
+      {/* Preferences */}
       <FieldLabel label="Ernährungsweise" />
       <CheckboxGrid
         options={DIETARY_RESTRICTIONS}
@@ -399,13 +564,91 @@ function MemberPreferencesForm({ user }: { user: User }) {
         onChange={v => set('portion_size', v)}
       />
 
-      <TouchableOpacity style={[styles.saveBtn, isPending && styles.saveBtnDisabled]} onPress={save} disabled={isPending}>
-        {isPending ? (
+      <TouchableOpacity style={[styles.saveBtn, savingPrefs && styles.saveBtnDisabled]} onPress={savePreferences} disabled={savingPrefs}>
+        {savingPrefs ? (
           <ActivityIndicator color="#fff" size="small" />
         ) : (
-          <Text style={styles.saveBtnText}>Speichern</Text>
+          <Text style={styles.saveBtnText}>Präferenzen speichern</Text>
         )}
       </TouchableOpacity>
+    </View>
+  );
+}
+
+// ─── Add Member Form ──────────────────────────────────────────────────────────
+
+function AddMemberForm({ onClose }: { onClose: () => void }) {
+  const [name, setName] = useState('');
+  const [shortName, setShortName] = useState('');
+  const [color, setColor] = useState(AVATAR_COLORS[0]);
+  const { mutate: createUser, isPending } = useCreateUser();
+
+  const handleNameChange = (value: string) => {
+    setName(value);
+    if (value.trim()) {
+      setShortName(value.trim().slice(0, 2).toUpperCase());
+    }
+  };
+
+  const handleSave = () => {
+    const trimmedName = name.trim();
+    const trimmedShort = shortName.trim();
+    if (!trimmedName || !trimmedShort) {
+      showAlert('Fehler', 'Name und Kürzel dürfen nicht leer sein.');
+      return;
+    }
+    createUser(
+      { name: trimmedName, short_name: trimmedShort, avatar_color: color },
+      {
+        onSuccess: () => onClose(),
+        onError: () => showAlert('Fehler', 'Mitglied konnte nicht hinzugefügt werden.'),
+      }
+    );
+  };
+
+  return (
+    <View style={[styles.card, styles.addMemberCard]}>
+      <SectionTitle title="Mitglied hinzufügen" />
+
+      <View style={styles.memberHeader}>
+        <View style={[styles.avatar, { backgroundColor: color }]}>
+          <Text style={styles.avatarText}>{shortName.slice(0, 4) || '?'}</Text>
+        </View>
+        <View style={styles.memberEditFields}>
+          <TextInput
+            style={[styles.input, styles.memberNameInput]}
+            value={name}
+            onChangeText={handleNameChange}
+            placeholder="Name"
+            maxLength={100}
+            autoFocus
+          />
+          <TextInput
+            style={[styles.input, styles.memberShortInput]}
+            value={shortName}
+            onChangeText={setShortName}
+            placeholder="Kürzel"
+            maxLength={4}
+            autoCapitalize="characters"
+          />
+        </View>
+      </View>
+
+      <FieldLabel label="Farbe" />
+      <ColorPicker value={color} onChange={setColor} />
+
+      <View style={styles.addMemberBtns}>
+        <TouchableOpacity style={[styles.saveBtn, styles.saveBtnFlex, isPending && styles.saveBtnDisabled]} onPress={handleSave} disabled={isPending}>
+          {isPending ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.saveBtnText}>Hinzufügen</Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.saveBtn, styles.saveBtnFlex, styles.cancelBtn]} onPress={onClose}>
+          <Text style={styles.saveBtnText}>Abbrechen</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -417,6 +660,7 @@ export default function SettingsScreen() {
   const isWide = width >= 768;
   const { data: household, isLoading: loadingHousehold } = useHousehold();
   const { data: users, isLoading: loadingUsers } = useUsers();
+  const [showAddForm, setShowAddForm] = useState(false);
 
   if (loadingHousehold || loadingUsers) {
     return (
@@ -428,10 +672,32 @@ export default function SettingsScreen() {
 
   const settings: HouseholdSettings = household?.settings ?? DEFAULT_HOUSEHOLD_SETTINGS;
 
+  const membersList = (
+    <>
+      <View style={styles.membersHeadingRow}>
+        <Text style={styles.membersHeading}>Haushaltsmitglieder</Text>
+        <Tooltip label="Mitglied hinzufügen" position="left">
+          <TouchableOpacity style={styles.addMemberBtn} onPress={() => setShowAddForm(true)}>
+            <Text style={styles.addMemberBtnText}>+</Text>
+          </TouchableOpacity>
+        </Tooltip>
+      </View>
+      {(users ?? []).map(user => (
+        <MemberPreferencesForm
+          key={user.id}
+          user={user}
+          onDeleted={() => {}}
+        />
+      ))}
+      {showAddForm && <AddMemberForm onClose={() => setShowAddForm(false)} />}
+    </>
+  );
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.content, isWide && styles.contentWide]}
+      keyboardShouldPersistTaps="handled"
     >
       {isWide ? (
         <View style={styles.wideLayout}>
@@ -439,19 +705,13 @@ export default function SettingsScreen() {
             <HouseholdSettingsForm initialSettings={settings} />
           </View>
           <View style={styles.wideCol}>
-            <Text style={styles.membersHeading}>Haushaltsmitglieder</Text>
-            {(users ?? []).map(user => (
-              <MemberPreferencesForm key={user.id} user={user} />
-            ))}
+            {membersList}
           </View>
         </View>
       ) : (
         <>
           <HouseholdSettingsForm initialSettings={settings} />
-          <Text style={styles.membersHeading}>Haushaltsmitglieder</Text>
-          {(users ?? []).map(user => (
-            <MemberPreferencesForm key={user.id} user={user} />
-          ))}
+          {membersList}
         </>
       )}
     </ScrollView>
@@ -487,13 +747,27 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
+  membersHeadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    marginTop: 4,
+  },
   membersHeading: {
     fontSize: 18,
     fontWeight: '700',
     color: '#333',
-    marginBottom: 8,
-    marginTop: 4,
   },
+  addMemberBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: GREEN,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addMemberBtnText: { color: '#fff', fontSize: 22, lineHeight: 26 },
 
   fieldLabel: {
     fontSize: 14,
@@ -554,24 +828,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 8,
-    padding: 10,
+    paddingHorizontal: 10,
+    height: 44,
     fontSize: 14,
     backgroundColor: '#fff',
   },
 
   // Tag input
-  tagInputRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  tagInputRow: { flexDirection: 'row', gap: 8, marginBottom: 8, alignItems: 'stretch' },
   tagInputField: {
     flex: 1,
+    height: 44,
     borderWidth: 1,
     borderColor: BORDER,
     borderRadius: 8,
-    padding: 10,
+    paddingHorizontal: 12,
     fontSize: 14,
     backgroundColor: '#fff',
   },
   tagAddBtn: {
-    width: 42,
+    width: 44,
+    height: 44,
     borderRadius: 8,
     backgroundColor: GREEN,
     alignItems: 'center',
@@ -589,6 +866,8 @@ const styles = StyleSheet.create({
   },
   saveBtnDisabled: { opacity: 0.6 },
   saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  saveBtnFlex: { flex: 1 },
+  cancelBtn: { backgroundColor: '#9E9E9E', marginLeft: 8 },
 
   // Member header
   memberHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
@@ -599,7 +878,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
+    flexShrink: 0,
   },
   avatarText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  memberName: { fontSize: 17, fontWeight: '700', color: '#333' },
+  memberName: { fontSize: 17, fontWeight: '700', color: '#333', flex: 1 },
+  memberEditFields: { flex: 1, flexDirection: 'row', gap: 8 },
+  memberNameInput: { flex: 1, marginTop: 0 },
+  memberShortInput: { width: 70, marginTop: 0 },
+  memberActions: { flexDirection: 'row', gap: 6, marginLeft: 8 },
+
+  // Icon buttons
+  iconBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconBtnGreen: { backgroundColor: GREEN },
+  iconBtnGray: { backgroundColor: '#9E9E9E' },
+  iconBtnRed: { backgroundColor: RED },
+  iconBtnText: { color: '#fff', fontSize: 16 },
+
+  // Color picker
+  colorRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  colorDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  colorDotActive: { borderColor: '#333', transform: [{ scale: 1.2 }] },
+  colorPickerSection: { marginBottom: 4 },
+
+  // Add member
+  addMemberCard: { borderWidth: 2, borderColor: GREEN },
+  addMemberBtns: { flexDirection: 'row', marginTop: 20 },
 });
