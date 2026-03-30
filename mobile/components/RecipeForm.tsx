@@ -485,33 +485,6 @@ export default function RecipeForm({
                       </View>
                     )}
                   </View>
-<<<<<<< claude/add-button-tooltips-NCSCd
-                  <TextInput
-                    style={[styles.input, styles.ingEditSmall]}
-                    value={editAmount}
-                    onChangeText={setEditAmount}
-                    keyboardType="decimal-pad"
-                    placeholder="Menge"
-                  />
-                  <TextInput
-                    style={[styles.input, styles.ingEditUnit]}
-                    value={editUnit}
-                    onChangeText={setEditUnit}
-                    placeholder="Einheit"
-                    returnKeyType="done"
-                    onSubmitEditing={confirmEditIngredient}
-                  />
-                  <Tooltip label="Bestätigen">
-                    <TouchableOpacity onPress={confirmEditIngredient} style={styles.ingEditBtn}>
-                      <Text style={styles.ingConfirmText}>✓</Text>
-                    </TouchableOpacity>
-                  </Tooltip>
-                  <Tooltip label="Abbrechen">
-                    <TouchableOpacity onPress={cancelEditIngredient} style={styles.ingEditBtn}>
-                      <Text style={styles.ingCancelText}>✕</Text>
-                    </TouchableOpacity>
-                  </Tooltip>
-=======
                   <View>
                     <TextInput
                       style={[styles.input, styles.ingEditSmall, editAmountError ? styles.inputError : undefined]}
@@ -533,13 +506,16 @@ export default function RecipeForm({
                     />
                     {editUnitError ? <Text style={styles.fieldError}>{editUnitError}</Text> : null}
                   </View>
-                  <TouchableOpacity onPress={confirmEditIngredient} style={styles.ingEditBtn}>
-                    <Text style={styles.ingConfirmText}>✓</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={cancelEditIngredient} style={styles.ingEditBtn}>
-                    <Text style={styles.ingCancelText}>✕</Text>
-                  </TouchableOpacity>
->>>>>>> main
+                  <Tooltip label="Bestätigen">
+                    <TouchableOpacity onPress={confirmEditIngredient} style={styles.ingEditBtn}>
+                      <Text style={styles.ingConfirmText}>✓</Text>
+                    </TouchableOpacity>
+                  </Tooltip>
+                  <Tooltip label="Abbrechen">
+                    <TouchableOpacity onPress={cancelEditIngredient} style={styles.ingEditBtn}>
+                      <Text style={styles.ingCancelText}>✕</Text>
+                    </TouchableOpacity>
+                  </Tooltip>
                 </View>
               );
             }
