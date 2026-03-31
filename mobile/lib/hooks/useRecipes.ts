@@ -1,15 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
 import type {
-  Recipe, RecipeCreatePayload, Ingredient,
+  Recipe, RecipeCreatePayload, Ingredient, RecipeIngredient,
   RecipeExportItem, RecipeImportResult,
   Tag, RecipeRating,
 } from '../types';
+import { DEFAULT_STALE_TIME } from '../constants';
 
 export function useRecipes() {
   return useQuery<Recipe[]>({
     queryKey: ['recipes'],
     queryFn: () => api.get('/recipes').then(r => r.data),
+    staleTime: DEFAULT_STALE_TIME,
   });
 }
 
@@ -17,6 +19,7 @@ export function useRecipe(id: number) {
   return useQuery<Recipe>({
     queryKey: ['recipes', id],
     queryFn: () => api.get(`/recipes/${id}`).then(r => r.data),
+    staleTime: DEFAULT_STALE_TIME,
   });
 }
 
@@ -51,6 +54,7 @@ export function useIngredients() {
   return useQuery<Ingredient[]>({
     queryKey: ['ingredients'],
     queryFn: () => api.get('/recipes/ingredients').then(r => r.data),
+    staleTime: DEFAULT_STALE_TIME,
   });
 }
 
@@ -77,7 +81,7 @@ export function useUpdateIngredient() {
 export function useUpdateRecipeIngredient(recipeId: number) {
   const qc = useQueryClient();
   return useMutation<
-    any,
+    RecipeIngredient,
     Error,
     { recipeIngredientId: number; ingredient_id?: number; amount?: number; unit?: string }
   >({
@@ -94,6 +98,7 @@ export function useTags() {
   return useQuery<Tag[]>({
     queryKey: ['tags'],
     queryFn: () => api.get('/recipes/tags').then(r => r.data),
+    staleTime: DEFAULT_STALE_TIME,
   });
 }
 

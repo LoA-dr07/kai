@@ -24,6 +24,8 @@ import { useUsers } from '../../lib/hooks/useUsers';
 import AiSuggestionModal from '../../components/AiSuggestionModal';
 import type { MealPlanEntry, MealType, User, AiMealPlanSuggestionEntry } from '../../lib/types';
 import { Tooltip } from '../../components/Tooltip';
+import { DAYS_DE, MEAL_TYPES } from '../../lib/constants';
+import { Colors } from '../../lib/theme';
 
 // --- Datums-Hilfsfunktionen ---
 
@@ -50,16 +52,7 @@ function getISOWeek(date: Date): number {
 
 // --- Konstanten ---
 
-const DAYS_DE = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
 const DAYS_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-
-const MEAL_TYPES: { key: MealType; label: string; icon: string }[] = [
-  { key: 'breakfast', label: 'Frühstück', icon: '🍳' },
-  { key: 'lunch', label: 'Mittagessen', icon: '🥗' },
-  { key: 'snack', label: 'Snack', icon: '🍎' },
-  { key: 'dinner', label: 'Abendessen', icon: '🍽' },
-  { key: 'dessert', label: 'Dessert', icon: '🍰' },
-];
 
 // --- UserChips im Modal ---
 
@@ -506,9 +499,9 @@ export default function MealPlanScreen() {
 
 // --- Styles ---
 
-const GREEN = '#2E7D32';
-const GREEN_LIGHT = '#E8F5E9';
-const BORDER = '#E0E0E0';
+const GREEN = Colors.green;
+const GREEN_LIGHT = Colors.greenLight;
+const BORDER = Colors.border;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F8F9FA' },

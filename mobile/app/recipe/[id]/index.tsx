@@ -16,6 +16,7 @@ import { useRecipe, useDeleteRecipe, useRateRecipe, useUpdateIngredient, useUpda
 import { useUsers } from '../../../lib/hooks/useUsers';
 import type { Tag, User } from '../../../lib/types';
 import { Tooltip } from '../../../components/Tooltip';
+import { Colors } from '../../../lib/theme';
 
 // --- Konstanten ---
 
@@ -473,7 +474,7 @@ function MetaCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-const GREEN = '#2E7D32';
+const GREEN = Colors.green;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
