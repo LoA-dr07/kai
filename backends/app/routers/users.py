@@ -42,7 +42,7 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db)):
 
 @router.patch("/{user_id}", response_model=UserOut)
 def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -78,7 +78,7 @@ def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(user_id: int, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -100,7 +100,7 @@ def update_user_preferences(
     payload: UserPreferencesUpdate,
     db: Session = Depends(get_db),
 ):
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     user.preferences = payload.preferences.model_dump()

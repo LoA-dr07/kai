@@ -19,6 +19,7 @@ import {
 import { useImportRecipes, useRecipes } from '../../lib/hooks/useRecipes';
 import type { Recipe, RecipeExportItem, RecipeUrlPreview } from '../../lib/types';
 import { Tooltip } from '../../components/Tooltip';
+import { Colors } from '../../lib/theme';
 
 const RATING_LABELS: Record<number, string> = {
   0: 'Nie',
@@ -400,8 +401,8 @@ function Chip({ label }: { label: string }) {
   );
 }
 
-const GREEN = '#2E7D32';
-const BORDER = '#E0E0E0';
+const GREEN = Colors.green;
+const BORDER = Colors.border;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, model_validator
 from typing import Optional
 from datetime import date
-from app.models.meal_plan import MealType
+from app.enums import MealType
 from app.schemas.recipe import RecipeOut
 
 
