@@ -11,6 +11,7 @@ import {
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useRecipe } from '../../../lib/hooks/useRecipes';
 import type { RecipeIngredient } from '../../../lib/types';
+import { Colors } from '../../../lib/theme';
 
 // -------------------------------------------------------------------
 // Kochansicht – Zutaten links | Zubereitung rechts (bei Querformat)
@@ -137,10 +138,10 @@ export default function CookScreen() {
 // Styles
 // -------------------------------------------------------------------
 
-const GREEN = '#2E7D32';
-const GREEN_DARK = '#1B5E20';
-const GREEN_LIGHT = '#E8F5E9';
-const BORDER = '#E0E0E0';
+const GREEN = Colors.green;
+const GREEN_DARK = Colors.greenDark;
+const GREEN_LIGHT = Colors.greenLight;
+const BORDER = Colors.border;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F0F4F0' },

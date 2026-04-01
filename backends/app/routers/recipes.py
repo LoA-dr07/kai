@@ -12,6 +12,12 @@ from app.schemas.recipe import (
     RecipeExportItem, RecipeExportIngredient, RecipeImportResult,
     RecipeUrlImport, RecipeUrlPreview,
 )
+from app.utils.recipe_scraper import (
+    scrape_recipe_url as _scrape_recipe_url,
+    parse_instructions as _parse_instructions,
+    parse_iso_duration as _parse_iso_duration,
+    parse_ingredients as _parse_ingredients,
+)
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
@@ -26,6 +32,19 @@ def _get_or_create_ingredient(db: Session, ingredient_id: int) -> Ingredient:
 def _apply_tags(db: Session, recipe: Recipe, tag_ids: list[int]) -> None:
     tags = [db.get(Tag, tid) for tid in tag_ids]
     recipe.tags = [t for t in tags if t is not None]
+
+
+def _set_recipe_ingredients(db: Session, recipe_id: int, ingredients) -> None:
+    """Replace all RecipeIngredients for a recipe with the given list."""
+    db.query(RecipeIngredient).filter(RecipeIngredient.recipe_id == recipe_id).delete()
+    for item in ingredients:
+        _get_or_create_ingredient(db, item.ingredient_id)
+        db.add(RecipeIngredient(
+            recipe_id=recipe_id,
+            ingredient_id=item.ingredient_id,
+            amount=item.amount,
+            unit=item.unit,
+        ))
 
 
 # --- Ingredients ---
@@ -127,15 +146,7 @@ def create_recipe(payload: RecipeCreate, db: Session = Depends(get_db)):
     db.add(recipe)
     db.flush()
 
-    for item in payload.ingredients:
-        _get_or_create_ingredient(db, item.ingredient_id)
-        db.add(RecipeIngredient(
-            recipe_id=recipe.id,
-            ingredient_id=item.ingredient_id,
-            amount=item.amount,
-            unit=item.unit,
-        ))
-
+    _set_recipe_ingredients(db, recipe.id, payload.ingredients)
     _apply_tags(db, recipe, payload.tag_ids)
 
     db.commit()
@@ -218,123 +229,6 @@ def import_recipes(recipes: list[RecipeExportItem], db: Session = Depends(get_db
     return RecipeImportResult(created=created, skipped=skipped, created_ids=created_ids)
 
 
-def _parse_iso_duration(duration: str) -> int | None:
-    """Convert ISO 8601 duration (e.g. PT1H30M) to minutes."""
-    import re
-    if not duration:
-        return None
-    match = re.fullmatch(r'P(?:T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?', duration.upper())
-    if not match:
-        return None
-    hours = int(match.group(1) or 0)
-    minutes = int(match.group(2) or 0)
-    total = hours * 60 + minutes
-    return total if total > 0 else None
-
-
-def _find_recipe_jsonld(data) -> dict | None:
-    """Recursively find a @type: Recipe object in JSON-LD data."""
-    if isinstance(data, list):
-        for item in data:
-            result = _find_recipe_jsonld(item)
-            if result:
-                return result
-    elif isinstance(data, dict):
-        type_val = data.get("@type", "")
-        if isinstance(type_val, str) and type_val.lower() == "recipe":
-            return data
-        if isinstance(type_val, list) and any(t.lower() == "recipe" for t in type_val):
-            return data
-        if "@graph" in data:
-            return _find_recipe_jsonld(data["@graph"])
-    return None
-
-
-def _parse_instructions(raw) -> str | None:
-    """Extract plain text from recipeInstructions (string, list of strings or HowToStep dicts)."""
-    if not raw:
-        return None
-    if isinstance(raw, str):
-        return raw.strip() or None
-    steps = []
-    for i, item in enumerate(raw, 1):
-        if isinstance(item, str):
-            text = item.strip()
-        elif isinstance(item, dict):
-            text = (item.get("text") or "").strip()
-        else:
-            continue
-        if text:
-            steps.append(f"{i}. {text}")
-    return "\n".join(steps) or None
-
-
-_KNOWN_UNITS = {
-    "g", "kg", "mg",
-    "ml", "l", "cl", "dl",
-    "el", "tl",
-    "stück", "stk", "stk.",
-    "prise", "bund", "tasse",
-    "becher", "packung", "pck.", "pck", "pkg.", "pkg", "pkt.",
-    "dose", "glas", "zweig", "zehe", "scheibe", "blatt", "handvoll",
-}
-
-import re as _re
-_NUMBER_RE = _re.compile(r'^(\d+(?:[.,]\d+)?)\s*(.*)', _re.DOTALL)
-
-
-def _scrape_recipe_url(url: str) -> dict:
-    """Fetch a page and extract recipe data from JSON-LD structured data."""
-    import json
-    import httpx
-    from html.parser import HTMLParser
-
-    class _JsonLdExtractor(HTMLParser):
-        def __init__(self):
-            super().__init__()
-            self._in_block = False
-            self.blocks: list[str] = []
-            self._buf: list[str] = []
-
-        def handle_starttag(self, tag, attrs):
-            if tag == "script" and dict(attrs).get("type") == "application/ld+json":
-                self._in_block = True
-                self._buf = []
-
-        def handle_endtag(self, tag):
-            if tag == "script" and self._in_block:
-                self._in_block = False
-                self.blocks.append("".join(self._buf))
-
-        def handle_data(self, data):
-            if self._in_block:
-                self._buf.append(data)
-
-    resp = httpx.get(url, timeout=15, headers={"User-Agent": "Mozilla/5.0"}, follow_redirects=True)
-    resp.raise_for_status()
-
-    # Detect charset from HTML meta tag to handle pages with ISO-8859-1 / Windows-1252 encoding
-    charset_match = _re.search(rb'charset=["\']?\s*([^"\'\s;>]+)', resp.content[:4096], _re.IGNORECASE)
-    if charset_match:
-        detected_encoding = charset_match.group(1).decode('ascii', errors='ignore')
-        html_text = resp.content.decode(detected_encoding, errors='replace')
-    else:
-        html_text = resp.text
-
-    parser = _JsonLdExtractor()
-    parser.feed(html_text)
-
-    for block in parser.blocks:
-        try:
-            recipe = _find_recipe_jsonld(json.loads(block))
-            if recipe:
-                return recipe
-        except (ValueError, KeyError):
-            continue
-
-    raise ValueError("Keine Rezeptdaten (JSON-LD) auf der Seite gefunden")
-
-
 @router.post("/import/url", response_model=RecipeUrlPreview)
 def import_recipe_from_url(payload: RecipeUrlImport):
     try:
@@ -358,31 +252,10 @@ def import_recipe_from_url(payload: RecipeUrlImport):
     except Exception:
         description = None
 
-    raw_ingredients: list[RecipeExportIngredient] = []
     try:
-        for line in (recipe_data.get("recipeIngredient") or []):
-            line = str(line).strip()
-            if not line:
-                continue
-            m = _NUMBER_RE.match(line)
-            if m:
-                amount = float(m.group(1).replace(",", "."))
-                rest = m.group(2).strip()
-                first_word, _, remainder = rest.partition(" ")
-                if first_word.lower().rstrip(".") in _KNOWN_UNITS and remainder:
-                    raw_ingredients.append(
-                        RecipeExportIngredient(ingredient_name=remainder.strip(), amount=amount, unit=first_word)
-                    )
-                else:
-                    raw_ingredients.append(
-                        RecipeExportIngredient(ingredient_name=rest, amount=amount, unit="Stück")
-                    )
-            else:
-                raw_ingredients.append(
-                    RecipeExportIngredient(ingredient_name=line, amount=1.0, unit="Stück")
-                )
+        raw_ingredients = _parse_ingredients(recipe_data.get("recipeIngredient") or [])
     except Exception:
-        pass
+        raw_ingredients = []
 
     try:
         raw_time = recipe_data.get("totalTime") or recipe_data.get("prepTime")
@@ -426,15 +299,7 @@ def update_recipe(recipe_id: int, payload: RecipeUpdate, db: Session = Depends(g
         setattr(recipe, field, value)
 
     if payload.ingredients is not None:
-        db.query(RecipeIngredient).filter(RecipeIngredient.recipe_id == recipe_id).delete()
-        for item in payload.ingredients:
-            _get_or_create_ingredient(db, item.ingredient_id)
-            db.add(RecipeIngredient(
-                recipe_id=recipe.id,
-                ingredient_id=item.ingredient_id,
-                amount=item.amount,
-                unit=item.unit,
-            ))
+        _set_recipe_ingredients(db, recipe.id, payload.ingredients)
 
     if payload.tag_ids is not None:
         _apply_tags(db, recipe, payload.tag_ids)

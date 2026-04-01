@@ -13,22 +13,14 @@ import {
 import { showAlert } from '../lib/alert';
 import { useAiMealPlanSuggestion } from '../lib/hooks/useAiMealPlanSuggestion';
 import type { User, Recipe, AiMealPlanSuggestionEntry } from '../lib/types';
+import { DAYS_DE, MEAL_TYPES } from '../lib/constants';
+import { Colors } from '../lib/theme';
 
 // --- Konstanten ---
 
-const DAYS_DE = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
-
-const MEAL_TYPES: { key: string; label: string; icon: string }[] = [
-  { key: 'breakfast', label: 'Frühstück', icon: '🍳' },
-  { key: 'lunch', label: 'Mittagessen', icon: '🥗' },
-  { key: 'snack', label: 'Snack', icon: '🍎' },
-  { key: 'dinner', label: 'Abendessen', icon: '🍽' },
-  { key: 'dessert', label: 'Dessert', icon: '🍰' },
-];
-
-const GREEN = '#2E7D32';
-const GREEN_LIGHT = '#E8F5E9';
-const BORDER = '#E0E0E0';
+const GREEN = Colors.green;
+const GREEN_LIGHT = Colors.greenLight;
+const BORDER = Colors.border;
 
 // --- Props ---
 

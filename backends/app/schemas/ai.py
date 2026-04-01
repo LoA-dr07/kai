@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from datetime import date
 from typing import Optional
-from app.models.meal_plan import MealType
+from app.enums import MealType
 
 
 class AiMealPlanRequest(BaseModel):
