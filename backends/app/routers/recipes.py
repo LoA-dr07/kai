@@ -174,6 +174,7 @@ def export_recipes(db: Session = Depends(get_db)):
 def import_recipes(recipes: list[RecipeExportItem], db: Session = Depends(get_db)):
     created = 0
     skipped = 0
+    created_ids: list[int] = []
     for item in recipes:
         if db.query(Recipe).filter(Recipe.name == item.name).first():
             skipped += 1
@@ -211,9 +212,10 @@ def import_recipes(recipes: list[RecipeExportItem], db: Session = Depends(get_db
                 user_id=rating.user_id,
                 stars=rating.stars,
             ))
+        created_ids.append(recipe.id)
         created += 1
     db.commit()
-    return RecipeImportResult(created=created, skipped=skipped)
+    return RecipeImportResult(created=created, skipped=skipped, created_ids=created_ids)
 
 
 def _parse_iso_duration(duration: str) -> int | None:

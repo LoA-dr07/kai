@@ -102,8 +102,12 @@ export default function RecipesScreen() {
       });
       const data: RecipeExportItem[] = JSON.parse(content);
       if (!Array.isArray(data)) throw new Error('Ungültiges Format – erwartet wird ein JSON-Array.');
-      const { created, skipped } = await importMutation.mutateAsync(data);
-      Alert.alert('Import abgeschlossen', `${created} Rezept(e) importiert, ${skipped} übersprungen.`);
+      const { created, skipped, created_ids } = await importMutation.mutateAsync(data);
+      if (created === 1) {
+        router.push(`/recipe/${created_ids[0]}`);
+      } else {
+        Alert.alert('Import abgeschlossen', `${created} Rezept(e) importiert, ${skipped} übersprungen.`);
+      }
     } catch (e) {
       Alert.alert('Import fehlgeschlagen', e instanceof Error ? e.message : String(e));
     } finally {
@@ -119,8 +123,12 @@ export default function RecipesScreen() {
       const text = await file.text();
       const data: RecipeExportItem[] = JSON.parse(text);
       if (!Array.isArray(data)) throw new Error('Ungültiges Format – erwartet wird ein JSON-Array.');
-      const { created, skipped } = await importMutation.mutateAsync(data);
-      alert(`Import abgeschlossen: ${created} Rezept(e) importiert, ${skipped} übersprungen.`);
+      const { created, skipped, created_ids } = await importMutation.mutateAsync(data);
+      if (created === 1) {
+        router.push(`/recipe/${created_ids[0]}`);
+      } else {
+        alert(`Import abgeschlossen: ${created} Rezept(e) importiert, ${skipped} übersprungen.`);
+      }
     } catch (e) {
       alert(`Import fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
@@ -165,14 +173,13 @@ export default function RecipesScreen() {
         source_url: urlPreview.source_url,
         ingredients: urlPreview.ingredients,
       };
-      const { created, skipped } = await importMutation.mutateAsync([exportItem]);
+      const { skipped, created_ids } = await importMutation.mutateAsync([exportItem]);
       setUrlModalVisible(false);
       if (skipped > 0) {
         const msg = 'Ein Rezept mit diesem Namen existiert bereits.';
         Platform.OS === 'web' ? alert(msg) : Alert.alert('Übersprungen', msg);
       } else {
-        const msg = `"${urlPreview.name}" wurde gespeichert.`;
-        Platform.OS === 'web' ? alert(msg) : Alert.alert('Gespeichert', msg);
+        router.push(`/recipe/${created_ids[0]}`);
       }
     } catch (e) {
       const msg = `Speichern fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`;
