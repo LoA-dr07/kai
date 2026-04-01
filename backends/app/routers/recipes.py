@@ -351,6 +351,10 @@ def import_recipe_from_url(payload: RecipeUrlImport):
 
     try:
         description = _parse_instructions(recipe_data.get("recipeInstructions"))
+        if not description:
+            raw_desc = recipe_data.get("description")
+            if isinstance(raw_desc, str):
+                description = raw_desc.strip() or None
     except Exception:
         description = None
 
