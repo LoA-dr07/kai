@@ -20,12 +20,13 @@ import {
 import { showAlert, showConfirm } from '../../lib/alert';
 import type { HouseholdSettings, UserPreferences, User } from '../../lib/types';
 import { Tooltip } from '../../components/Tooltip';
+import { Colors } from '../../lib/theme';
 
-const GREEN = '#2E7D32';
-const LIGHT_GREEN = '#E8F5E9';
-const BORDER = '#E0E0E0';
-const BG = '#F8F9FA';
-const RED = '#C62828';
+const GREEN = Colors.green;
+const LIGHT_GREEN = Colors.greenLight;
+const BORDER = Colors.border;
+const BG = Colors.bg;
+const RED = Colors.red;
 
 const AVATAR_COLORS = [
   '#1565C0',

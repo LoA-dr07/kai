@@ -1,7 +1,7 @@
-import enum
 from sqlalchemy import Column, Integer, String, Date, ForeignKey, Enum, Table
 from sqlalchemy.orm import relationship
 from app.db.session import Base
+from app.enums import MealType  # noqa: F401 – re-exported for backwards-compat
 
 
 # Many-to-many association: MealPlanEntry ↔ User
@@ -11,14 +11,6 @@ meal_plan_entry_users = Table(
     Column("entry_id", Integer, ForeignKey("meal_plan_entries.id", ondelete="CASCADE"), primary_key=True),
     Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
 )
-
-
-class MealType(str, enum.Enum):
-    breakfast = "breakfast"
-    lunch = "lunch"
-    snack = "snack"
-    dinner = "dinner"
-    dessert = "dessert"
 
 
 class MealPlan(Base):

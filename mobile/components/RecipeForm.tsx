@@ -13,6 +13,7 @@ import { showAlert } from '../lib/alert';
 import { useIngredients, useCreateIngredient, useTags, useCreateTag } from '../lib/hooks/useRecipes';
 import type { RecipeCreatePayload, Tag } from '../lib/types';
 import { Tooltip } from './Tooltip';
+import { Colors } from '../lib/theme';
 
 export interface FormIngredient {
   key: string;
@@ -672,7 +673,7 @@ export default function RecipeForm({
   );
 }
 
-const GREEN = '#2E7D32';
+const GREEN = Colors.green;
 const BORDER = '#DDD';
 
 const styles = StyleSheet.create({
