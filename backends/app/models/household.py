@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from app.db.session import Base
@@ -9,7 +9,7 @@ class Household(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
-    settings = Column(JSONB, nullable=True, default=dict)
+    settings = Column(JSONB().with_variant(JSON(), "sqlite"), nullable=True, default=dict)
 
     members = relationship("HouseholdMember", back_populates="household")
 
