@@ -127,6 +127,7 @@ class RecipeExportItem(BaseModel):
 class RecipeImportResult(BaseModel):
     created: int
     skipped: int
+    created_ids: list[int] = []
 
 
 class RecipeUrlImport(BaseModel):

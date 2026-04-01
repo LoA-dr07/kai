@@ -66,6 +66,7 @@ export interface RecipeExportItem {
 export interface RecipeImportResult {
   created: number;
   skipped: number;
+  created_ids: number[];
 }
 
 export interface RecipeUrlPreview {
