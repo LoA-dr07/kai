@@ -290,26 +290,31 @@ export default function BulkImportScreen() {
       return;
     }
 
-    const result = await bulkPreview.mutateAsync({
-      items: filled.map(x => ({ url: x.url })),
-    });
+    try {
+      const result = await bulkPreview.mutateAsync({
+        items: filled.map(x => ({ url: x.url })),
+      });
 
-    const newConfigs: RecipeConfig[] = [];
-    const newErrors: PreviewFailure[] = [];
-    for (const r of result.results) {
-      if (r.preview) {
-        newConfigs.push({ url: r.url, preview: r.preview, tagIds: [], ratings: {} });
-      } else {
-        newErrors.push({ url: r.url, error: r.error ?? 'Unbekannter Fehler' });
+      const newConfigs: RecipeConfig[] = [];
+      const newErrors: PreviewFailure[] = [];
+      for (const r of result.results) {
+        if (r.preview) {
+          newConfigs.push({ url: r.url, preview: r.preview, tagIds: [], ratings: {} });
+        } else {
+          newErrors.push({ url: r.url, error: r.error ?? 'Unbekannter Fehler' });
+        }
       }
-    }
 
-    setPreviewErrors(newErrors);
-    if (newConfigs.length === 0) {
-      setInputError('Kein Rezept konnte geladen werden. Bitte URLs prüfen.');
-      return;
+      setPreviewErrors(newErrors);
+      if (newConfigs.length === 0) {
+        setInputError('Kein Rezept konnte geladen werden. Bitte URLs prüfen.');
+        return;
+      }
+      setConfigs(newConfigs);
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail ?? (e instanceof Error ? e.message : String(e));
+      setInputError(`Fehler beim Laden: ${detail}`);
     }
-    setConfigs(newConfigs);
   }
 
   // ── Config update helpers ─────────────────────────────────────────────────
@@ -448,6 +453,14 @@ export default function BulkImportScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Info banner */}
+          <View style={styles.infoBanner}>
+            <Ionicons name="information-circle-outline" size={18} color={Colors.greenDark} />
+            <Text style={styles.infoBannerText}>
+              Tags und Bewertungen sind individuell pro Rezept. Jede Karte kann unabhängig konfiguriert werden.
+            </Text>
+          </View>
+
           {/* Preview errors from step 1 */}
           {previewErrors.length > 0 && (
             <View style={[styles.card, styles.errorCard]}>
@@ -636,6 +649,17 @@ const styles = StyleSheet.create({
     borderLeftColor: RED,
   },
   errorCardTitle: { fontSize: 14, fontWeight: '600', color: RED, marginBottom: 10 },
+
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: Colors.greenLight,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  infoBannerText: { flex: 1, fontSize: 13, color: Colors.greenDark, lineHeight: 18 },
 
   sectionTitle: { fontSize: 17, fontWeight: '700', color: '#1A1A1A', marginBottom: 6 },
   sectionSubtitle: { fontSize: 14, fontWeight: '700', color: '#333', marginBottom: 8 },
