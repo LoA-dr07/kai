@@ -4,7 +4,7 @@ import type {
   Recipe, RecipeCreatePayload, Ingredient, RecipeIngredient,
   RecipeExportItem, RecipeImportResult,
   Tag, RecipeRating,
-  BulkUrlImportResult,
+  BulkUrlImportResult, RecipeBulkPreviewResult,
 } from '../types';
 import { DEFAULT_STALE_TIME } from '../constants';
 
@@ -134,13 +134,22 @@ export function useImportRecipes() {
   });
 }
 
+interface BulkUrlItem {
+  url: string;
+  tag_ids: number[];
+  ratings: { user_id: number; stars: number }[];
+}
+
+export function useBulkPreviewFromUrl() {
+  return useMutation<RecipeBulkPreviewResult, Error, { items: Pick<BulkUrlItem, 'url'>[] }>({
+    mutationFn: payload =>
+      api.post('/recipes/import/url/bulk-preview', payload, { timeout: 0 }).then(r => r.data),
+  });
+}
+
 export function useBulkImportFromUrl() {
   const qc = useQueryClient();
-  return useMutation<
-    BulkUrlImportResult,
-    Error,
-    { urls: string[]; tag_ids: number[]; ratings: { user_id: number; stars: number }[] }
-  >({
+  return useMutation<BulkUrlImportResult, Error, { items: BulkUrlItem[] }>({
     mutationFn: payload =>
       api.post('/recipes/import/url/bulk', payload, { timeout: 0 }).then(r => r.data),
     onSuccess: () => {
