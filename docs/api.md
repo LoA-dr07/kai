@@ -159,6 +159,36 @@ Rezept von einer URL einlesen (via `recipe-scrapers`, unterstützt 300+ Rezeptse
 
 ---
 
+### `POST /recipes/import/url/bulk`
+Mehrere Rezepte auf einmal aus URLs importieren (scrapen + direkt speichern). Tags und Bewertungen können vorbelegt werden und werden auf alle erfolgreich importierten Rezepte angewendet.
+
+**Request Body:**
+```json
+{
+  "urls": ["https://example.com/rezept1", "https://example.com/rezept2"],
+  "tag_ids": [1, 3],
+  "ratings": [
+    { "user_id": 1, "stars": 4 },
+    { "user_id": 2, "stars": 3 }
+  ]
+}
+```
+- `tag_ids`: optional, Liste von Tag-IDs
+- `ratings`: optional, Liste von Bewertungen (stars 1–5; 0 wird ignoriert)
+
+**Response 200:**
+```json
+{
+  "created_ids": [42, 43],
+  "failed": [
+    { "url": "https://example.com/rezept3", "error": "Kein Rezept-Schema gefunden" }
+  ]
+}
+```
+Jede URL wird isoliert verarbeitet (Savepoint). Fehler bei einzelnen URLs verhindern nicht den Import der anderen.
+
+---
+
 ## Bewertungen
 
 ### `POST /recipes/{id}/ratings`

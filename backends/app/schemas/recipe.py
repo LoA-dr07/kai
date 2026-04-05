@@ -141,3 +141,19 @@ class RecipeUrlPreview(BaseModel):
     prep_time_minutes: Optional[int] = None
     source_url: Optional[str] = None
     ingredients: list[RecipeExportIngredient] = []
+
+
+class RecipeBulkUrlImport(BaseModel):
+    urls: list[str]
+    tag_ids: list[int] = []
+    ratings: list[RecipeRatingUpsert] = []
+
+
+class BulkUrlImportFailure(BaseModel):
+    url: str
+    error: str
+
+
+class BulkUrlImportResult(BaseModel):
+    created_ids: list[int]
+    failed: list[BulkUrlImportFailure]

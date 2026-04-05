@@ -2,17 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, useWindowDimensions } from 'react-native';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Modal,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -29,24 +27,32 @@ const RATING_LABELS: Record<number, string> = {
   4: 'Häufig',
   5: 'Sehr häufig',
 };
-import { api } from '../../lib/api';
 
 export default function RecipesScreen() {
   const router = useRouter();
+  const { filter_ids } = useLocalSearchParams<{ filter_ids?: string }>();
   const { width } = useWindowDimensions();
   const numColumns = width >= 1400 ? 4 : width >= 1024 ? 3 : width >= 768 ? 2 : 1;
-  const isWide = width >= 768;
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
   const importMutation = useImportRecipes();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // URL-Import State
-  const [urlModalVisible, setUrlModalVisible] = useState(false);
-  const [urlInput, setUrlInput] = useState('');
-  const [urlLoading, setUrlLoading] = useState(false);
-  const [urlError, setUrlError] = useState<string | null>(null);
+  // Filter state: set from navigation params, dismissed by user
+  const [activeFilterIds, setActiveFilterIds] = useState<Set<number> | null>(null);
+
+  useEffect(() => {
+    if (filter_ids) {
+      const ids = filter_ids.split(',').map(Number).filter(Boolean);
+      if (ids.length > 0) setActiveFilterIds(new Set(ids));
+    }
+  }, [filter_ids]);
+
+  const displayedRecipes = useMemo(() => {
+    if (!activeFilterIds) return recipes ?? [];
+    return (recipes ?? []).filter(r => activeFilterIds.has(r.id));
+  }, [recipes, activeFilterIds]);
 
   async function handleExport() {
     setIsExporting(true);
@@ -136,32 +142,6 @@ export default function RecipesScreen() {
     }
   }
 
-  function openUrlModal() {
-    setUrlInput('');
-    setUrlError(null);
-    setUrlModalVisible(true);
-  }
-
-  async function handleUrlFetch() {
-    const trimmed = urlInput.trim();
-    if (!trimmed) return;
-    setUrlLoading(true);
-    setUrlError(null);
-    try {
-      const response = await api.post('/recipes/import/url', { url: trimmed });
-      setUrlModalVisible(false);
-      router.push({
-        pathname: '/recipe/import-preview',
-        params: { data: JSON.stringify(response.data) },
-      });
-    } catch (e: any) {
-      const detail = e?.response?.data?.detail ?? (e instanceof Error ? e.message : String(e));
-      setUrlError(String(detail));
-    } finally {
-      setUrlLoading(false);
-    }
-  }
-
   if (isLoading) {
     return <ActivityIndicator style={styles.center} size="large" color="#2E7D32" />;
   }
@@ -188,9 +168,29 @@ export default function RecipesScreen() {
           onChange={handleWebFileSelected}
         />
       )}
+
+      {activeFilterIds && (
+        <View style={styles.filterBanner}>
+          <Text style={styles.filterBannerText}>
+            {activeFilterIds.size} neue{activeFilterIds.size === 1 ? 's Rezept' : ' Rezepte'} · Filter aktiv
+          </Text>
+          <Tooltip label="Filter aufheben">
+            <TouchableOpacity
+              onPress={() => {
+                setActiveFilterIds(null);
+                router.setParams({ filter_ids: undefined });
+              }}
+              accessibilityLabel="Filter aufheben"
+            >
+              <Ionicons name="close-circle" size={20} color={GREEN} />
+            </TouchableOpacity>
+          </Tooltip>
+        </View>
+      )}
+
       <FlatList
         key={numColumns}
-        data={recipes}
+        data={displayedRecipes}
         keyExtractor={item => String(item.id)}
         numColumns={numColumns}
         columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
@@ -210,11 +210,11 @@ export default function RecipesScreen() {
 
       {/* Action buttons */}
       <View style={styles.fabGroup}>
-        <Tooltip label="Rezept aus URL importieren">
+        <Tooltip label="Rezepte aus URLs importieren">
           <TouchableOpacity
             style={styles.fabSecondary}
-            onPress={openUrlModal}
-            accessibilityLabel="Rezept aus URL importieren"
+            onPress={() => router.push('/recipe/bulk-import')}
+            accessibilityLabel="Rezepte aus URLs importieren"
           >
             <Ionicons name="link-outline" size={22} color="#2E7D32" />
           </TouchableOpacity>
@@ -248,52 +248,6 @@ export default function RecipesScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* URL-Import Modal */}
-      <Modal
-        visible={urlModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setUrlModalVisible(false)}
-      >
-        <View style={[styles.modalContainer, isWide && styles.modalContainerWide]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Rezept aus URL importieren</Text>
-            <TouchableOpacity onPress={() => setUrlModalVisible(false)}>
-              <Text style={styles.modalClose}>Schließen</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.modalBody}>
-            <Text style={styles.urlLabel}>Rezept-URL eingeben:</Text>
-            <View style={styles.urlRow}>
-              <TextInput
-                style={styles.urlInput}
-                placeholder="https://www.chefkoch.de/rezepte/…"
-                value={urlInput}
-                onChangeText={setUrlInput}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-                returnKeyType="go"
-                onSubmitEditing={handleUrlFetch}
-              />
-              <TouchableOpacity
-                style={[styles.fetchBtn, (!urlInput.trim() || urlLoading) && styles.fetchBtnDisabled]}
-                onPress={handleUrlFetch}
-                disabled={!urlInput.trim() || urlLoading}
-              >
-                {urlLoading
-                  ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.fetchBtnText}>Laden</Text>}
-              </TouchableOpacity>
-            </View>
-
-            {urlError && (
-              <Text style={styles.urlError}>{urlError}</Text>
-            )}
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -426,43 +380,16 @@ const styles = StyleSheet.create({
   cardTagText: { fontSize: 11, fontWeight: '600', color: '#2E7D32' },
   cardTagTextCustom: { color: '#5C6BC0' },
 
-  // Modal
-  modalContainer: { flex: 1, backgroundColor: '#fff' },
-  modalContainerWide: { maxWidth: 680, width: '100%', alignSelf: 'center' },
-  modalHeader: {
+  // Filter banner
+  filterBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: Colors.greenLight,
     paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-  },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
-  modalClose: { fontSize: 16, color: GREEN, fontWeight: '600' },
-  modalBody: { padding: 16 },
-  urlLabel: { fontSize: 14, fontWeight: '600', color: '#555', marginBottom: 8 },
-  urlRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  urlInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 10,
-    paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 14,
-    backgroundColor: '#FAFAFA',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
-  fetchBtn: {
-    backgroundColor: GREEN,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 70,
-  },
-  fetchBtnDisabled: { backgroundColor: '#A5D6A7' },
-  fetchBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  urlError: { color: '#D32F2F', fontSize: 13, marginBottom: 12 },
+  filterBannerText: { fontSize: 14, fontWeight: '600', color: Colors.greenDark, flex: 1 },
 });
