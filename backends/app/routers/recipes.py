@@ -243,6 +243,18 @@ def import_recipe_from_url(payload: RecipeUrlImport):
     if isinstance(name, list):
         name = name[0] if name else "Unbekanntes Rezept"
 
+    author_raw = recipe_data.get("author")
+    if isinstance(author_raw, list):
+        author_raw = author_raw[0] if author_raw else None
+    if isinstance(author_raw, dict):
+        author_name = author_raw.get("name", "")
+    elif isinstance(author_raw, str):
+        author_name = author_raw
+    else:
+        author_name = ""
+    if author_name and name.endswith(f" von {author_name}"):
+        name = name[: -len(f" von {author_name}")].rstrip()
+
     try:
         description = _parse_instructions(recipe_data.get("recipeInstructions"))
         if not description:
