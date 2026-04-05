@@ -1,4 +1,5 @@
 """Utilities for scraping recipe data from external URLs via JSON-LD structured data."""
+import html as _html
 import json
 import re
 from html.parser import HTMLParser
@@ -19,6 +20,14 @@ _KNOWN_UNITS = {
 }
 
 _NUMBER_RE = re.compile(r'^(\d+(?:[.,]\d+)?)\s*(.*)', re.DOTALL)
+_HTML_TAG_RE = re.compile(r'<[^>]+>')
+
+
+def _strip_html(text: str) -> str:
+    """Strip HTML tags and decode HTML entities from a string."""
+    text = _HTML_TAG_RE.sub(' ', text)
+    text = _html.unescape(text)
+    return re.sub(r' {2,}', ' ', text).strip()
 
 
 class _JsonLdExtractor(HTMLParser):
@@ -66,13 +75,13 @@ def parse_instructions(raw) -> str | None:
     if not raw:
         return None
     if isinstance(raw, str):
-        return raw.strip() or None
+        return _strip_html(raw) or None
     steps = []
     for i, item in enumerate(raw, 1):
         if isinstance(item, str):
-            text = item.strip()
+            text = _strip_html(item)
         elif isinstance(item, dict):
-            text = (item.get("text") or "").strip()
+            text = _strip_html(item.get("text") or "")
         else:
             continue
         if text:
