@@ -11,7 +11,8 @@ from app.schemas.recipe import (
     RecipeRatingOut, RecipeRatingUpsert,
     RecipeExportItem, RecipeExportIngredient, RecipeImportResult,
     RecipeUrlImport, RecipeUrlPreview,
-    RecipeBulkUrlImport, BulkUrlImportResult, BulkUrlImportFailure,
+    RecipeBulkUrlItem, RecipeBulkUrlImport, BulkUrlImportResult, BulkUrlImportFailure,
+    RecipeUrlPreviewResult, RecipeBulkPreviewResult,
 )
 from app.utils.recipe_scraper import (
     scrape_recipe_url as _scrape_recipe_url,
@@ -295,15 +296,29 @@ def import_recipe_from_url(payload: RecipeUrlImport):
         )
 
 
+@router.post("/import/url/bulk-preview", response_model=RecipeBulkPreviewResult)
+def bulk_preview_from_url(payload: RecipeBulkUrlImport):
+    """Scrape multiple URLs and return previews without persisting anything."""
+    results: list[RecipeUrlPreviewResult] = []
+    for item in payload.items:
+        try:
+            preview = _build_recipe_preview(item.url)
+            results.append(RecipeUrlPreviewResult(url=item.url, preview=preview))
+        except Exception as exc:
+            results.append(RecipeUrlPreviewResult(url=item.url, error=str(exc)))
+    return RecipeBulkPreviewResult(results=results)
+
+
 @router.post("/import/url/bulk", response_model=BulkUrlImportResult)
 def bulk_import_from_url(payload: RecipeBulkUrlImport, db: Session = Depends(get_db)):
+    """Import recipes from URLs with per-recipe tags and ratings."""
     created_ids: list[int] = []
     failed: list[BulkUrlImportFailure] = []
 
-    for url in payload.urls:
+    for item in payload.items:
         sp = db.begin_nested()
         try:
-            preview = _build_recipe_preview(url)
+            preview = _build_recipe_preview(item.url)
             recipe = Recipe(
                 name=preview.name,
                 description=preview.description,
@@ -331,12 +346,12 @@ def bulk_import_from_url(payload: RecipeBulkUrlImport, db: Session = Depends(get
                     unit=ing.unit,
                 ))
 
-            for tag_id in payload.tag_ids:
+            for tag_id in item.tag_ids:
                 tag = db.get(Tag, tag_id)
                 if tag and tag not in recipe.tags:
                     recipe.tags.append(tag)
 
-            for r in payload.ratings:
+            for r in item.ratings:
                 if r.stars > 0 and db.get(User, r.user_id):
                     db.add(RecipeRating(
                         recipe_id=recipe.id,
@@ -348,7 +363,7 @@ def bulk_import_from_url(payload: RecipeBulkUrlImport, db: Session = Depends(get
             created_ids.append(recipe.id)
         except Exception as exc:
             sp.rollback()
-            failed.append(BulkUrlImportFailure(url=url, error=str(exc)))
+            failed.append(BulkUrlImportFailure(url=item.url, error=str(exc)))
 
     db.commit()
     return BulkUrlImportResult(created_ids=created_ids, failed=failed)

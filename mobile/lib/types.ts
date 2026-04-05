@@ -79,6 +79,16 @@ export interface BulkUrlImportResult {
   failed: BulkUrlImportFailure[];
 }
 
+export interface RecipeUrlPreviewResult {
+  url: string;
+  preview: RecipeUrlPreview | null;
+  error: string | null;
+}
+
+export interface RecipeBulkPreviewResult {
+  results: RecipeUrlPreviewResult[];
+}
+
 export interface RecipeUrlPreview {
   name: string;
   description?: string | null;
