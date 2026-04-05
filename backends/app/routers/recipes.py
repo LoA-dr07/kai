@@ -17,7 +17,6 @@ from app.utils.recipe_scraper import (
     parse_instructions as _parse_instructions,
     parse_iso_duration as _parse_iso_duration,
     parse_ingredients as _parse_ingredients,
-    _strip_html,
 )
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
@@ -258,10 +257,6 @@ def import_recipe_from_url(payload: RecipeUrlImport):
 
     try:
         description = _parse_instructions(recipe_data.get("recipeInstructions"))
-        if not description:
-            raw_desc = recipe_data.get("description")
-            if isinstance(raw_desc, str):
-                description = _strip_html(raw_desc) or None
     except Exception:
         description = None
 
