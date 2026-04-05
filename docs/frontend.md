@@ -63,13 +63,10 @@ mobile/
 - Responsiv: Tablet-Layout ab 768px Breite
 
 ### `recipe/bulk-import.tsx` – Rezepte aus URLs importieren (Bulk)
-- Dynamische URL-Felder: Mit jeder eingetippten URL erscheint automatisch ein neues leeres Feld.
-- Validierung: Alle Felder leer → Fehler. Ungültige URLs → Feld rot markiert, kein Import.
-- Vor dem Import: Tag-Auswahl (wie in RecipeForm) und optionale Sternebewertungen pro Haushaltsmitglied.
-- Tags und Bewertungen gelten für alle importierten Rezepte.
-- Ruft `POST /recipes/import/url/bulk` via `useBulkImportFromUrl()` auf.
-- Ergebnis-Ansicht: Erfolgsmeldung + Liste fehlgeschlagener URLs mit Fehlerbeschreibung.
-- Bei mind. 1 Erfolg: Button "Zur Rezeptübersicht" navigiert mit `filter_ids`-Parameter zu `/(tabs)/recipes`.
+Dreistufiger Flow:
+1. **URL-Eingabe**: Dynamische URL-Felder (neues Feld erscheint automatisch). Validierung: alle leer → Fehler, ungültige URLs → Feld rot markiert. Klick auf "Vorschau laden" scrapt alle URLs via `useBulkPreviewFromUrl()`.
+2. **Konfiguration (pro Rezept)**: Pro erfolgreich gescraptem Rezept eine Karte mit Rezeptname, URL, individuallem Tag-Chip-Auswahl und Sternebewertung pro Haushaltsmitglied. Fehlgeschlagene Vorschau-URLs werden als Fehler-Banner oben angezeigt. Klick auf "X Rezepte importieren" → `useBulkImportFromUrl()`.
+3. **Ergebnis**: Erfolgsanzahl + Liste aller fehlgeschlagenen URLs (Vorschau-Fehler + Import-Fehler). "Zur Rezeptübersicht" navigiert mit `filter_ids`-Parameter.
 
 ### `recipe/new.tsx` – Neues Rezept
 - Verwendet `RecipeForm`-Komponente
@@ -121,7 +118,8 @@ Alle Hooks befinden sich in `mobile/lib/hooks/`. Sie wrappen Axios-Calls und ver
 | `useCreateTag()` | Mutation | Neuer Tag, invalidiert `['tags']` |
 | `useRateRecipe(recipeId)` | Mutation | Bewertung Upsert, invalidiert `['recipes']` + `['recipes', recipeId]` |
 | `useImportRecipes()` | Mutation | JSON-Bulk-Import, invalidiert `['recipes']` + `['ingredients']` |
-| `useBulkImportFromUrl()` | Mutation | URL-Bulk-Import, ruft `POST /recipes/import/url/bulk` auf, invalidiert `['recipes']` + `['ingredients']` |
+| `useBulkPreviewFromUrl()` | Mutation | Scrape mehrere URLs ohne Speichern (`POST /recipes/import/url/bulk-preview`) |
+| `useBulkImportFromUrl()` | Mutation | URL-Bulk-Import mit per-item-Konfiguration, invalidiert `['recipes']` + `['ingredients']` |
 
 ### Wochenplan-Hooks (`useMealPlan.ts`)
 
