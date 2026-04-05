@@ -50,9 +50,10 @@ mobile/
 - Aktionsbuttons im Header:
   - Exportieren → `GET /recipes/export` → Systemteilen-Dialog
   - Importieren → Datei-Picker → `POST /recipes/import`
-  - Aus URL importieren → Modal mit URL-Eingabe → Vorschau → Speichern
+  - Aus URLs importieren → navigiert zu `recipe/bulk-import`
   - Neues Rezept → navigiert zu `recipe/new`
 - Tippt man auf eine Karte → navigiert zu `recipe/[id]`
+- Unterstützt `filter_ids`-Query-Parameter (komma-separierte Rezept-IDs): Zeigt nur diese Rezepte und blendet einen Filter-Banner ein ("X neue Rezepte · Filter aktiv"). Banner-✕ entfernt den Filter.
 
 ### `(tabs)/meal-plan.tsx` – Wochenplan
 - Zeigt eine Woche als Grid: 7 Tage × 5 Mahlzeiten (Frühstück, Mittagessen, Snack, Abendessen, Dessert)
@@ -60,6 +61,15 @@ mobile/
 - Pro Zelle: geplantes Rezept oder Freitext, farbige User-Avatar-Chips
 - Zelle antippen → Bearbeitungsmodal (Rezept auswählen oder Freitext eingeben, User zuweisen)
 - Responsiv: Tablet-Layout ab 768px Breite
+
+### `recipe/bulk-import.tsx` – Rezepte aus URLs importieren (Bulk)
+- Dynamische URL-Felder: Mit jeder eingetippten URL erscheint automatisch ein neues leeres Feld.
+- Validierung: Alle Felder leer → Fehler. Ungültige URLs → Feld rot markiert, kein Import.
+- Vor dem Import: Tag-Auswahl (wie in RecipeForm) und optionale Sternebewertungen pro Haushaltsmitglied.
+- Tags und Bewertungen gelten für alle importierten Rezepte.
+- Ruft `POST /recipes/import/url/bulk` via `useBulkImportFromUrl()` auf.
+- Ergebnis-Ansicht: Erfolgsmeldung + Liste fehlgeschlagener URLs mit Fehlerbeschreibung.
+- Bei mind. 1 Erfolg: Button "Zur Rezeptübersicht" navigiert mit `filter_ids`-Parameter zu `/(tabs)/recipes`.
 
 ### `recipe/new.tsx` – Neues Rezept
 - Verwendet `RecipeForm`-Komponente
@@ -110,7 +120,8 @@ Alle Hooks befinden sich in `mobile/lib/hooks/`. Sie wrappen Axios-Calls und ver
 | `useTags()` | Query | Alle Tags (Cache-Key: `['tags']`) |
 | `useCreateTag()` | Mutation | Neuer Tag, invalidiert `['tags']` |
 | `useRateRecipe(recipeId)` | Mutation | Bewertung Upsert, invalidiert `['recipes']` + `['recipes', recipeId]` |
-| `useImportRecipes()` | Mutation | Bulk-Import, invalidiert `['recipes']` + `['ingredients']` |
+| `useImportRecipes()` | Mutation | JSON-Bulk-Import, invalidiert `['recipes']` + `['ingredients']` |
+| `useBulkImportFromUrl()` | Mutation | URL-Bulk-Import, ruft `POST /recipes/import/url/bulk` auf, invalidiert `['recipes']` + `['ingredients']` |
 
 ### Wochenplan-Hooks (`useMealPlan.ts`)
 
@@ -292,6 +303,7 @@ const isTablet = width >= 768;
 | `/` | Weiterleitung → `/recipes` |
 | `/(tabs)/recipes` | Rezeptliste |
 | `/(tabs)/meal-plan` | Wochenplan |
+| `/recipe/bulk-import` | Bulk-Import aus URLs |
 | `/recipe/new` | Neues Rezept |
 | `/recipe/[id]` | Rezeptdetail |
 | `/recipe/[id]/edit` | Rezept bearbeiten |
