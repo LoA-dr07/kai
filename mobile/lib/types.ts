@@ -69,6 +69,16 @@ export interface RecipeImportResult {
   created_ids: number[];
 }
 
+export interface BulkUrlImportFailure {
+  url: string;
+  error: string;
+}
+
+export interface BulkUrlImportResult {
+  created_ids: number[];
+  failed: BulkUrlImportFailure[];
+}
+
 export interface RecipeUrlPreview {
   name: string;
   description?: string | null;

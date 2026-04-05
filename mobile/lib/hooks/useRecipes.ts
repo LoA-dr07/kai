@@ -4,6 +4,7 @@ import type {
   Recipe, RecipeCreatePayload, Ingredient, RecipeIngredient,
   RecipeExportItem, RecipeImportResult,
   Tag, RecipeRating,
+  BulkUrlImportResult,
 } from '../types';
 import { DEFAULT_STALE_TIME } from '../constants';
 
@@ -126,6 +127,22 @@ export function useImportRecipes() {
   const qc = useQueryClient();
   return useMutation<RecipeImportResult, Error, RecipeExportItem[]>({
     mutationFn: recipes => api.post('/recipes/import', recipes).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['recipes'] });
+      qc.invalidateQueries({ queryKey: ['ingredients'] });
+    },
+  });
+}
+
+export function useBulkImportFromUrl() {
+  const qc = useQueryClient();
+  return useMutation<
+    BulkUrlImportResult,
+    Error,
+    { urls: string[]; tag_ids: number[]; ratings: { user_id: number; stars: number }[] }
+  >({
+    mutationFn: payload =>
+      api.post('/recipes/import/url/bulk', payload, { timeout: 0 }).then(r => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['recipes'] });
       qc.invalidateQueries({ queryKey: ['ingredients'] });
