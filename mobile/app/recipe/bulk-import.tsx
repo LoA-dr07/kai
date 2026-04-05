@@ -238,6 +238,10 @@ export default function BulkImportScreen() {
   const [invalidIndices, setInvalidIndices] = useState<Set<number>>(new Set());
   const [inputError, setInputError] = useState<string | null>(null);
 
+  // Step 1: global defaults (pre-fill for all recipes, adjustable per-recipe in step 2)
+  const [globalTagIds, setGlobalTagIds] = useState<number[]>([]);
+  const [globalRatings, setGlobalRatings] = useState<Record<number, number>>({});
+
   // Step 2: per-recipe configuration
   const [configs, setConfigs] = useState<RecipeConfig[]>([]);
   const [previewErrors, setPreviewErrors] = useState<PreviewFailure[]>([]);
@@ -290,26 +294,36 @@ export default function BulkImportScreen() {
       return;
     }
 
-    const result = await bulkPreview.mutateAsync({
-      items: filled.map(x => ({ url: x.url })),
-    });
+    try {
+      const result = await bulkPreview.mutateAsync({
+        items: filled.map(x => ({ url: x.url })),
+      });
 
-    const newConfigs: RecipeConfig[] = [];
-    const newErrors: PreviewFailure[] = [];
-    for (const r of result.results) {
-      if (r.preview) {
-        newConfigs.push({ url: r.url, preview: r.preview, tagIds: [], ratings: {} });
-      } else {
-        newErrors.push({ url: r.url, error: r.error ?? 'Unbekannter Fehler' });
+      const newConfigs: RecipeConfig[] = [];
+      const newErrors: PreviewFailure[] = [];
+      for (const r of result.results) {
+        if (r.preview) {
+          newConfigs.push({
+            url: r.url,
+            preview: r.preview,
+            tagIds: [...globalTagIds],
+            ratings: { ...globalRatings },
+          });
+        } else {
+          newErrors.push({ url: r.url, error: r.error ?? 'Unbekannter Fehler' });
+        }
       }
-    }
 
-    setPreviewErrors(newErrors);
-    if (newConfigs.length === 0) {
-      setInputError('Kein Rezept konnte geladen werden. Bitte URLs prüfen.');
-      return;
+      setPreviewErrors(newErrors);
+      if (newConfigs.length === 0) {
+        setInputError('Kein Rezept konnte geladen werden. Bitte URLs prüfen.');
+        return;
+      }
+      setConfigs(newConfigs);
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail ?? (e instanceof Error ? e.message : String(e));
+      setInputError(`Fehler beim Laden: ${detail}`);
     }
-    setConfigs(newConfigs);
   }
 
   // ── Config update helpers ─────────────────────────────────────────────────
@@ -362,6 +376,8 @@ export default function BulkImportScreen() {
     setUrls(['']);
     setInvalidIndices(new Set());
     setInputError(null);
+    setGlobalTagIds([]);
+    setGlobalRatings({});
     setConfigs([]);
     setPreviewErrors([]);
     setResults(null);
@@ -448,6 +464,16 @@ export default function BulkImportScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Info banner */}
+          <View style={styles.infoBanner}>
+            <Ionicons name="information-circle-outline" size={18} color={Colors.greenDark} />
+            <Text style={styles.infoBannerText}>
+              {globalTagIds.length > 0 || Object.values(globalRatings).some(s => s > 0)
+                ? 'Vorbelegt aus Schritt 1 – hier kannst du Tags und Bewertungen individuell pro Rezept anpassen.'
+                : 'Tags und Bewertungen sind individuell pro Rezept konfigurierbar.'}
+            </Text>
+          </View>
+
           {/* Preview errors from step 1 */}
           {previewErrors.length > 0 && (
             <View style={[styles.card, styles.errorCard]}>
@@ -552,7 +578,6 @@ export default function BulkImportScreen() {
           <Text style={styles.sectionTitle}>URLs eingeben</Text>
           <Text style={styles.hint}>
             Sobald du eine URL eingibst, erscheint automatisch ein weiteres Feld.
-            Im nächsten Schritt kannst du Tags und Bewertungen für jedes Rezept individuell vergeben.
           </Text>
 
           {urls.map((url, index) => {
@@ -592,6 +617,44 @@ export default function BulkImportScreen() {
 
           {inputError && <Text style={styles.importError}>{inputError}</Text>}
         </View>
+
+        {/* Global tags (optional default for all recipes) */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Tags</Text>
+          <Text style={styles.hint}>
+            Optional – gilt als Vorbelegung für alle Rezepte und kann im nächsten Schritt individuell angepasst werden.
+          </Text>
+          <TagSection
+            allTags={allTags}
+            selectedIds={globalTagIds}
+            onToggle={id =>
+              setGlobalTagIds(prev =>
+                prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+              )
+            }
+            onAddTag={async name => {
+              const tag = await createTag.mutateAsync(name);
+              return tag.id;
+            }}
+          />
+        </View>
+
+        {/* Global ratings (optional default for all recipes) */}
+        {users.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Bewertungen</Text>
+            <Text style={styles.hint}>
+              Optional – gilt als Vorbelegung für alle Rezepte und kann im nächsten Schritt individuell angepasst werden.
+            </Text>
+            <RatingSection
+              users={users}
+              ratings={globalRatings}
+              onRate={(userId, stars) =>
+                setGlobalRatings(prev => ({ ...prev, [userId]: stars }))
+              }
+            />
+          </View>
+        )}
 
         <TouchableOpacity
           style={[styles.primaryBtn, bulkPreview.isPending && styles.primaryBtnDisabled]}
@@ -636,6 +699,17 @@ const styles = StyleSheet.create({
     borderLeftColor: RED,
   },
   errorCardTitle: { fontSize: 14, fontWeight: '600', color: RED, marginBottom: 10 },
+
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: Colors.greenLight,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  infoBannerText: { flex: 1, fontSize: 13, color: Colors.greenDark, lineHeight: 18 },
 
   sectionTitle: { fontSize: 17, fontWeight: '700', color: '#1A1A1A', marginBottom: 6 },
   sectionSubtitle: { fontSize: 14, fontWeight: '700', color: '#333', marginBottom: 8 },
