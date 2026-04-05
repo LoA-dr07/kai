@@ -11,6 +11,7 @@ from app.schemas.recipe import (
     RecipeRatingOut, RecipeRatingUpsert,
     RecipeExportItem, RecipeExportIngredient, RecipeImportResult,
     RecipeUrlImport, RecipeUrlPreview,
+    RecipeBulkUrlImport, BulkUrlImportResult, BulkUrlImportFailure,
 )
 from app.utils.recipe_scraper import (
     scrape_recipe_url as _scrape_recipe_url,
@@ -229,15 +230,9 @@ def import_recipes(recipes: list[RecipeExportItem], db: Session = Depends(get_db
     return RecipeImportResult(created=created, skipped=skipped, created_ids=created_ids)
 
 
-@router.post("/import/url", response_model=RecipeUrlPreview)
-def import_recipe_from_url(payload: RecipeUrlImport):
-    try:
-        recipe_data = _scrape_recipe_url(payload.url)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Rezept konnte nicht ausgelesen werden: {exc}",
-        )
+def _build_recipe_preview(url: str) -> RecipeUrlPreview:
+    """Scrape a recipe URL and return a RecipeUrlPreview. Raises on failure."""
+    recipe_data = _scrape_recipe_url(url)
 
     name = recipe_data.get("name", "Unbekanntes Rezept")
     if isinstance(name, list):
@@ -284,9 +279,79 @@ def import_recipe_from_url(payload: RecipeUrlImport):
         description=description,
         servings=servings,
         prep_time_minutes=prep_minutes,
-        source_url=payload.url,
+        source_url=url,
         ingredients=raw_ingredients,
     )
+
+
+@router.post("/import/url", response_model=RecipeUrlPreview)
+def import_recipe_from_url(payload: RecipeUrlImport):
+    try:
+        return _build_recipe_preview(payload.url)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Rezept konnte nicht ausgelesen werden: {exc}",
+        )
+
+
+@router.post("/import/url/bulk", response_model=BulkUrlImportResult)
+def bulk_import_from_url(payload: RecipeBulkUrlImport, db: Session = Depends(get_db)):
+    created_ids: list[int] = []
+    failed: list[BulkUrlImportFailure] = []
+
+    for url in payload.urls:
+        sp = db.begin_nested()
+        try:
+            preview = _build_recipe_preview(url)
+            recipe = Recipe(
+                name=preview.name,
+                description=preview.description,
+                servings=preview.servings,
+                prep_time_minutes=preview.prep_time_minutes,
+                source_url=preview.source_url,
+            )
+            db.add(recipe)
+            db.flush()
+
+            seen: set[int] = set()
+            for ing in preview.ingredients:
+                ingredient = db.query(Ingredient).filter(Ingredient.name == ing.ingredient_name).first()
+                if not ingredient:
+                    ingredient = Ingredient(name=ing.ingredient_name)
+                    db.add(ingredient)
+                    db.flush()
+                if ingredient.id in seen:
+                    continue
+                seen.add(ingredient.id)
+                db.add(RecipeIngredient(
+                    recipe_id=recipe.id,
+                    ingredient_id=ingredient.id,
+                    amount=ing.amount,
+                    unit=ing.unit,
+                ))
+
+            for tag_id in payload.tag_ids:
+                tag = db.get(Tag, tag_id)
+                if tag and tag not in recipe.tags:
+                    recipe.tags.append(tag)
+
+            for r in payload.ratings:
+                if r.stars > 0 and db.get(User, r.user_id):
+                    db.add(RecipeRating(
+                        recipe_id=recipe.id,
+                        user_id=r.user_id,
+                        stars=r.stars,
+                    ))
+
+            sp.commit()
+            created_ids.append(recipe.id)
+        except Exception as exc:
+            sp.rollback()
+            failed.append(BulkUrlImportFailure(url=url, error=str(exc)))
+
+    db.commit()
+    return BulkUrlImportResult(created_ids=created_ids, failed=failed)
 
 
 @router.get("/{recipe_id}", response_model=RecipeOut)
