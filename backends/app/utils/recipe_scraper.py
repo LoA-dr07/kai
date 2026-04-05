@@ -71,13 +71,22 @@ def find_recipe_jsonld(data) -> dict | None:
 
 
 def parse_instructions(raw) -> str | None:
-    """Extract plain text from recipeInstructions (string, list of strings or HowToStep dicts)."""
+    """Extract plain text from recipeInstructions (string, list of strings, HowToStep or HowToSection dicts)."""
     if not raw:
         return None
     if isinstance(raw, str):
         return _strip_html(raw) or None
+
+    # Flatten HowToSection containers into a single list of step items
+    flat: list = []
+    for item in raw:
+        if isinstance(item, dict) and item.get("@type") == "HowToSection":
+            flat.extend(item.get("itemListElement") or [])
+        else:
+            flat.append(item)
+
     steps = []
-    for i, item in enumerate(raw, 1):
+    for i, item in enumerate(flat, 1):
         if isinstance(item, str):
             text = _strip_html(item)
         elif isinstance(item, dict):
