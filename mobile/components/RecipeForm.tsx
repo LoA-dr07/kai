@@ -259,16 +259,39 @@ export default function RecipeForm({
       return;
     }
 
+    // Resolve imported ingredients that don't have a backend ID yet (ingredient_id === 0)
+    const resolvedIngredients: { ingredient_id: number; amount: number; unit: string }[] = [];
+    for (const ing of formIngredients) {
+      let id = ing.ingredient_id;
+      if (id === 0) {
+        const exact = (ingredients ?? []).find(
+          i => i.name.toLowerCase() === ing.ingredient_name.toLowerCase(),
+        );
+        if (exact) {
+          id = exact.id;
+        } else {
+          try {
+            const created = await createIngredient.mutateAsync(ing.ingredient_name);
+            id = created.id;
+          } catch {
+            showAlert('Fehler', `Zutat "${ing.ingredient_name}" konnte nicht erstellt werden.`);
+            return;
+          }
+        }
+      }
+      resolvedIngredients.push({
+        ingredient_id: id,
+        amount: parseFloat(ing.amount.replace(',', '.')),
+        unit: ing.unit,
+      });
+    }
+
     const payload: RecipeCreatePayload = {
       name: name.trim(),
       description: description.trim() || null,
       servings: servingsNum,
       prep_time_minutes: prepTime ? parseInt(prepTime, 10) : null,
-      ingredients: formIngredients.map(ing => ({
-        ingredient_id: ing.ingredient_id,
-        amount: parseFloat(ing.amount.replace(',', '.')),
-        unit: ing.unit,
-      })),
+      ingredients: resolvedIngredients,
       tag_ids: selectedTagIds,
     };
 
