@@ -143,10 +143,14 @@ class RecipeUrlPreview(BaseModel):
     ingredients: list[RecipeExportIngredient] = []
 
 
-class RecipeBulkUrlImport(BaseModel):
-    urls: list[str]
+class RecipeBulkUrlItem(BaseModel):
+    url: str
     tag_ids: list[int] = []
     ratings: list[RecipeRatingUpsert] = []
+
+
+class RecipeBulkUrlImport(BaseModel):
+    items: list[RecipeBulkUrlItem]
 
 
 class BulkUrlImportFailure(BaseModel):
@@ -157,3 +161,13 @@ class BulkUrlImportFailure(BaseModel):
 class BulkUrlImportResult(BaseModel):
     created_ids: list[int]
     failed: list[BulkUrlImportFailure]
+
+
+class RecipeUrlPreviewResult(BaseModel):
+    url: str
+    preview: Optional[RecipeUrlPreview] = None
+    error: Optional[str] = None
+
+
+class RecipeBulkPreviewResult(BaseModel):
+    results: list[RecipeUrlPreviewResult]

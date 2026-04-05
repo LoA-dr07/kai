@@ -159,33 +159,54 @@ Rezept von einer URL einlesen (via `recipe-scrapers`, unterstützt 300+ Rezeptse
 
 ---
 
+### `POST /recipes/import/url/bulk-preview`
+Scrape mehrere URLs und gib Vorschau-Objekte zurück, **ohne** etwas zu speichern. Fehler pro URL werden zurückgegeben, nicht als HTTP-Fehler.
+
+**Request Body:**
+```json
+{ "items": [{ "url": "https://example.com/rezept1" }, { "url": "https://example.com/rezept2" }] }
+```
+
+**Response 200:**
+```json
+{
+  "results": [
+    { "url": "https://example.com/rezept1", "preview": { "name": "Spaghetti", ... }, "error": null },
+    { "url": "https://example.com/rezept2", "preview": null, "error": "Kein Rezept-Schema gefunden" }
+  ]
+}
+```
+
+---
+
 ### `POST /recipes/import/url/bulk`
-Mehrere Rezepte auf einmal aus URLs importieren (scrapen + direkt speichern). Tags und Bewertungen können vorbelegt werden und werden auf alle erfolgreich importierten Rezepte angewendet.
+Mehrere Rezepte direkt speichern. Tags und Bewertungen werden **pro Rezept** individuell angegeben. Jede URL wird in einem Savepoint isoliert verarbeitet.
 
 **Request Body:**
 ```json
 {
-  "urls": ["https://example.com/rezept1", "https://example.com/rezept2"],
-  "tag_ids": [1, 3],
-  "ratings": [
-    { "user_id": 1, "stars": 4 },
-    { "user_id": 2, "stars": 3 }
+  "items": [
+    {
+      "url": "https://example.com/rezept1",
+      "tag_ids": [1, 3],
+      "ratings": [{ "user_id": 1, "stars": 4 }, { "user_id": 2, "stars": 3 }]
+    },
+    {
+      "url": "https://example.com/rezept2",
+      "tag_ids": [],
+      "ratings": []
+    }
   ]
 }
 ```
-- `tag_ids`: optional, Liste von Tag-IDs
-- `ratings`: optional, Liste von Bewertungen (stars 1–5; 0 wird ignoriert)
 
 **Response 200:**
 ```json
 {
   "created_ids": [42, 43],
-  "failed": [
-    { "url": "https://example.com/rezept3", "error": "Kein Rezept-Schema gefunden" }
-  ]
+  "failed": [{ "url": "https://example.com/rezept3", "error": "..." }]
 }
 ```
-Jede URL wird isoliert verarbeitet (Savepoint). Fehler bei einzelnen URLs verhindern nicht den Import der anderen.
 
 ---
 
