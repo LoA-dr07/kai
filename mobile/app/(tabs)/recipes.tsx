@@ -17,7 +17,7 @@ import {
   View,
 } from 'react-native';
 import { useImportRecipes, useRecipes } from '../../lib/hooks/useRecipes';
-import type { Recipe, RecipeExportItem, RecipeUrlPreview } from '../../lib/types';
+import type { Recipe, RecipeExportItem } from '../../lib/types';
 import { Tooltip } from '../../components/Tooltip';
 import { Colors } from '../../lib/theme';
 
@@ -46,9 +46,7 @@ export default function RecipesScreen() {
   const [urlModalVisible, setUrlModalVisible] = useState(false);
   const [urlInput, setUrlInput] = useState('');
   const [urlLoading, setUrlLoading] = useState(false);
-  const [urlPreview, setUrlPreview] = useState<RecipeUrlPreview | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
-  const [isSavingUrl, setIsSavingUrl] = useState(false);
 
   async function handleExport() {
     setIsExporting(true);
@@ -140,7 +138,6 @@ export default function RecipesScreen() {
 
   function openUrlModal() {
     setUrlInput('');
-    setUrlPreview(null);
     setUrlError(null);
     setUrlModalVisible(true);
   }
@@ -150,43 +147,18 @@ export default function RecipesScreen() {
     if (!trimmed) return;
     setUrlLoading(true);
     setUrlError(null);
-    setUrlPreview(null);
     try {
-      const response = await api.post<RecipeUrlPreview>('/recipes/import/url', { url: trimmed });
-      setUrlPreview(response.data);
+      const response = await api.post('/recipes/import/url', { url: trimmed });
+      setUrlModalVisible(false);
+      router.push({
+        pathname: '/recipe/import-preview',
+        params: { data: JSON.stringify(response.data) },
+      });
     } catch (e: any) {
       const detail = e?.response?.data?.detail ?? (e instanceof Error ? e.message : String(e));
       setUrlError(String(detail));
     } finally {
       setUrlLoading(false);
-    }
-  }
-
-  async function handleUrlSave() {
-    if (!urlPreview) return;
-    setIsSavingUrl(true);
-    try {
-      const exportItem: RecipeExportItem = {
-        name: urlPreview.name,
-        description: urlPreview.description,
-        servings: urlPreview.servings,
-        prep_time_minutes: urlPreview.prep_time_minutes,
-        source_url: urlPreview.source_url,
-        ingredients: urlPreview.ingredients,
-      };
-      const { skipped, created_ids } = await importMutation.mutateAsync([exportItem]);
-      setUrlModalVisible(false);
-      if (skipped > 0) {
-        const msg = 'Ein Rezept mit diesem Namen existiert bereits.';
-        Platform.OS === 'web' ? alert(msg) : Alert.alert('Übersprungen', msg);
-      } else {
-        router.push(`/recipe/${created_ids[0]}`);
-      }
-    } catch (e) {
-      const msg = `Speichern fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`;
-      Platform.OS === 'web' ? alert(msg) : Alert.alert('Fehler', msg);
-    } finally {
-      setIsSavingUrl(false);
     }
   }
 
@@ -318,45 +290,6 @@ export default function RecipesScreen() {
 
             {urlError && (
               <Text style={styles.urlError}>{urlError}</Text>
-            )}
-
-            {urlPreview && (
-              <View style={styles.preview}>
-                <Text style={styles.previewTitle}>{urlPreview.name}</Text>
-                {urlPreview.description ? (
-                  <Text style={styles.previewDesc} numberOfLines={3}>{urlPreview.description}</Text>
-                ) : null}
-                <View style={styles.previewMeta}>
-                  <Text style={styles.previewMetaText}>{urlPreview.servings} Portionen</Text>
-                  {urlPreview.prep_time_minutes ? (
-                    <Text style={styles.previewMetaText}>{urlPreview.prep_time_minutes} Min.</Text>
-                  ) : null}
-                  <Text style={styles.previewMetaText}>{urlPreview.ingredients.length} Zutaten</Text>
-                </View>
-                {urlPreview.ingredients.length > 0 && (
-                  <View style={styles.ingredientList}>
-                    {urlPreview.ingredients.slice(0, 5).map((ing, i) => (
-                      <Text key={i} style={styles.ingredientItem}>
-                        · {ing.amount} {ing.unit} {ing.ingredient_name}
-                      </Text>
-                    ))}
-                    {urlPreview.ingredients.length > 5 && (
-                      <Text style={styles.ingredientMore}>
-                        … und {urlPreview.ingredients.length - 5} weitere
-                      </Text>
-                    )}
-                  </View>
-                )}
-                <TouchableOpacity
-                  style={[styles.saveBtn, isSavingUrl && styles.saveBtnDisabled]}
-                  onPress={handleUrlSave}
-                  disabled={isSavingUrl}
-                >
-                  {isSavingUrl
-                    ? <ActivityIndicator size="small" color="#fff" />
-                    : <Text style={styles.saveBtnText}>Rezept speichern</Text>}
-                </TouchableOpacity>
-              </View>
             )}
           </View>
         </View>
@@ -532,29 +465,4 @@ const styles = StyleSheet.create({
   fetchBtnDisabled: { backgroundColor: '#A5D6A7' },
   fetchBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   urlError: { color: '#D32F2F', fontSize: 13, marginBottom: 12 },
-
-  // Preview
-  preview: {
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: BORDER,
-    marginTop: 8,
-  },
-  previewTitle: { fontSize: 17, fontWeight: '700', color: '#1A1A1A', marginBottom: 6 },
-  previewDesc: { fontSize: 13, color: '#666', marginBottom: 10, lineHeight: 18 },
-  previewMeta: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  previewMetaText: { fontSize: 13, color: '#555' },
-  ingredientList: { marginBottom: 16 },
-  ingredientItem: { fontSize: 13, color: '#444', lineHeight: 20 },
-  ingredientMore: { fontSize: 13, color: '#888', fontStyle: 'italic' },
-  saveBtn: {
-    backgroundColor: GREEN,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  saveBtnDisabled: { backgroundColor: '#A5D6A7' },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
