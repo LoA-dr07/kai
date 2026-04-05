@@ -19,7 +19,7 @@ import {
   useUpdateEntry,
   useDeleteEntry,
 } from '../../lib/hooks/useMealPlan';
-import { useRecipes } from '../../lib/hooks/useRecipes';
+import { useRecipes, useTags } from '../../lib/hooks/useRecipes';
 import { useUsers } from '../../lib/hooks/useUsers';
 import AiSuggestionModal from '../../components/AiSuggestionModal';
 import type { MealPlanEntry, MealType, User, AiMealPlanSuggestionEntry } from '../../lib/types';
@@ -133,6 +133,9 @@ export default function MealPlanScreen() {
   const [searchText, setSearchText] = useState('');
   const [freeText, setFreeText] = useState('');
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
+  const [filterExpanded, setFilterExpanded] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [minRatings, setMinRatings] = useState<Record<number, number>>({});
 
   const weekStartIso = isoDate(weekStart);
   const weekNum = getISOWeek(weekStart);
@@ -141,6 +144,7 @@ export default function MealPlanScreen() {
   const { data: allPlans, isLoading } = useMealPlans();
   const { data: recipes } = useRecipes();
   const { data: users = [] } = useUsers();
+  const { data: tags = [] } = useTags();
   const createPlan = useCreateMealPlan();
   const addEntry = useAddEntry();
   const updateEntry = useUpdateEntry();
@@ -165,6 +169,9 @@ export default function MealPlanScreen() {
     setFreeText('');
     setSearchText('');
     setSelectedUserIds([]);
+    setFilterExpanded(false);
+    setSelectedTagIds([]);
+    setMinRatings({});
     setModalVisible(true);
   };
 
@@ -179,6 +186,9 @@ export default function MealPlanScreen() {
     }
     setSearchText('');
     setSelectedUserIds(entry.assigned_user_ids ?? []);
+    setFilterExpanded(false);
+    setSelectedTagIds([]);
+    setMinRatings({});
     setModalVisible(true);
   };
 
@@ -271,8 +281,33 @@ export default function MealPlanScreen() {
     }
   };
 
-  const filteredRecipes =
-    recipes?.filter(r => r.name.toLowerCase().includes(searchText.toLowerCase())) ?? [];
+  const toggleTagFilter = (tagId: number) => {
+    setSelectedTagIds(prev =>
+      prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]
+    );
+  };
+
+  const setMinRating = (userId: number, stars: number) => {
+    setMinRatings(prev => ({ ...prev, [userId]: (prev[userId] ?? 0) === stars ? 0 : stars }));
+  };
+
+  const activeFilterCount =
+    selectedTagIds.length + Object.values(minRatings).filter(v => v > 0).length;
+
+  const filteredRecipes = (recipes ?? []).filter(r => {
+    if (searchText && !r.name.toLowerCase().includes(searchText.toLowerCase())) return false;
+    if (selectedTagIds.length > 0) {
+      const recipeTagIds = r.tags.map(t => t.id);
+      if (!selectedTagIds.every(tid => recipeTagIds.includes(tid))) return false;
+    }
+    for (const [userIdStr, minStars] of Object.entries(minRatings)) {
+      if (minStars > 0) {
+        const rating = r.ratings.find(rt => rt.user_id === Number(userIdStr));
+        if (!rating || rating.stars < minStars) return false;
+      }
+    }
+    return true;
+  });
 
   const selectedMealLabel = selectedSlot
     ? MEAL_TYPES.find(m => m.key === selectedSlot.mealType)?.label
@@ -427,14 +462,94 @@ export default function MealPlanScreen() {
           {/* Rezept-Tab */}
           {tab === 'recipe' ? (
             <View style={styles.tabContent}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Rezept suchen …"
-                value={searchText}
-                onChangeText={setSearchText}
-                autoCapitalize="none"
-                clearButtonMode="while-editing"
-              />
+              {/* Suchzeile mit Filter-Schalter */}
+              <View style={filterStyles.searchRow}>
+                <TextInput
+                  style={[styles.searchInput, filterStyles.searchInputFlex]}
+                  placeholder="Rezept suchen …"
+                  value={searchText}
+                  onChangeText={setSearchText}
+                  autoCapitalize="none"
+                  clearButtonMode="while-editing"
+                />
+                <TouchableOpacity
+                  style={[filterStyles.filterBtn, activeFilterCount > 0 && filterStyles.filterBtnActive]}
+                  onPress={() => setFilterExpanded(prev => !prev)}
+                >
+                  <Text style={[filterStyles.filterBtnText, activeFilterCount > 0 && filterStyles.filterBtnTextActive]}>
+                    {activeFilterCount > 0 ? `Filter · ${activeFilterCount}` : 'Filter'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Filterbereich */}
+              {filterExpanded && (
+                <View style={filterStyles.panel}>
+                  {/* Tag-Filter */}
+                  {tags.length > 0 && (
+                    <View style={filterStyles.section}>
+                      <Text style={filterStyles.sectionLabel}>Tags</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        <View style={filterStyles.chipRow}>
+                          {tags.map(tag => {
+                            const selected = selectedTagIds.includes(tag.id);
+                            return (
+                              <TouchableOpacity
+                                key={tag.id}
+                                style={[filterStyles.tagChip, selected && filterStyles.tagChipSelected]}
+                                onPress={() => toggleTagFilter(tag.id)}
+                              >
+                                <Text style={[filterStyles.tagChipText, selected && filterStyles.tagChipTextSelected]}>
+                                  {tag.name}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </ScrollView>
+                    </View>
+                  )}
+
+                  {/* Bewertungs-Filter pro Person */}
+                  {users.length > 0 && (
+                    <View style={filterStyles.section}>
+                      <Text style={filterStyles.sectionLabel}>Mindest-Bewertung</Text>
+                      {users.map(user => {
+                        const minStar = minRatings[user.id] ?? 0;
+                        return (
+                          <View key={user.id} style={filterStyles.ratingRow}>
+                            <View style={[filterStyles.userBadge, { backgroundColor: user.avatar_color }]}>
+                              <Text style={filterStyles.userBadgeText}>{user.short_name}</Text>
+                            </View>
+                            <View style={filterStyles.starsRow}>
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <TouchableOpacity
+                                  key={star}
+                                  onPress={() => setMinRating(user.id, star)}
+                                  hitSlop={{ top: 6, bottom: 6, left: 3, right: 3 }}
+                                >
+                                  <Text style={[filterStyles.star, star <= minStar && filterStyles.starActive]}>
+                                    {star <= minStar ? '★' : '☆'}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                            {minStar > 0 && (
+                              <TouchableOpacity
+                                onPress={() => setMinRatings(prev => ({ ...prev, [user.id]: 0 }))}
+                                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                              >
+                                <Text style={filterStyles.clearBtn}>✕</Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+              )}
+
               <FlatList
                 data={filteredRecipes}
                 keyExtractor={item => String(item.id)}
@@ -693,4 +808,86 @@ const badgeStyles = StyleSheet.create({
     alignItems: 'center',
   },
   text: { fontSize: 10, color: '#fff', fontWeight: '700' },
+});
+
+const filterStyles = StyleSheet.create({
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  searchInputFlex: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  filterBtn: {
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FAFAFA',
+  },
+  filterBtnActive: {
+    borderColor: GREEN,
+    backgroundColor: GREEN_LIGHT,
+  },
+  filterBtnText: { fontSize: 14, color: '#888', fontWeight: '600' },
+  filterBtnTextActive: { color: GREEN },
+
+  panel: {
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 10,
+    backgroundColor: '#FAFAFA',
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+  section: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#888',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+
+  chipRow: { flexDirection: 'row', gap: 6 },
+  tagChip: {
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: '#fff',
+  },
+  tagChipSelected: { borderColor: GREEN, backgroundColor: GREEN_LIGHT },
+  tagChipText: { fontSize: 13, color: '#555', fontWeight: '500' },
+  tagChipTextSelected: { color: GREEN, fontWeight: '700' },
+
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
+  userBadge: {
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    minWidth: 32,
+    alignItems: 'center',
+  },
+  userBadgeText: { fontSize: 12, color: '#fff', fontWeight: '700' },
+  starsRow: { flexDirection: 'row', gap: 2 },
+  star: { fontSize: 22, color: '#CCC' },
+  starActive: { color: '#F9A825' },
+  clearBtn: { fontSize: 14, color: '#B71C1C', fontWeight: '700', marginLeft: 4 },
 });
