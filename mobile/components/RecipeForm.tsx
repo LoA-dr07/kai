@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -33,6 +33,7 @@ interface RecipeFormProps {
   onSubmit: (data: RecipeCreatePayload) => Promise<void>;
   isSubmitting: boolean;
   submitLabel: string;
+  extraContent?: React.ReactNode;
 }
 
 export default function RecipeForm({
@@ -45,6 +46,7 @@ export default function RecipeForm({
   onSubmit,
   isSubmitting,
   submitLabel,
+  extraContent,
 }: RecipeFormProps) {
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
@@ -679,6 +681,8 @@ export default function RecipeForm({
           </TouchableOpacity>
         </View>
       </View>
+
+      {extraContent}
 
       {/* Absenden */}
       <TouchableOpacity
