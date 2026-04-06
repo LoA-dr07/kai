@@ -19,6 +19,7 @@ import { useImportRecipes, useRecipes, useTags } from '../../lib/hooks/useRecipe
 import type { Recipe, RecipeExportItem } from '../../lib/types';
 import { Tooltip } from '../../components/Tooltip';
 import { Colors } from '../../lib/theme';
+import { AddToMealPlanModal } from '../../components/AddToMealPlanModal';
 
 const RATING_LABELS: Record<number, string> = {
   0: 'Nie',
@@ -39,6 +40,7 @@ export default function RecipesScreen() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [addModalRecipe, setAddModalRecipe] = useState<{ id: number; name: string } | null>(null);
 
   // Filter state: set from navigation params, dismissed by user
   const [activeFilterIds, setActiveFilterIds] = useState<Set<number> | null>(null);
@@ -264,7 +266,11 @@ export default function RecipesScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <RecipeCard recipe={item} onPress={() => router.push(`/recipe/${item.id}`)} />
+          <RecipeCard
+            recipe={item}
+            onPress={() => router.push(`/recipe/${item.id}`)}
+            onAddToMealPlan={() => setAddModalRecipe({ id: item.id, name: item.name })}
+          />
         )}
       />
 
@@ -308,42 +314,69 @@ export default function RecipesScreen() {
         </TouchableOpacity>
       </View>
 
+      {addModalRecipe && (
+        <AddToMealPlanModal
+          recipeId={addModalRecipe.id}
+          recipeName={addModalRecipe.name}
+          visible={true}
+          onClose={() => setAddModalRecipe(null)}
+        />
+      )}
     </View>
   );
 }
 
-function RecipeCard({ recipe, onPress }: { recipe: Recipe; onPress: () => void }) {
+function RecipeCard({
+  recipe,
+  onPress,
+  onAddToMealPlan,
+}: {
+  recipe: Recipe;
+  onPress: () => void;
+  onAddToMealPlan: () => void;
+}) {
   const avgRating =
     recipe.ratings.length > 0
       ? recipe.ratings.reduce((s, r) => s + r.stars, 0) / recipe.ratings.length
       : null;
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
-      <Text style={styles.cardTitle}>{recipe.name}</Text>
-      {recipe.description ? (
-        <Text style={styles.cardDesc} numberOfLines={2}>{recipe.description}</Text>
-      ) : null}
-      {recipe.tags.length > 0 && (
-        <View style={styles.cardTagRow}>
-          {recipe.tags.map(tag => (
-            <View key={tag.id} style={[styles.cardTag, !tag.is_predefined && styles.cardTagCustom]}>
-              <Text style={[styles.cardTagText, !tag.is_predefined && styles.cardTagTextCustom]}>
-                {tag.name}
-              </Text>
-            </View>
-          ))}
-        </View>
-      )}
-      <View style={styles.cardMeta}>
-        <Chip label={`${recipe.servings} Portionen`} />
-        {recipe.prep_time_minutes ? <Chip label={`${recipe.prep_time_minutes} Min.`} /> : null}
-        <Chip label={`${recipe.ingredients.length} Zutaten`} />
-        {avgRating !== null && (
-          <Chip label={`${'★'.repeat(Math.round(avgRating))} ${avgRating.toFixed(1)} · ${RATING_LABELS[Math.round(avgRating)]}`} />
+    <View style={styles.card}>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.cardTouchable}>
+        <Text style={styles.cardTitle}>{recipe.name}</Text>
+        {recipe.description ? (
+          <Text style={styles.cardDesc} numberOfLines={2}>{recipe.description}</Text>
+        ) : null}
+        {recipe.tags.length > 0 && (
+          <View style={styles.cardTagRow}>
+            {recipe.tags.map(tag => (
+              <View key={tag.id} style={[styles.cardTag, !tag.is_predefined && styles.cardTagCustom]}>
+                <Text style={[styles.cardTagText, !tag.is_predefined && styles.cardTagTextCustom]}>
+                  {tag.name}
+                </Text>
+              </View>
+            ))}
+          </View>
         )}
-      </View>
-    </TouchableOpacity>
+        <View style={styles.cardMeta}>
+          <Chip label={`${recipe.servings} Portionen`} />
+          {recipe.prep_time_minutes ? <Chip label={`${recipe.prep_time_minutes} Min.`} /> : null}
+          <Chip label={`${recipe.ingredients.length} Zutaten`} />
+          {avgRating !== null && (
+            <Chip label={`${'★'.repeat(Math.round(avgRating))} ${avgRating.toFixed(1)} · ${RATING_LABELS[Math.round(avgRating)]}`} />
+          )}
+        </View>
+      </TouchableOpacity>
+      <Tooltip label="Zum Essensplan hinzufügen" position="left">
+        <TouchableOpacity
+          style={styles.cardMealPlanBtn}
+          onPress={onAddToMealPlan}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="calendar-outline" size={18} color={Colors.green} />
+        </TouchableOpacity>
+      </Tooltip>
+    </View>
   );
 }
 
@@ -405,7 +438,19 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  cardTitle: { fontSize: 18, fontWeight: '600', color: '#1A1A1A', marginBottom: 6 },
+  cardTouchable: { flex: 1 },
+  cardMealPlanBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.greenLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTitle: { fontSize: 18, fontWeight: '600', color: '#1A1A1A', marginBottom: 6, paddingRight: 38 },
   cardDesc: { fontSize: 14, color: '#666', marginBottom: 10, lineHeight: 20 },
   cardMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
