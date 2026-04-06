@@ -594,7 +594,7 @@ export default function BulkImportScreen() {
                         <Ionicons
                           name={entry.expanded ? 'chevron-up' : 'chevron-down'}
                           size={18}
-                          color={entry.tagIds.length > 0 || Object.values(entry.ratings).some(s => s > 0) ? GREEN : '#AAA'}
+                          color={entry.tagIds.length > 0 || Object.keys(entry.ratings).length > 0 ? GREEN : '#AAA'}
                         />
                       </TouchableOpacity>
                     </Tooltip>

@@ -1,7 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Tooltip } from './Tooltip';
 import type { User } from '../lib/types';
-import { Colors } from '../lib/theme';
 
 export const RATING_LABELS: Record<number, string> = {
   0: 'Nie',
@@ -36,20 +35,12 @@ export function RatingSection({ users, ratings, onRate }: RatingSectionProps) {
             <Text style={styles.userName}>{user.name}</Text>
             <View style={styles.starsWrapper}>
               <View style={styles.starsContainer}>
-                <Tooltip label="Keine Bewertung">
-                  <TouchableOpacity
-                    onPress={() => onRate(user.id, undefined)}
-                    hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-                  >
-                    <Text style={[styles.neverBtn, !hasRating && styles.neverBtnActive]}>✕</Text>
-                  </TouchableOpacity>
-                </Tooltip>
-                <Tooltip label="Nie">
+                <Tooltip label="Nie – dieses Rezept koche ich nie">
                   <TouchableOpacity
                     onPress={() => onRate(user.id, 0)}
                     hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
                   >
-                    <Text style={[styles.nieBtn, hasRating && stars === 0 && styles.nieBtnActive]}>0</Text>
+                    <Text style={[styles.nieBtn, hasRating && stars === 0 && styles.nieBtnActive]}>Nie</Text>
                   </TouchableOpacity>
                 </Tooltip>
                 {[1, 2, 3, 4, 5].map(n => (
@@ -64,6 +55,16 @@ export function RatingSection({ users, ratings, onRate }: RatingSectionProps) {
                     </TouchableOpacity>
                   </Tooltip>
                 ))}
+                {hasRating && (
+                  <Tooltip label="Bewertung entfernen (Keine Bewertung)">
+                    <TouchableOpacity
+                      onPress={() => onRate(user.id, undefined)}
+                      hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                    >
+                      <Text style={styles.resetBtn}>✕</Text>
+                    </TouchableOpacity>
+                  </Tooltip>
+                )}
               </View>
               {label !== null && (
                 <Text style={[styles.ratingLabel, stars === 0 && styles.ratingLabelNever]}>
@@ -98,10 +99,9 @@ const styles = StyleSheet.create({
   starsContainer: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   star: { fontSize: 22, color: '#DDD' },
   starFilled: { color: '#FFC107' },
-  neverBtn: { fontSize: 14, color: '#CCC', fontWeight: '700', marginRight: 2 },
-  neverBtnActive: { color: Colors.green },
-  nieBtn: { fontSize: 14, color: '#CCC', fontWeight: '700', marginRight: 2 },
+  nieBtn: { fontSize: 12, color: '#CCC', fontWeight: '700', marginRight: 2 },
   nieBtnActive: { color: '#C62828' },
+  resetBtn: { fontSize: 13, color: '#C62828', fontWeight: '700', marginLeft: 4 },
   ratingLabel: { fontSize: 10, color: '#888', marginTop: 2 },
   ratingLabelNever: { color: '#C62828', fontWeight: '600' },
 });
