@@ -352,7 +352,7 @@ def bulk_import_from_url(payload: RecipeBulkUrlImport, db: Session = Depends(get
                     recipe.tags.append(tag)
 
             for r in item.ratings:
-                if r.stars > 0 and db.get(User, r.user_id):
+                if db.get(User, r.user_id):
                     db.add(RecipeRating(
                         recipe_id=recipe.id,
                         user_id=r.user_id,
