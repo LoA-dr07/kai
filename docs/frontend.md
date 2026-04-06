@@ -45,8 +45,13 @@ mobile/
 ## Screens
 
 ### `(tabs)/recipes.tsx` – Rezeptliste
-- Zeigt alle Rezepte als scrollbare Liste
+- Zeigt alle Rezepte als scrollbare Liste (responsive: 1–4 Spalten je nach Bildschirmbreite)
 - Zeigt pro Karte: Name, Zubereitungszeit, Portionen, Zutatenanzahl, Durchschnittsbewertung, Tags
+- **Tag-Filter-Leiste** (horizontale ScrollView) direkt über der Rezeptliste:
+  - Alle verfügbaren Tags als anklickbare Chips
+  - Mehrere Tags gleichzeitig wählbar → AND-Verknüpfung (Rezept muss ALLE gewählten Tags besitzen)
+  - Wenn Filter aktiv: „Alle"-Chip am Anfang zum Zurücksetzen aller Filter
+  - Rein client-seitige Filterung (kein zusätzlicher API-Call)
 - Aktionsbuttons im Header:
   - Exportieren → `GET /recipes/export` → Systemteilen-Dialog
   - Importieren → Datei-Picker → `POST /recipes/import`
