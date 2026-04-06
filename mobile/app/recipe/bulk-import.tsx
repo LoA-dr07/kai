@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Tooltip } from '../../components/Tooltip';
+import { RatingSection } from '../../components/RatingSection';
 import {
   useBulkImportFromUrl,
   useBulkPreviewFromUrl,
@@ -18,21 +18,12 @@ import {
   useTags,
 } from '../../lib/hooks/useRecipes';
 import { useUsers } from '../../lib/hooks/useUsers';
-import type { BulkUrlImportResult, RecipeUrlPreview, Tag, User } from '../../lib/types';
+import type { BulkUrlImportResult, RecipeUrlPreview, Tag } from '../../lib/types';
 import { Colors } from '../../lib/theme';
 
 const GREEN = Colors.green;
 const BORDER = Colors.border;
 const RED = '#D32F2F';
-
-const RATING_LABELS: Record<number, string> = {
-  0: 'Nie',
-  1: 'Selten',
-  2: 'Gelegentlich',
-  3: 'Gerne',
-  4: 'Häufig',
-  5: 'Sehr häufig',
-};
 
 function isValidUrl(s: string): boolean {
   try {
@@ -51,7 +42,7 @@ interface RecipeConfig {
   url: string;
   preview: RecipeUrlPreview;
   tagIds: number[];
-  ratings: Record<number, number>; // user_id → stars (0 = not set)
+  ratings: Record<number, number>; // user_id → stars (key absent = Keine Bewertung, 0 = Nie)
 }
 
 interface PreviewFailure {
@@ -178,58 +169,6 @@ function TagSection({
   );
 }
 
-function RatingSection({
-  users,
-  ratings,
-  onRate,
-}: {
-  users: User[];
-  ratings: Record<number, number>;
-  onRate: (userId: number, stars: number) => void;
-}) {
-  return (
-    <View>
-      {users.map(user => {
-        const stars = ratings[user.id] ?? 0;
-        const label = stars > 0 ? RATING_LABELS[stars] : null;
-        return (
-          <View key={user.id} style={styles.starRow}>
-            <View style={[styles.avatarBadge, { backgroundColor: user.avatar_color }]}>
-              <Text style={styles.avatarText}>{user.short_name}</Text>
-            </View>
-            <Text style={styles.userName}>{user.name}</Text>
-            <View style={styles.starsWrapper}>
-              <View style={styles.starsContainer}>
-                <Tooltip label="Bewertung entfernen">
-                  <TouchableOpacity
-                    onPress={() => onRate(user.id, 0)}
-                    hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-                  >
-                    <Text style={[styles.neverBtn, stars === 0 && styles.neverBtnActive]}>✕</Text>
-                  </TouchableOpacity>
-                </Tooltip>
-                {[1, 2, 3, 4, 5].map(n => (
-                  <Tooltip key={n} label={`${n} ${n === 1 ? 'Stern' : 'Sterne'}`}>
-                    <TouchableOpacity
-                      onPress={() => onRate(user.id, n)}
-                      hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-                    >
-                      <Text style={[styles.star, n <= stars && stars > 0 && styles.starFilled]}>
-                        {n <= stars && stars > 0 ? '★' : '☆'}
-                      </Text>
-                    </TouchableOpacity>
-                  </Tooltip>
-                ))}
-              </View>
-              {label !== null && <Text style={styles.ratingLabel}>{label}</Text>}
-            </View>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function BulkImportScreen() {
@@ -307,10 +246,14 @@ export default function BulkImportScreen() {
     }));
   }
 
-  function setEntryRating(index: number, userId: number, stars: number) {
-    setUrlEntries(prev => prev.map((e, i) =>
-      i === index ? { ...e, ratings: { ...e.ratings, [userId]: stars } } : e
-    ));
+  function setEntryRating(index: number, userId: number, stars: number | undefined) {
+    setUrlEntries(prev => prev.map((e, i) => {
+      if (i !== index) return e;
+      const newRatings = { ...e.ratings };
+      if (stars === undefined) delete newRatings[userId];
+      else newRatings[userId] = stars;
+      return { ...e, ratings: newRatings };
+    }));
   }
 
   async function handleAddTagForEntry(index: number, name: string): Promise<number> {
@@ -382,10 +325,14 @@ export default function BulkImportScreen() {
     }));
   }
 
-  function setConfigRating(index: number, userId: number, stars: number) {
-    setConfigs(prev => prev.map((c, i) =>
-      i === index ? { ...c, ratings: { ...c.ratings, [userId]: stars } } : c
-    ));
+  function setConfigRating(index: number, userId: number, stars: number | undefined) {
+    setConfigs(prev => prev.map((c, i) => {
+      if (i !== index) return c;
+      const newRatings = { ...c.ratings };
+      if (stars === undefined) delete newRatings[userId];
+      else newRatings[userId] = stars;
+      return { ...c, ratings: newRatings };
+    }));
   }
 
   async function handleAddTagForConfig(index: number, name: string): Promise<number> {
@@ -401,8 +348,7 @@ export default function BulkImportScreen() {
         url: c.url,
         tag_ids: c.tagIds,
         ratings: Object.entries(c.ratings)
-          .map(([uid, stars]) => ({ user_id: Number(uid), stars }))
-          .filter(r => r.stars > 0),
+          .map(([uid, stars]) => ({ user_id: Number(uid), stars })),
       })),
     });
     setResults(result);
@@ -857,32 +803,6 @@ const styles = StyleSheet.create({
   addTagBtnDisabled: { backgroundColor: '#A5D6A7' },
   addTagBtnText: { color: '#fff', fontSize: 22, fontWeight: '700', lineHeight: 26 },
 
-  // Star ratings
-  starRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
-  },
-  avatarBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-    flexShrink: 0,
-  },
-  avatarText: { fontSize: 11, color: '#fff', fontWeight: '700' },
-  userName: { fontSize: 14, color: '#1A1A1A', flex: 1 },
-  starsWrapper: { flexDirection: 'column', alignItems: 'flex-end' },
-  starsContainer: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  star: { fontSize: 22, color: '#DDD' },
-  starFilled: { color: '#FFC107' },
-  neverBtn: { fontSize: 14, color: '#CCC', fontWeight: '700', marginRight: 2 },
-  neverBtnActive: { color: '#C62828' },
-  ratingLabel: { fontSize: 10, color: '#888', marginTop: 2 },
 
   // Buttons
   primaryBtn: {
