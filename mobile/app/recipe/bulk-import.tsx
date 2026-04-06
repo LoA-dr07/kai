@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { RatingSection } from '../../components/RatingSection';
+import { Tooltip } from '../../components/Tooltip';
 import {
   useBulkImportFromUrl,
   useBulkPreviewFromUrl,
