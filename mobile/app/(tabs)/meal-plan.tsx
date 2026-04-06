@@ -26,29 +26,7 @@ import type { MealPlanEntry, MealType, User, AiMealPlanSuggestionEntry } from '.
 import { Tooltip } from '../../components/Tooltip';
 import { DAYS_DE, MEAL_TYPES } from '../../lib/constants';
 import { Colors } from '../../lib/theme';
-
-// --- Datums-Hilfsfunktionen ---
-
-function getMondayOf(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function isoDate(date: Date): string {
-  return date.toISOString().split('T')[0];
-}
-
-function getISOWeek(date: Date): number {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-}
+import { getMondayOf, isoDate, getISOWeek } from '../../lib/dateUtils';
 
 // --- Konstanten ---
 
