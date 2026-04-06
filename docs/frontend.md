@@ -24,6 +24,7 @@ mobile/
 │           ├── edit.tsx    # Rezept bearbeiten
 │           └── cook.tsx    # Koch-Ansicht
 ├── components/             # Wiederverwendbare UI-Komponenten
+│   ├── AddToMealPlanModal.tsx # Rezept zum Essensplan hinzufügen (Woche, Tag, Mahlzeit, User)
 │   ├── AiSuggestionModal.tsx  # KI-Wochenplan-Modal (Eingabe → Laden → Vorschau → Übernehmen)
 │   ├── RecipeForm.tsx         # Rezeptformular (Neu + Bearbeiten)
 │   └── Tooltip.tsx            # Hover-Tooltip für icon-only Buttons (Web) + accessibilityLabel (Mobile)
@@ -31,6 +32,7 @@ mobile/
 │   ├── api.ts              # Axios-Client
 │   ├── types.ts            # TypeScript-Interfaces
 │   ├── alert.ts            # Cross-platform Alert-Utility
+│   ├── dateUtils.ts        # Datums-Hilfsfunktionen (getMondayOf, isoDate, getISOWeek)
 │   └── hooks/              # React Query Custom Hooks
 │       ├── useRecipes.ts              # Rezept-Hooks
 │       ├── useMealPlan.ts             # Wochenplan-Hooks
@@ -236,6 +238,46 @@ showConfirm('Mitglied löschen', 'Wirklich löschen?', () => deleteUser());
 
 Auf Web: `window.alert()` / `window.confirm()`
 Auf Mobile: `Alert.alert()` aus React Native
+
+---
+
+## Komponente: AddToMealPlanModal (`mobile/components/AddToMealPlanModal.tsx`)
+
+Wiederverwendbares Modal, um ein Rezept direkt aus der Rezeptliste oder der Rezept-Detailansicht in den Essensplan einzutragen.
+
+**Props:**
+
+| Prop | Typ | Beschreibung |
+|------|-----|--------------|
+| `recipeId` | `number` | ID des einzutragenden Rezepts |
+| `recipeName` | `string` | Angezeigter Name (read-only) |
+| `visible` | `boolean` | Steuert die Sichtbarkeit |
+| `onClose` | `() => void` | Callback beim Schließen oder nach erfolgreichem Speichern |
+
+**Verhalten:**
+- Beim Öffnen wird der Zustand auf aktuelle Woche, heutigen Wochentag und Mahlzeit "Abendessen" zurückgesetzt
+- Wochennavigation: vorherige / nächste Woche per Pfeil-Buttons
+- Erstellt bei Bedarf automatisch einen neuen Essensplan für die gewählte Woche (`KW X YYYY`)
+- User-Chips werden nur angezeigt, wenn mindestens ein User vorhanden ist
+- Fehler werden via `showAlert` angezeigt
+
+**Verwendung (Beispiel):**
+```tsx
+import { AddToMealPlanModal } from '../components/AddToMealPlanModal';
+
+const [visible, setVisible] = useState(false);
+
+<AddToMealPlanModal
+  recipeId={recipe.id}
+  recipeName={recipe.name}
+  visible={visible}
+  onClose={() => setVisible(false)}
+/>
+```
+
+**Einstiegspunkte:**
+- `(tabs)/recipes.tsx`: Kalender-Icon-Button auf jeder Rezeptkarte (oben rechts)
+- `recipe/[id]/index.tsx`: "Zum Essensplan"-Button in der Aktionsleiste
 
 ---
 

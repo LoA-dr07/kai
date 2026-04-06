@@ -17,6 +17,7 @@ import { useUsers } from '../../../lib/hooks/useUsers';
 import type { Tag, User } from '../../../lib/types';
 import { Tooltip } from '../../../components/Tooltip';
 import { Colors } from '../../../lib/theme';
+import { AddToMealPlanModal } from '../../../components/AddToMealPlanModal';
 
 // --- Konstanten ---
 
@@ -121,6 +122,7 @@ export default function RecipeDetailScreen() {
   const [isEditingSourceUrl, setIsEditingSourceUrl] = useState(false);
   const [editSourceUrl, setEditSourceUrl] = useState('');
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [addToMealPlanVisible, setAddToMealPlanVisible] = useState(false);
 
   const editingSuggestions = editingName.length >= 1
     ? allIngredients.filter(i => i.name.toLowerCase().includes(editingName.toLowerCase())).slice(0, 5)
@@ -443,6 +445,12 @@ export default function RecipeDetailScreen() {
             <Text style={styles.cookBtnText}>Kochen</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            style={[styles.mealPlanBtn, isNarrow && styles.actionBtnFull]}
+            onPress={() => setAddToMealPlanVisible(true)}
+          >
+            <Text style={styles.mealPlanBtnText}>Zum Essensplan</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.editBtn, isNarrow && styles.actionBtnFull]}
             onPress={() => router.push(`/recipe/${recipeId}/edit`)}
           >
@@ -461,6 +469,13 @@ export default function RecipeDetailScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <AddToMealPlanModal
+        recipeId={recipeId}
+        recipeName={recipe.name}
+        visible={addToMealPlanVisible}
+        onClose={() => setAddToMealPlanVisible(false)}
+      />
     </>
   );
 }
@@ -628,6 +643,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cookBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  mealPlanBtn: {
+    flex: 1,
+    backgroundColor: Colors.greenLight,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: GREEN,
+  },
+  mealPlanBtnText: { color: GREEN, fontSize: 16, fontWeight: '600' },
   editBtn: {
     flex: 1,
     backgroundColor: GREEN,
