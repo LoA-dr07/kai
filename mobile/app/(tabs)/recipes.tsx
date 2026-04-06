@@ -9,12 +9,13 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useImportRecipes, useRecipes } from '../../lib/hooks/useRecipes';
+import { useImportRecipes, useRecipes, useTags } from '../../lib/hooks/useRecipes';
 import type { Recipe, RecipeExportItem } from '../../lib/types';
 import { Tooltip } from '../../components/Tooltip';
 import { Colors } from '../../lib/theme';
@@ -41,6 +42,8 @@ export default function RecipesScreen() {
 
   // Filter state: set from navigation params, dismissed by user
   const [activeFilterIds, setActiveFilterIds] = useState<Set<number> | null>(null);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const { data: tags = [] } = useTags();
 
   useEffect(() => {
     if (filter_ids) {
@@ -49,10 +52,25 @@ export default function RecipesScreen() {
     }
   }, [filter_ids]);
 
+  const toggleTagFilter = (tagId: number) => {
+    setSelectedTagIds(prev =>
+      prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]
+    );
+  };
+
   const displayedRecipes = useMemo(() => {
-    if (!activeFilterIds) return recipes ?? [];
-    return (recipes ?? []).filter(r => activeFilterIds.has(r.id));
-  }, [recipes, activeFilterIds]);
+    let result = recipes ?? [];
+    if (activeFilterIds) {
+      result = result.filter(r => activeFilterIds.has(r.id));
+    }
+    if (selectedTagIds.length > 0) {
+      result = result.filter(r => {
+        const recipeTagIds = r.tags.map(t => t.id);
+        return selectedTagIds.every(tid => recipeTagIds.includes(tid));
+      });
+    }
+    return result;
+  }, [recipes, activeFilterIds, selectedTagIds]);
 
   async function handleExport() {
     setIsExporting(true);
@@ -188,6 +206,39 @@ export default function RecipesScreen() {
         </View>
       )}
 
+      {tags.length > 0 && (
+        <View style={styles.tagFilterBar}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tagFilterScroll}
+          >
+            {selectedTagIds.length > 0 && (
+              <TouchableOpacity
+                style={[styles.tagFilterChip, styles.tagFilterChipClear]}
+                onPress={() => setSelectedTagIds([])}
+              >
+                <Text style={styles.tagFilterChipClearText}>Alle</Text>
+              </TouchableOpacity>
+            )}
+            {tags.map(tag => {
+              const selected = selectedTagIds.includes(tag.id);
+              return (
+                <TouchableOpacity
+                  key={tag.id}
+                  style={[styles.tagFilterChip, selected && styles.tagFilterChipSelected]}
+                  onPress={() => toggleTagFilter(tag.id)}
+                >
+                  <Text style={[styles.tagFilterChipText, selected && styles.tagFilterChipTextSelected]}>
+                    {tag.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+
       <FlatList
         key={numColumns}
         data={displayedRecipes}
@@ -199,8 +250,17 @@ export default function RecipesScreen() {
         refreshing={isRefetching}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>Noch keine Rezepte</Text>
-            <Text style={styles.emptySubtitle}>Tippe auf "+ Rezept", um loszulegen.</Text>
+            {selectedTagIds.length > 0 || activeFilterIds ? (
+              <>
+                <Text style={styles.emptyTitle}>Keine Rezepte gefunden</Text>
+                <Text style={styles.emptySubtitle}>Keine Rezepte entsprechen den gewählten Filtern.</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.emptyTitle}>Noch keine Rezepte</Text>
+                <Text style={styles.emptySubtitle}>Tippe auf "+ Rezept", um loszulegen.</Text>
+              </>
+            )}
           </View>
         }
         renderItem={({ item }) => (
@@ -379,6 +439,50 @@ const styles = StyleSheet.create({
   cardTagCustom: { backgroundColor: '#EDE7F6', borderColor: '#5C6BC0' },
   cardTagText: { fontSize: 11, fontWeight: '600', color: '#2E7D32' },
   cardTagTextCustom: { color: '#5C6BC0' },
+
+  // Tag filter bar
+  tagFilterBar: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    paddingVertical: 8,
+  },
+  tagFilterScroll: {
+    paddingHorizontal: 16,
+    gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tagFilterChip: {
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#fff',
+  },
+  tagFilterChipSelected: {
+    borderColor: Colors.green,
+    backgroundColor: Colors.greenLight,
+  },
+  tagFilterChipClear: {
+    borderColor: Colors.border,
+    backgroundColor: '#F0F0F0',
+  },
+  tagFilterChipText: {
+    fontSize: 13,
+    color: '#555',
+    fontWeight: '500',
+  },
+  tagFilterChipTextSelected: {
+    color: Colors.green,
+    fontWeight: '700',
+  },
+  tagFilterChipClearText: {
+    fontSize: 13,
+    color: '#888',
+    fontWeight: '600',
+  },
 
   // Filter banner
   filterBanner: {
