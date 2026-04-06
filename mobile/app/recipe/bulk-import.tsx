@@ -259,8 +259,14 @@ export default function BulkImportScreen() {
   // ── URL input handlers ────────────────────────────────────────────────────
 
   function handleUrlChange(text: string, index: number) {
+    const trimmed = text.trim();
+    const valid = isValidUrl(trimmed);
     setUrlEntries(prev => {
-      const next = prev.map((e, i) => i === index ? { ...e, url: text } : e);
+      const next = prev.map((e, i) => {
+        const url = i === index ? text : e.url;
+        const expanded = valid ? (i === index) : e.expanded;
+        return i === index ? { ...e, url, expanded } : { ...e, expanded };
+      });
       if (text !== '' && index === next.length - 1) {
         next.push({ url: '', expanded: false, tagIds: [], ratings: {} });
       }
@@ -268,7 +274,7 @@ export default function BulkImportScreen() {
     });
     if (invalidIndices.has(index)) {
       const s = new Set(invalidIndices);
-      if (text.trim() === '' || isValidUrl(text.trim())) s.delete(index);
+      if (trimmed === '' || valid) s.delete(index);
       setInvalidIndices(s);
     }
     if (inputError) setInputError(null);
