@@ -59,6 +59,13 @@ interface PreviewFailure {
   error: string;
 }
 
+interface UrlEntry {
+  url: string;
+  expanded: boolean;
+  tagIds: number[];
+  ratings: Record<number, number>;
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function TagSection({
@@ -234,13 +241,11 @@ export default function BulkImportScreen() {
   const createTag = useCreateTag();
 
   // Step 1: URL input
-  const [urls, setUrls] = useState<string[]>(['']);
+  const [urlEntries, setUrlEntries] = useState<UrlEntry[]>([
+    { url: '', expanded: false, tagIds: [], ratings: {} },
+  ]);
   const [invalidIndices, setInvalidIndices] = useState<Set<number>>(new Set());
   const [inputError, setInputError] = useState<string | null>(null);
-
-  // Step 1: global defaults (pre-fill for all recipes, adjustable per-recipe in step 2)
-  const [globalTagIds, setGlobalTagIds] = useState<number[]>([]);
-  const [globalRatings, setGlobalRatings] = useState<Record<number, number>>({});
 
   // Step 2: per-recipe configuration
   const [configs, setConfigs] = useState<RecipeConfig[]>([]);
@@ -254,10 +259,13 @@ export default function BulkImportScreen() {
   // ── URL input handlers ────────────────────────────────────────────────────
 
   function handleUrlChange(text: string, index: number) {
-    const next = [...urls];
-    next[index] = text;
-    if (text !== '' && index === next.length - 1) next.push('');
-    setUrls(next);
+    setUrlEntries(prev => {
+      const next = prev.map((e, i) => i === index ? { ...e, url: text } : e);
+      if (text !== '' && index === next.length - 1) {
+        next.push({ url: '', expanded: false, tagIds: [], ratings: {} });
+      }
+      return next;
+    });
     if (invalidIndices.has(index)) {
       const s = new Set(invalidIndices);
       if (text.trim() === '' || isValidUrl(text.trim())) s.delete(index);
@@ -267,18 +275,47 @@ export default function BulkImportScreen() {
   }
 
   function removeUrl(index: number) {
-    const next = urls.filter((_, i) => i !== index);
-    if (next.length === 0 || next[next.length - 1].trim() !== '') next.push('');
-    setUrls(next);
+    setUrlEntries(prev => {
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length === 0 || next[next.length - 1].url.trim() !== '') {
+        next.push({ url: '', expanded: false, tagIds: [], ratings: {} });
+      }
+      return next;
+    });
     const s = new Set<number>();
     invalidIndices.forEach(i => { if (i !== index) s.add(i > index ? i - 1 : i); });
     setInvalidIndices(s);
   }
 
+  function toggleEntryExpanded(index: number) {
+    setUrlEntries(prev => prev.map((e, i) => i === index ? { ...e, expanded: !e.expanded } : e));
+  }
+
+  function toggleEntryTag(index: number, tagId: number) {
+    setUrlEntries(prev => prev.map((e, i) => {
+      if (i !== index) return e;
+      const newIds = e.tagIds.includes(tagId)
+        ? e.tagIds.filter(id => id !== tagId)
+        : [...e.tagIds, tagId];
+      return { ...e, tagIds: newIds };
+    }));
+  }
+
+  function setEntryRating(index: number, userId: number, stars: number) {
+    setUrlEntries(prev => prev.map((e, i) =>
+      i === index ? { ...e, ratings: { ...e.ratings, [userId]: stars } } : e
+    ));
+  }
+
+  async function handleAddTagForEntry(index: number, name: string): Promise<number> {
+    const tag = await createTag.mutateAsync(name);
+    return tag.id;
+  }
+
   async function handleLoadPreviews() {
     setInputError(null);
-    const filled = urls
-      .map((u, i) => ({ url: u.trim(), index: i }))
+    const filled = urlEntries
+      .map((e, i) => ({ ...e, url: e.url.trim(), index: i }))
       .filter(x => x.url !== '');
 
     if (filled.length === 0) {
@@ -302,12 +339,13 @@ export default function BulkImportScreen() {
       const newConfigs: RecipeConfig[] = [];
       const newErrors: PreviewFailure[] = [];
       for (const r of result.results) {
+        const entry = filled.find(x => x.url === r.url);
         if (r.preview) {
           newConfigs.push({
             url: r.url,
             preview: r.preview,
-            tagIds: [...globalTagIds],
-            ratings: { ...globalRatings },
+            tagIds: entry ? [...entry.tagIds] : [],
+            ratings: entry ? { ...entry.ratings } : {},
           });
         } else {
           newErrors.push({ url: r.url, error: r.error ?? 'Unbekannter Fehler' });
@@ -373,11 +411,9 @@ export default function BulkImportScreen() {
   }
 
   function reset() {
-    setUrls(['']);
+    setUrlEntries([{ url: '', expanded: false, tagIds: [], ratings: {} }]);
     setInvalidIndices(new Set());
     setInputError(null);
-    setGlobalTagIds([]);
-    setGlobalRatings({});
     setConfigs([]);
     setPreviewErrors([]);
     setResults(null);
@@ -468,9 +504,7 @@ export default function BulkImportScreen() {
           <View style={styles.infoBanner}>
             <Ionicons name="information-circle-outline" size={18} color={Colors.greenDark} />
             <Text style={styles.infoBannerText}>
-              {globalTagIds.length > 0 || Object.values(globalRatings).some(s => s > 0)
-                ? 'Vorbelegt aus Schritt 1 – hier kannst du Tags und Bewertungen individuell pro Rezept anpassen.'
-                : 'Tags und Bewertungen sind individuell pro Rezept konfigurierbar.'}
+              Tags und Bewertungen aus Schritt 1 sind hier pro Rezept noch anpassbar.
             </Text>
           </View>
 
@@ -574,30 +608,43 @@ export default function BulkImportScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>URLs eingeben</Text>
-          <Text style={styles.hint}>
-            Sobald du eine URL eingibst, erscheint automatisch ein weiteres Feld.
-          </Text>
+        <Text style={styles.sectionTitle}>URLs eingeben</Text>
+        <Text style={[styles.hint, { marginBottom: 12 }]}>
+          Sobald du eine URL eingibst, erscheint automatisch ein weiteres Feld. Mit dem Pfeil kannst du Tags und Bewertungen direkt pro Rezept vorab festlegen.
+        </Text>
 
-          {urls.map((url, index) => {
-            const isInvalid = invalidIndices.has(index);
-            const isEmpty = url.trim() === '';
-            const isLastEmpty = index === urls.length - 1 && isEmpty;
-            return (
-              <View key={index} style={styles.urlFieldWrapper}>
-                <View style={styles.urlFieldRow}>
-                  <TextInput
-                    style={[styles.input, styles.urlInput, isInvalid && styles.urlInputInvalid]}
-                    placeholder={isLastEmpty ? 'Weitere URL hinzufügen…' : 'https://www.chefkoch.de/rezepte/…'}
-                    placeholderTextColor={isLastEmpty ? '#BBB' : '#AAA'}
-                    value={url}
-                    onChangeText={text => handleUrlChange(text, index)}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    keyboardType="url"
-                  />
-                  {!isEmpty && (
+        {urlEntries.map((entry, index) => {
+          const isInvalid = invalidIndices.has(index);
+          const isEmpty = entry.url.trim() === '';
+          const isLastEmpty = index === urlEntries.length - 1 && isEmpty;
+          return (
+            <View key={index} style={[styles.urlEntryWrapper, isLastEmpty && styles.urlEntryWrapperPlaceholder]}>
+              {/* URL row */}
+              <View style={styles.urlFieldRow}>
+                <TextInput
+                  style={[styles.input, styles.urlInput, isInvalid && styles.urlInputInvalid]}
+                  placeholder={isLastEmpty ? 'Weitere URL hinzufügen…' : 'https://www.chefkoch.de/rezepte/…'}
+                  placeholderTextColor={isLastEmpty ? '#BBB' : '#AAA'}
+                  value={entry.url}
+                  onChangeText={text => handleUrlChange(text, index)}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                />
+                {!isEmpty && (
+                  <>
+                    <Tooltip label={entry.expanded ? 'Tags & Bewertungen einklappen' : 'Tags & Bewertungen ausklappen'} position="left">
+                      <TouchableOpacity
+                        style={styles.urlExpandBtn}
+                        onPress={() => toggleEntryExpanded(index)}
+                      >
+                        <Ionicons
+                          name={entry.expanded ? 'chevron-up' : 'chevron-down'}
+                          size={18}
+                          color={entry.tagIds.length > 0 || Object.values(entry.ratings).some(s => s > 0) ? GREEN : '#AAA'}
+                        />
+                      </TouchableOpacity>
+                    </Tooltip>
                     <Tooltip label="URL entfernen" position="left">
                       <TouchableOpacity
                         style={styles.urlRemoveBtn}
@@ -606,55 +653,40 @@ export default function BulkImportScreen() {
                         <Ionicons name="close-circle" size={20} color="#AAA" />
                       </TouchableOpacity>
                     </Tooltip>
-                  )}
-                </View>
-                {isInvalid && (
-                  <Text style={styles.urlFieldError}>Keine gültige URL</Text>
+                  </>
                 )}
               </View>
-            );
-          })}
+              {isInvalid && (
+                <Text style={styles.urlFieldError}>Keine gültige URL</Text>
+              )}
 
-          {inputError && <Text style={styles.importError}>{inputError}</Text>}
-        </View>
+              {/* Expandable tags + ratings */}
+              {!isEmpty && entry.expanded && (
+                <View style={styles.urlEntryExpanded}>
+                  <Text style={styles.sectionSubtitle}>Tags</Text>
+                  <TagSection
+                    allTags={allTags}
+                    selectedIds={entry.tagIds}
+                    onToggle={tagId => toggleEntryTag(index, tagId)}
+                    onAddTag={name => handleAddTagForEntry(index, name)}
+                  />
+                  {users.length > 0 && (
+                    <>
+                      <Text style={[styles.sectionSubtitle, { marginTop: 14 }]}>Bewertungen</Text>
+                      <RatingSection
+                        users={users}
+                        ratings={entry.ratings}
+                        onRate={(userId, stars) => setEntryRating(index, userId, stars)}
+                      />
+                    </>
+                  )}
+                </View>
+              )}
+            </View>
+          );
+        })}
 
-        {/* Global tags (optional default for all recipes) */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Tags</Text>
-          <Text style={styles.hint}>
-            Optional – gilt als Vorbelegung für alle Rezepte und kann im nächsten Schritt individuell angepasst werden.
-          </Text>
-          <TagSection
-            allTags={allTags}
-            selectedIds={globalTagIds}
-            onToggle={id =>
-              setGlobalTagIds(prev =>
-                prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-              )
-            }
-            onAddTag={async name => {
-              const tag = await createTag.mutateAsync(name);
-              return tag.id;
-            }}
-          />
-        </View>
-
-        {/* Global ratings (optional default for all recipes) */}
-        {users.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Bewertungen</Text>
-            <Text style={styles.hint}>
-              Optional – gilt als Vorbelegung für alle Rezepte und kann im nächsten Schritt individuell angepasst werden.
-            </Text>
-            <RatingSection
-              users={users}
-              ratings={globalRatings}
-              onRate={(userId, stars) =>
-                setGlobalRatings(prev => ({ ...prev, [userId]: stars }))
-              }
-            />
-          </View>
-        )}
+        {inputError && <Text style={[styles.importError, { marginBottom: 12 }]}>{inputError}</Text>}
 
         <TouchableOpacity
           style={[styles.primaryBtn, bulkPreview.isPending && styles.primaryBtnDisabled]}
@@ -734,8 +766,28 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#F0F0F0', marginBottom: 14 },
 
   // URL fields
-  urlFieldWrapper: { marginBottom: 8 },
-  urlFieldRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  urlEntryWrapper: {
+    marginBottom: 10,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: BORDER,
+    overflow: 'hidden',
+  },
+  urlEntryWrapperPlaceholder: {
+    backgroundColor: '#FAFAFA',
+    borderStyle: 'dashed',
+    borderColor: '#D0D0D0',
+  },
+  urlFieldRow: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 8 },
+  urlExpandBtn: { padding: 4 },
+  urlEntryExpanded: {
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+    padding: 12,
+    paddingTop: 10,
+    backgroundColor: '#FAFAFA',
+  },
   input: {
     borderWidth: 1,
     borderColor: BORDER,
@@ -746,10 +798,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
     color: '#1A1A1A',
   },
-  urlInput: { flex: 1 },
-  urlInputInvalid: { borderColor: RED, backgroundColor: '#FFF5F5' },
+  urlInput: { flex: 1, borderWidth: 0, borderRadius: 0, backgroundColor: 'transparent', paddingHorizontal: 4 },
+  urlInputInvalid: { backgroundColor: '#FFF5F5' },
   urlRemoveBtn: { padding: 4 },
-  urlFieldError: { fontSize: 12, color: RED, marginTop: 3, marginLeft: 2 },
+  urlFieldError: { fontSize: 12, color: RED, marginTop: 0, marginBottom: 4, marginLeft: 12 },
   importError: {
     fontSize: 13,
     color: RED,
