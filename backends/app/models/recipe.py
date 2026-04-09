@@ -34,7 +34,7 @@ class Recipe(Base):
     source_url = Column(String(2048), nullable=True)
     household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True)
 
-    ingredients = relationship("RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan")
+    ingredients = relationship("RecipeIngredient", back_populates="recipe", cascade="all, delete-orphan", lazy="selectin")
     meal_plan_entries = relationship("MealPlanEntry", back_populates="recipe")
     tags = relationship("Tag", secondary="recipe_tags", back_populates="recipes", lazy="selectin")
     ratings = relationship("RecipeRating", back_populates="recipe", cascade="all, delete-orphan", lazy="selectin")
@@ -59,7 +59,7 @@ class RecipeIngredient(Base):
     unit = Column(String(50), nullable=False)
 
     recipe = relationship("Recipe", back_populates="ingredients")
-    ingredient = relationship("Ingredient", back_populates="recipes")
+    ingredient = relationship("Ingredient", back_populates="recipes", lazy="selectin")
 
     __table_args__ = (UniqueConstraint("recipe_id", "ingredient_id"),)
 
