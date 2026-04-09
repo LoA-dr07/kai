@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { api } from '../../lib/api';
 import { useImportRecipes, useRecipes, useTags } from '../../lib/hooks/useRecipes';
 import type { Recipe, RecipeExportItem } from '../../lib/types';
 import { Tooltip } from '../../components/Tooltip';
