@@ -99,15 +99,19 @@ def parse_instructions(raw) -> str | None:
 
 
 def parse_iso_duration(duration: str) -> int | None:
-    """Convert ISO 8601 duration (e.g. PT1H30M) to minutes."""
+    """Convert ISO 8601 duration (e.g. PT1H30M, P0DT30M) to minutes."""
     if not duration:
         return None
-    match = re.fullmatch(r'P(?:T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?', duration.upper())
+    match = re.fullmatch(
+        r'P(?:\d+Y)?(?:\d+M)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?',
+        duration.upper(),
+    )
     if not match:
         return None
-    hours = int(match.group(1) or 0)
-    minutes = int(match.group(2) or 0)
-    total = hours * 60 + minutes
+    days = int(match.group(1) or 0)
+    hours = int(match.group(2) or 0)
+    minutes = int(match.group(3) or 0)
+    total = days * 24 * 60 + hours * 60 + minutes
     return total if total > 0 else None
 
 
