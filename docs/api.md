@@ -526,19 +526,22 @@ Erlaubte Werte:
 
 ## KI-Mahlzeitenplanung (`/ai`)
 
+**Voraussetzung:** `ANTHROPIC_API_KEY` in `backends/.env` konfiguriert.
+
 ### `POST /ai/meal-plan-suggestion`
 KI-gestützten Wochenplan-Vorschlag generieren (via Claude API).
-
-**Voraussetzung:** `ANTHROPIC_API_KEY` in `backends/.env` konfiguriert.
 
 **Request Body:**
 ```json
 {
   "week_start_date": "2026-03-23",
   "requesting_user_id": 1,
-  "special_wishes": "Bitte viel Pasta diese Woche"
+  "special_wishes": "Bitte viel Pasta diese Woche",
+  "meal_types": ["breakfast", "dinner"]
 }
 ```
+
+`meal_types`: Optional. Welche Mahlzeitstypen geplant werden sollen. Default: alle 5 (`breakfast`, `lunch`, `snack`, `dinner`, `dessert`). Min. 1 Eintrag.
 
 **Response 200:**
 ```json
@@ -558,11 +561,58 @@ KI-gestützten Wochenplan-Vorschlag generieren (via Claude API).
 }
 ```
 
-`day_of_week`: 0=Montag … 6=Sonntag · Die Antwort enthält 35 Einträge (7 Tage × 5 Mahlzeitstypen).
+`day_of_week`: 0=Montag … 6=Sonntag.
+Die Antwort enthält `7 × len(meal_types)` Basiseinträge. Bei unterschiedlichen Präferenzen der Haushaltsmitglieder für denselben Slot (z.B. wegen „Nie"-Bewertungen) können zusätzliche Einträge pro Person/Gruppe entstehen.
+Rezepte, die ein Haushaltsmitglied mit 0 Sternen („Nie") bewertet hat, werden nie für dieses Mitglied eingeplant.
 
 **Response 404:** Nutzer oder Haushalt nicht gefunden
 **Response 503:** `ANTHROPIC_API_KEY` nicht konfiguriert
 **Response 502:** Claude API-Fehler oder ungültige KI-Antwort
+
+---
+
+### `POST /ai/chat`
+Freier KI-Chat für Rezeptvorschläge und Ernährungsberatung (via Claude API).
+
+**Request Body:**
+```json
+{
+  "messages": [
+    { "role": "user", "content": "Schlage mir ein schnelles Abendessen vor" }
+  ],
+  "week_start_date": "2026-03-23"
+}
+```
+
+`messages`: Vollständige Gesprächshistorie (abwechselnd `user` / `assistant`). `week_start_date`: Optional, wird als Kontext mitgeliefert.
+
+**Response 200:**
+```json
+{
+  "reply": "Ich empfehle dir diese drei Gerichte für ein schnelles Abendessen:",
+  "recipe_suggestions": [
+    {
+      "recipe_id": 5,
+      "recipe_name": "Pasta Carbonara",
+      "reason": "Nur 20 Minuten Zubereitungszeit",
+      "is_new_recipe": false
+    },
+    {
+      "recipe_id": null,
+      "recipe_name": "Avocado-Toast",
+      "reason": "Sehr schnell, kein Kochen nötig",
+      "is_new_recipe": true
+    }
+  ]
+}
+```
+
+`recipe_id`: Gesetzt wenn das Rezept in der Haushaltsdatenbank existiert, sonst `null`.
+`is_new_recipe`: `true` wenn das Rezept nicht in der Datenbank ist.
+`recipe_suggestions`: Leer wenn keine Rezeptvorschläge gemacht werden.
+
+**Response 503:** `ANTHROPIC_API_KEY` nicht konfiguriert
+**Response 502:** Claude API-Fehler
 
 ---
 

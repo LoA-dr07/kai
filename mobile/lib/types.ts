@@ -193,6 +193,7 @@ export interface AiMealPlanRequest {
   week_start_date: string;
   requesting_user_id: number;
   special_wishes: string;
+  meal_types: MealType[];
 }
 
 export interface AiMealPlanSuggestionEntry {
@@ -208,4 +209,28 @@ export interface AiMealPlanSuggestionEntry {
 export interface AiMealPlanSuggestion {
   week_start_date: string;
   entries: AiMealPlanSuggestionEntry[];
+}
+
+// --- AI Chat ---
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface RecipeSuggestion {
+  recipe_id?: number | null;
+  recipe_name: string;
+  reason: string;
+  is_new_recipe: boolean;
+}
+
+export interface AiChatRequest {
+  messages: ChatMessage[];
+  week_start_date?: string;
+}
+
+export interface AiChatResponse {
+  reply: string;
+  recipe_suggestions: RecipeSuggestion[];
 }
