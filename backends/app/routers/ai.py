@@ -84,6 +84,8 @@ def _build_user_message(
         lines.append(f"  Wochenbudget: {settings.weekly_budget:.0f} EUR")
     lines.append(f"  Bevorzugte Küchen: {', '.join(settings.preferred_cuisines) or 'keine Präferenz'}")
     lines.append(f"  Kochkenntnisse: {settings.cooking_skill_level}")
+    if settings.notes:
+        lines.append(f"HAUSHALT-NOTIZEN: {settings.notes}")
     lines.append("")
     lines.append(f"HAUSHALTSMITGLIEDER ({len(all_users)}):")
 
@@ -139,10 +141,14 @@ def _build_chat_system_message(
     household: Household,
     recipes: list[Recipe],
     nie_ratings: dict[int, list[str]],
+    settings: HouseholdSettings,
 ) -> str:
     lines = []
     lines.append(f"Du bist ein Meal-Planner-Assistent für den Haushalt '{household.name}'.")
     lines.append("Beantworte Fragen zu Rezepten, Ernährung und Mahlzeitenplanung auf Deutsch.")
+    if settings.notes:
+        lines.append("")
+        lines.append(f"HAUSHALT-NOTIZEN: {settings.notes}")
     lines.append("")
     lines.append("HAUSHALTSMITGLIEDER:")
     for user in all_users:
@@ -312,11 +318,13 @@ def ai_chat(
     all_users, household, all_recipes, nie_ratings = _load_shared_context(db)
     valid_recipe_ids = {r.id for r in all_recipes}
 
+    settings = HouseholdSettings(**(household.settings or {}))
     system_message = _build_chat_system_message(
         all_users=all_users,
         household=household,
         recipes=all_recipes,
         nie_ratings=nie_ratings,
+        settings=settings,
     )
 
     anthropic_messages = [
