@@ -147,6 +147,7 @@ backends/        ← FastAPI (Python)
 **`backends/.env`** (nicht im Git)
 ```
 DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/meal_planner
+ANTHROPIC_API_KEY=sk-ant-...   # Pflicht für KI-Funktionen (/ai/meal-plan-suggestion, /ai/chat)
 ```
 
 **`mobile/.env`** (nicht im Git)
