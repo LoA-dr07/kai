@@ -13,9 +13,10 @@ mobile/
 │   ├── _layout.tsx         # Root-Layout (QueryClientProvider)
 │   ├── index.tsx           # Weiterleitung → /recipes
 │   ├── (tabs)/
-│   │   ├── _layout.tsx     # Tab-Navigation (Rezepte | Wochenplan | Einstellungen)
+│   │   ├── _layout.tsx     # Tab-Navigation (Rezepte | Wochenplan | KI-Chat | Einstellungen)
 │   │   ├── recipes.tsx     # Rezeptliste-Screen
 │   │   ├── meal-plan.tsx   # Wochenplan-Screen
+│   │   ├── ai-chat.tsx     # KI-Chat-Screen
 │   │   └── settings.tsx    # Einstellungen-Screen (Haushalt + Mitglieder)
 │   └── recipe/
 │       ├── new.tsx         # Neues Rezept erstellen
@@ -25,7 +26,7 @@ mobile/
 │           └── cook.tsx    # Koch-Ansicht
 ├── components/             # Wiederverwendbare UI-Komponenten
 │   ├── AddToMealPlanModal.tsx # Rezept zum Essensplan hinzufügen (Woche, Tag, Mahlzeit, User)
-│   ├── AiSuggestionModal.tsx  # KI-Wochenplan-Modal (Eingabe → Laden → Vorschau → Übernehmen)
+│   ├── AiSuggestionModal.tsx  # KI-Wochenplan-Modal (Mahlzeitstyp-Filter, Eingabe → Laden → Vorschau → Übernehmen)
 │   ├── RecipeForm.tsx         # Rezeptformular (Neu + Bearbeiten)
 │   └── Tooltip.tsx            # Hover-Tooltip für icon-only Buttons (Web) + accessibilityLabel (Mobile)
 ├── lib/
@@ -38,7 +39,8 @@ mobile/
 │       ├── useMealPlan.ts             # Wochenplan-Hooks
 │       ├── useUsers.ts                # User-Hooks (inkl. useUpdateUserPreferences)
 │       ├── useHousehold.ts            # Haushalt-Hooks
-│       └── useAiMealPlanSuggestion.ts # KI-Wochenplan-Hook
+│       ├── useAiMealPlanSuggestion.ts # KI-Wochenplan-Hook
+│       └── useAiChat.ts               # KI-Chat-Hook
 └── assets/                 # Bilder, Icons
 ```
 
@@ -68,6 +70,19 @@ mobile/
 - Pro Zelle: geplantes Rezept oder Freitext, farbige User-Avatar-Chips
 - Zelle antippen → Bearbeitungsmodal (Rezept auswählen oder Freitext eingeben, User zuweisen)
 - Responsiv: Tablet-Layout ab 768px Breite
+
+### `(tabs)/ai-chat.tsx` – KI-Chat
+- Chat-Interface mit KI-Assistent (Claude API via `POST /ai/chat`)
+- Haushaltsmitglieder, Präferenzen, Nie-Bewertungen und verfügbare Rezepte werden automatisch als Kontext mitgegeben
+- **Nachrichtenblase:** User-Nachrichten rechts (grün), KI-Antworten links (weiß)
+- **Rezeptvorschlag-Karten:** Erscheinen direkt unter KI-Antworten für jedes vorgeschlagene Gericht
+  - Zeigt: Rezeptname, Begründung, ✨-Markierung für neue Rezepte (nicht in DB)
+  - **„+ Zum Wochenplan hinzufügen":** Klappt Inline-Picker auf mit Wochentag- und Mahlzeitstyp-Chips
+  - Nach Auswahl von Tag + Mahlzeit: „Eintragen"-Button → Eintrag wird sofort gespeichert
+  - Bestätigung: Button wechselt zu „✓ Zum Wochenplan hinzugefügt"
+- Willkommensnachricht beim ersten Öffnen (zählt nicht zur API-Gesprächshistorie)
+- Wochenbanner zeigt die aktuelle Kalenderwoche
+- `KeyboardAvoidingView` für iOS-Tastatur-Handling
 
 ### `recipe/bulk-import.tsx` – Rezepte aus URLs importieren (Bulk)
 Dreistufiger Flow:
@@ -157,11 +172,12 @@ Alle Meal-Plan-Mutations invalidieren `['meal-plans']`.
 | `useHousehold()` | Query | Haushalt mit Einstellungen (Cache-Key: `['household']`, `staleTime: 5min`) |
 | `useUpdateHouseholdSettings()` | Mutation | Einstellungen speichern, aktualisiert `['household']` Cache |
 
-### KI-Hooks (`useAiMealPlanSuggestion.ts`)
+### KI-Hooks
 
-| Hook | Typ | Beschreibung |
-|------|-----|--------------|
-| `useAiMealPlanSuggestion()` | Mutation | KI-Wochenplan generieren (`POST /ai/meal-plan-suggestion`), Timeout 60 s |
+| Hook | Datei | Typ | Beschreibung |
+|------|-------|-----|--------------|
+| `useAiMealPlanSuggestion()` | `useAiMealPlanSuggestion.ts` | Mutation | KI-Wochenplan generieren (`POST /ai/meal-plan-suggestion`), Timeout 60 s |
+| `useAiChat()` | `useAiChat.ts` | Mutation | KI-Chat-Nachricht senden (`POST /ai/chat`), Timeout 60 s |
 
 ---
 
@@ -348,6 +364,7 @@ const isTablet = width >= 768;
 | `/` | Weiterleitung → `/recipes` |
 | `/(tabs)/recipes` | Rezeptliste |
 | `/(tabs)/meal-plan` | Wochenplan |
+| `/(tabs)/ai-chat` | KI-Chat |
 | `/recipe/bulk-import` | Bulk-Import aus URLs |
 | `/recipe/new` | Neues Rezept |
 | `/recipe/[id]` | Rezeptdetail |
