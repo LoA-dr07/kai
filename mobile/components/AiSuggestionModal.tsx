@@ -15,6 +15,7 @@ import { useAiMealPlanSuggestion } from '../lib/hooks/useAiMealPlanSuggestion';
 import type { User, Recipe, AiMealPlanSuggestionEntry, MealType } from '../lib/types';
 import { DAYS_DE, MEAL_TYPES } from '../lib/constants';
 import { Colors } from '../lib/theme';
+import axios from 'axios';
 
 // --- Konstanten ---
 
@@ -93,9 +94,13 @@ export default function AiSuggestionModal({
       });
       setEntries(result.entries);
       setPhase('preview');
-    } catch {
+    } catch (err) {
       setPhase('input');
-      showAlert('Fehler', 'KI-Plan konnte nicht erstellt werden. Bitte versuche es erneut.');
+      const detail =
+        axios.isAxiosError(err) && err.response?.data?.detail
+          ? String(err.response.data.detail)
+          : 'KI-Plan konnte nicht erstellt werden. Bitte versuche es erneut.';
+      showAlert('Fehler', detail);
     }
   };
 
