@@ -50,6 +50,7 @@ const DEFAULT_HOUSEHOLD_SETTINGS: HouseholdSettings = {
   weekly_budget: null,
   preferred_cuisines: [],
   cooking_skill_level: 'medium',
+  notes: '',
 };
 
 const DEFAULT_USER_PREFERENCES: UserPreferences = {
@@ -357,6 +358,17 @@ function HouseholdSettingsForm({ initialSettings }: { initialSettings: Household
         value={form.weekly_budget != null ? String(form.weekly_budget) : ''}
         onChangeText={v => set('weekly_budget', v ? parseFloat(v) : null)}
         placeholder="z. B. 120"
+      />
+
+      <FieldLabel label="Notizen für die KI" />
+      <TextInput
+        style={[styles.input, styles.notesInput]}
+        value={form.notes ?? ''}
+        onChangeText={v => set('notes', v)}
+        placeholder="z. B. Wir kochen unter der Woche max. 30 Minuten, haben 2 kleine Kinder …"
+        multiline
+        numberOfLines={4}
+        textAlignVertical="top"
       />
 
       <TouchableOpacity style={[styles.saveBtn, isPending && styles.saveBtnDisabled]} onPress={save} disabled={isPending}>
@@ -833,6 +845,11 @@ const styles = StyleSheet.create({
     height: 44,
     fontSize: 14,
     backgroundColor: '#fff',
+  },
+  notesInput: {
+    height: undefined,
+    minHeight: 88,
+    paddingVertical: 10,
   },
 
   // Tag input
