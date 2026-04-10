@@ -16,9 +16,10 @@ import { useAiChat } from '../../lib/hooks/useAiChat';
 import { useMealPlans, useCreateMealPlan, useAddEntry } from '../../lib/hooks/useMealPlan';
 import { useUsers } from '../../lib/hooks/useUsers';
 import type { ChatMessage, RecipeSuggestion, MealType } from '../../lib/types';
-import { DAYS_DE, MEAL_TYPES } from '../../lib/constants';
+import { MEAL_TYPES } from '../../lib/constants';
 import { Colors } from '../../lib/theme';
 import { getMondayOf, isoDate, getISOWeek } from '../../lib/dateUtils';
+import axios from 'axios';
 
 // --- Konstanten ---
 
@@ -103,9 +104,12 @@ export default function AiChatScreen() {
         { message: assistantMsg, suggestions: result.recipe_suggestions },
       ]);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-    } catch {
-      showAlert('Fehler', 'KI-Antwort konnte nicht geladen werden. Bitte versuche es erneut.');
-      // Remove the pending user message on error
+    } catch (err) {
+      const detail =
+        axios.isAxiosError(err) && err.response?.data?.detail
+          ? String(err.response.data.detail)
+          : 'KI-Antwort konnte nicht geladen werden. Bitte versuche es erneut.';
+      showAlert('Fehler', detail);
       setDisplayMessages(prev => prev.slice(0, -1));
       setInput(text);
     }
