@@ -140,6 +140,7 @@ export interface HouseholdSettings {
   weekly_budget: number | null;
   preferred_cuisines: string[];
   cooking_skill_level: string;     // "beginner"|"medium"|"advanced"
+  notes?: string;                  // free-text context for AI
 }
 
 export interface Household {
