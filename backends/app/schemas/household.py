@@ -11,6 +11,7 @@ class HouseholdSettings(BaseModel):
     weekly_budget: float | None = None     # optional weekly budget in €
     preferred_cuisines: list[str] = []     # ["italian", "german", "asian", ...]
     cooking_skill_level: str = "medium"    # "beginner" | "medium" | "advanced"
+    notes: str = ""                         # free-text context for AI
 
 
 class HouseholdSettingsUpdate(BaseModel):

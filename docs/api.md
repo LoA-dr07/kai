@@ -488,7 +488,8 @@ Haushalt mit allen Mitgliedern und Einstellungen abrufen.
     "shared_meals_importance": 3,
     "weekly_budget": null,
     "preferred_cuisines": [],
-    "cooking_skill_level": "medium"
+    "cooking_skill_level": "medium",
+    "notes": ""
   }
 }
 ```
@@ -507,7 +508,8 @@ Haushalts-Einstellungen speichern (vollständiger Ersatz).
     "shared_meals_importance": 4,
     "weekly_budget": 120.0,
     "preferred_cuisines": ["italian","german"],
-    "cooking_skill_level": "medium"
+    "cooking_skill_level": "medium",
+    "notes": "Wir kochen unter der Woche max. 30 Minuten."
   }
 }
 ```
@@ -521,6 +523,7 @@ Erlaubte Werte:
 - `leftovers_frequency`: `never`, `sometimes`, `often`
 - `shared_meals_importance`: `1`–`5`
 - `cooking_skill_level`: `beginner`, `medium`, `advanced`
+- `notes`: Freitext – wird als `HAUSHALT-NOTIZEN` in den KI-Prompt beider AI-Endpunkte injiziert (leer = kein Abschnitt)
 
 ---
 
