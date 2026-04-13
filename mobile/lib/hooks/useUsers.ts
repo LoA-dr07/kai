@@ -1,65 +1,62 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { useQuery } from '@powersync/react';
+import { useMutation } from '@tanstack/react-query';
 import { api } from '../api';
 import type { User, UserPreferences, UserCreate, UserUpdate } from '../types';
-import { DEFAULT_STALE_TIME } from '../constants';
 
-export function useUsers() {
-  return useQuery<User[]>({
-    queryKey: ['users'],
-    queryFn: () => api.get('/users').then(r => r.data),
-    staleTime: DEFAULT_STALE_TIME,
-  });
+// ---------------------------------------------------------------------------
+// Read hook – PowerSync (local SQLite, reactive, offline-capable)
+// ---------------------------------------------------------------------------
+
+export function useUsers(): { data: User[]; isLoading: boolean; error: Error | undefined } {
+  const { data: rows, isLoading, error } = useQuery(
+    'SELECT * FROM users ORDER BY name',
+  );
+  const data = useMemo<User[]>(
+    () =>
+      rows.map(r => ({
+        id: Number(r.id),
+        name: r.name as string,
+        avatar_color: r.avatar_color as string,
+        short_name: r.short_name as string,
+        preferences: (
+          typeof r.preferences === 'string'
+            ? JSON.parse(r.preferences || '{}')
+            : (r.preferences ?? {})
+        ) as UserPreferences,
+      })),
+    [rows],
+  );
+  return { data, isLoading, error };
 }
 
+// ---------------------------------------------------------------------------
+// Write hooks – direct FastAPI calls; PowerSync syncs the changes back
+// ---------------------------------------------------------------------------
+
 export function useCreateUser() {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useMutation<User, Error, UserCreate>({
     mutationFn: (data: UserCreate) => api.post('/users', data).then(r => r.data),
-    onSuccess: (newUser: User) => {
-      queryClient.setQueryData<User[]>(['users'], old => [...(old ?? []), newUser]);
-      queryClient.invalidateQueries({ queryKey: ['household'] });
-    },
   });
 }
 
 export function useUpdateUser(userId: number) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useMutation<User, Error, UserUpdate>({
     mutationFn: (data: UserUpdate) =>
       api.patch(`/users/${userId}`, data).then(r => r.data),
-    onSuccess: (updatedUser: User) => {
-      queryClient.setQueryData<User[]>(['users'], old =>
-        old ? old.map(u => (u.id === userId ? updatedUser : u)) : [updatedUser]
-      );
-      queryClient.invalidateQueries({ queryKey: ['household'] });
-      queryClient.invalidateQueries({ queryKey: ['recipes'] });
-    },
   });
 }
 
 export function useDeleteUser() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (userId: number) => api.delete(`/users/${userId}`),
-    onSuccess: (_: unknown, userId: number) => {
-      queryClient.setQueryData<User[]>(['users'], old =>
-        old ? old.filter(u => u.id !== userId) : []
-      );
-      queryClient.invalidateQueries({ queryKey: ['household'] });
-      queryClient.invalidateQueries({ queryKey: ['recipes'] });
-    },
+  return useMutation<void, Error, number>({
+    mutationFn: (userId: number) =>
+      api.delete(`/users/${userId}`).then(() => undefined),
   });
 }
 
 export function useUpdateUserPreferences(userId: number) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useMutation<User, Error, UserPreferences>({
     mutationFn: (preferences: UserPreferences) =>
       api.put(`/users/${userId}/preferences`, { preferences }).then(r => r.data),
-    onSuccess: (updatedUser: User) => {
-      queryClient.setQueryData<User[]>(['users'], old =>
-        old ? old.map(u => (u.id === userId ? updatedUser : u)) : [updatedUser]
-      );
-    },
   });
 }
