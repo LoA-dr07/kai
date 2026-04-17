@@ -14,7 +14,9 @@ if (!config.resolver.sourceExts.includes('mjs')) {
 // browser-specific build instead of the Node.js/CommonJS build
 config.resolver.unstable_enablePackageExports = true;
 
-// Prefer browser-compatible builds
-config.resolver.resolverMainFields = ['browser', 'module', 'main'];
+// Keep 'react-native' first so native packages resolve to their TS source
+// (not compiled lib/module/ output) – required for the RN codegen to work.
+// 'browser' follows for web-compatible fallbacks (@powersync/web etc.)
+config.resolver.resolverMainFields = ['react-native', 'browser', 'module', 'main'];
 
 module.exports = config;
