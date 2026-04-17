@@ -1,13 +1,4 @@
-// Loaded on Expo Web (browser) by Metro/webpack platform-specific resolution.
-// Uses @powersync/web which runs SQLite via WebAssembly (wa-sqlite).
-import { PowerSyncDatabase } from '@powersync/web';
-
-import { AppBackendConnector } from './connector';
-import { AppSchema } from './schema';
-
-export const db = new PowerSyncDatabase({
-  schema: AppSchema,
-  database: { dbFilename: 'meal-planner.db' },
-});
-
-export const connector = new AppBackendConnector();
+// Web: PowerSync is not used – reads go via REST API, writes via FastAPI directly.
+// See database.native.ts for the native (iOS/Android) implementation.
+export const db = null as any;
+export const connector = null as any;
