@@ -25,7 +25,6 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "bundler": "webpack",
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
