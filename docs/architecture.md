@@ -3,28 +3,60 @@
 ## Systemüberblick
 
 ```
-┌─────────────────────────────────────────┐
-│           Client (Frontend)             │
-│  React Native / Expo                    │
-│  • Mobile (iOS/Android via Expo Go)     │
-│  • Web (Browser via Expo Web)           │
-└────────────────┬────────────────────────┘
-                 │ HTTP/JSON (Axios, 10s Timeout)
-                 │ EXPO_PUBLIC_API_URL
-                 ▼
-┌─────────────────────────────────────────┐
-│           Backend (FastAPI)             │
-│  Python · Uvicorn · CORS: *             │
-│  http://localhost:8000                  │
-│  Swagger UI: /docs                      │
-└────────────────┬────────────────────────┘
-                 │ SQLAlchemy ORM
-                 ▼
-┌─────────────────────────────────────────┐
-│         PostgreSQL Datenbank            │
-│  Migrationen via Alembic                │
-└─────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────┐
+│                  Client (Frontend)                    │
+│  React Native / Expo · TypeScript · Expo Router       │
+│                                                       │
+│  Web (Browser)          Native (iOS / Android)        │
+│  • Reads: REST API      • Reads: PowerSync SQLite     │
+│  • Writes: REST API     • Writes: REST API            │
+└──────────┬──────────────────────┬─────────────────────┘
+           │ HTTP/JSON (Axios)    │ HTTP/JSON (Axios)
+           │ Writes               │ Writes + Token-Fetch
+           ▼                      ▼
+┌──────────────────────────────────────────────────────┐
+│            Backend (FastAPI · Python)                │
+│            fly.io · https://meal-planner-api.fly.dev │
+│            Swagger UI: /docs                         │
+│            CORS: allow_origins=["*"]                 │
+└──────────────────────┬───────────────────────────────┘
+                       │ SQLAlchemy ORM
+                       ▼
+┌──────────────────────────────────────────────────────┐
+│          Neon PostgreSQL (Serverless)                │
+│          Direct Connection (für PowerSync WAL)       │
+└──────────────────────┬───────────────────────────────┘
+                       │ Logical Replication (WAL)
+                       ▼
+┌──────────────────────────────────────────────────────┐
+│          PowerSync Cloud                             │
+│          Sync Rules → sendet Änderungen an Clients   │
+└──────────────────────┬───────────────────────────────┘
+                       │ WebSocket / HTTP Sync
+                       ▼
+             Native App (lokales SQLite)
 ```
+
+---
+
+## Datenfluss
+
+### Schreibpfad (alle Plattformen)
+1. App ruft FastAPI-Endpunkt auf (Axios)
+2. FastAPI schreibt in Neon PostgreSQL
+3. Neon signalisiert Änderung via WAL (Write-Ahead Log)
+4. PowerSync Cloud erkennt Änderung und pusht an verbundene Native-Clients
+
+### Lesepfad Native (offline-fähig)
+1. PowerSync hält lokale SQLite-Kopie auf dem Gerät
+2. Hooks lesen per SQL direkt aus SQLite (`useQuery` von `@powersync/react`)
+3. Daten sind sofort verfügbar, auch ohne Internetverbindung
+4. Sync läuft transparent im Hintergrund
+
+### Lesepfad Web
+1. Hooks rufen direkt die FastAPI REST API auf (`useQuery` von `@tanstack/react-query`)
+2. Kein lokales SQLite – Web ist online-only
+3. Grund: `@powersync/web` ist nicht kompatibel mit dem Metro-Bundler von Expo 54
 
 ---
 
@@ -43,7 +75,7 @@ Business-Logik (inline im Router)
     ↓
 SQLAlchemy ORM (backends/app/models/)
     ↓
-PostgreSQL
+Neon PostgreSQL
     ↓
 Pydantic-Schema (Response-Serialisierung)
     ↓
@@ -58,15 +90,48 @@ JSON Response
 Screen (mobile/app/)
     ↓
 React Query Hook (mobile/lib/hooks/)
-    • useQuery  → GET-Anfragen (gecacht)
-    • useMutation → POST/PATCH/DELETE + Cache-Invalidierung
+    Native: useQuery (@powersync/react) → PowerSync SQLite
+    Web:    useQuery (@tanstack/react-query) → REST API
+    Mutations (beide Plattformen): useMutation → FastAPI
     ↓
 Axios API-Client (mobile/lib/api.ts)
-    • baseURL: EXPO_PUBLIC_API_URL
+    • baseURL: EXPO_PUBLIC_API_URL (fly.io)
     • timeout: 10s
     ↓
-FastAPI Backend
+FastAPI Backend (fly.io)
 ```
+
+---
+
+## PowerSync-Integration
+
+### Authentifizierung
+PowerSync benötigt einen signierten JWT zur Verbindung. Das Backend stellt zwei Endpunkte bereit:
+
+| Endpunkt | Zweck |
+|----------|-------|
+| `GET /auth/powersync-token` | Gibt JWT zurück (signiert mit `POWERSYNC_PRIVATE_KEY`) |
+| `GET /auth/jwks.json` | Gibt Public Key zurück (für PowerSync-Validierung) |
+
+Im PowerSync Dashboard wird die JWKS URI hinterlegt:
+`https://meal-planner-api.fly.dev/auth/jwks.json`
+
+### Platform-spezifische Dateien
+
+| Datei | Plattform | Implementierung |
+|-------|-----------|-----------------|
+| `mobile/lib/powersync/database.ts` | Web | `db = null` (PowerSync deaktiviert) |
+| `mobile/lib/powersync/database.native.ts` | Native | `PowerSyncDatabase` mit wa-sqlite |
+| `mobile/lib/hooks/useRecipes.web.ts` | Web | React Query + REST API |
+| `mobile/lib/hooks/useRecipes.ts` | Native | PowerSync `useQuery` |
+| `mobile/lib/hooks/useMealPlan.web.ts` | Web | React Query + REST API |
+| `mobile/lib/hooks/useMealPlan.ts` | Native | PowerSync `useQuery` |
+| `mobile/lib/hooks/useHousehold.web.ts` | Web | React Query + REST API |
+| `mobile/lib/hooks/useHousehold.ts` | Native | PowerSync `useQuery` |
+| `mobile/lib/hooks/useUsers.web.ts` | Web | React Query + REST API |
+| `mobile/lib/hooks/useUsers.ts` | Native | PowerSync `useQuery` |
+
+Metro wählt `.web.ts`-Dateien automatisch für Web-Builds.
 
 ---
 
