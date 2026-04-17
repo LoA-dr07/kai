@@ -61,6 +61,7 @@ export interface RecipeExportItem {
   source_url?: string | null;
   ingredients: RecipeExportIngredient[];
   ratings?: RecipeRating[];
+  tags?: string[];
 }
 
 export interface RecipeImportResult {
