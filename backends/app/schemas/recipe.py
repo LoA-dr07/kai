@@ -122,6 +122,7 @@ class RecipeExportItem(BaseModel):
     source_url: Optional[str] = None
     ingredients: list[RecipeExportIngredient] = []
     ratings: list[RecipeRatingOut] = []
+    tags: list[str] = []
 
 
 class RecipeImportResult(BaseModel):
