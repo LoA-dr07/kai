@@ -12,11 +12,11 @@ import type {
 // ---------------------------------------------------------------------------
 
 export function useRecipes() {
-  const { data = [], isLoading, error } = useQuery<Recipe[], Error>({
+  const { data = [], isLoading, error, refetch, isRefetching } = useQuery<Recipe[], Error>({
     queryKey: ['recipes'],
     queryFn: () => api.get('/recipes').then(r => r.data),
   });
-  return { data, isLoading, error: error ?? undefined };
+  return { data, isLoading, error: error ?? undefined, refetch, isRefetching };
 }
 
 export function useRecipe(id: number) {
