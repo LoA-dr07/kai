@@ -2,6 +2,7 @@
 
 **Framework:** React Native / Expo · TypeScript · Expo Router
 **Plattformen:** iOS · Android (via Expo Go) · Web (Expo Web)
+**Offline-Sync:** PowerSync (nur Native; Web nutzt REST API direkt)
 
 ---
 
@@ -34,13 +35,22 @@ mobile/
 │   ├── types.ts            # TypeScript-Interfaces
 │   ├── alert.ts            # Cross-platform Alert-Utility
 │   ├── dateUtils.ts        # Datums-Hilfsfunktionen (getMondayOf, isoDate, getISOWeek)
-│   └── hooks/              # React Query Custom Hooks
-│       ├── useRecipes.ts              # Rezept-Hooks
-│       ├── useMealPlan.ts             # Wochenplan-Hooks
-│       ├── useUsers.ts                # User-Hooks (inkl. useUpdateUserPreferences)
-│       ├── useHousehold.ts            # Haushalt-Hooks
-│       ├── useAiMealPlanSuggestion.ts # KI-Wochenplan-Hook
-│       └── useAiChat.ts               # KI-Chat-Hook
+│   ├── powersync/          # PowerSync-Konfiguration
+│   │   ├── schema.ts          # SQLite-Schema (spiegelt Server-Modelle)
+│   │   ├── connector.ts       # BackendConnector (JWT-Fetch, uploadData no-op)
+│   │   ├── database.ts        # Web: db = null (PowerSync deaktiviert)
+│   │   └── database.native.ts # Native: PowerSyncDatabase mit wa-sqlite
+│   └── hooks/              # React Query / PowerSync Custom Hooks
+│       ├── useRecipes.ts              # Native: PowerSync SQLite
+│       ├── useRecipes.web.ts          # Web: REST API Fallback
+│       ├── useMealPlan.ts             # Native: PowerSync SQLite
+│       ├── useMealPlan.web.ts         # Web: REST API Fallback
+│       ├── useUsers.ts                # Native: PowerSync SQLite
+│       ├── useUsers.web.ts            # Web: REST API Fallback
+│       ├── useHousehold.ts            # Native: PowerSync SQLite
+│       ├── useHousehold.web.ts        # Web: REST API Fallback
+│       ├── useAiMealPlanSuggestion.ts # KI-Wochenplan-Hook (beide Plattformen)
+│       └── useAiChat.ts               # KI-Chat-Hook (beide Plattformen)
 └── assets/                 # Bilder, Icons
 ```
 
@@ -118,6 +128,29 @@ Dreistufiger Flow:
   - Präferenz-Felder: Ernährungsweise, Allergien, ungemochte Zutaten (Freitext-Tag-Input), bevorzugte Küchen, Schärfeverträglichkeit, Portionsgröße → `useUpdateUserPreferences`
 - **„+ Mitglied hinzufügen"**-Button im Sektions-Header öffnet `AddMemberForm`-Karte: Name, Kürzel (auto-generiert), Farbauswahl → `useCreateUser`; erstellt gleichzeitig family-Tag
 - Feedback via `showAlert` / `showConfirm` aus `mobile/lib/alert.ts`
+
+---
+
+## PowerSync-Integration
+
+PowerSync ermöglicht Offline-Unterstützung auf Native (iOS/Android). Auf Web ist es nicht kompatibel mit dem Metro-Bundler von Expo 54.
+
+### Datenfluss Native
+1. `_layout.tsx` verbindet `db.connect(connector)` beim App-Start
+2. `connector.fetchCredentials()` holt einen JWT von `GET /auth/powersync-token`
+3. PowerSync Cloud sendet Datenbankänderungen via WebSocket an die lokale SQLite
+4. Hooks lesen per SQL aus SQLite – reaktiv, sofort, offline-fähig
+
+### Datenfluss Web
+- `database.ts` exportiert `db = null` → PowerSync wird nicht initialisiert
+- Metro wählt automatisch `.web.ts`-Hooks → REST API via React Query
+- `_layout.tsx` rendert `PowerSyncContext.Provider` nur wenn `db !== null`
+
+### Platform-Resolution
+Metro wählt automatisch nach Priorität:
+- `.web.ts` → Expo Web
+- `.native.ts` → iOS & Android
+- `.ts` → Fallback (alle Plattformen)
 
 ---
 
