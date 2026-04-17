@@ -1,8 +1,8 @@
 # API-Referenz – Meal-Planner
 
-**Base URL (Produktion):** `https://meal-planner-api.fly.dev`
+**Base URL (Produktion):** `https://meal-planner-api-long-feather-1592.fly.dev`
 **Base URL (lokal):** `http://localhost:8000`
-**Interaktive Dokumentation:** `https://meal-planner-api.fly.dev/docs` (Swagger UI)
+**Interaktive Dokumentation:** `https://meal-planner-api-long-feather-1592.fly.dev/docs` (Swagger UI)
 **Content-Type:** `application/json`
 
 ---

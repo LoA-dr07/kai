@@ -178,7 +178,7 @@ Ziel: Die App läuft produktiv auf mehreren Geräten gleichzeitig. Backend und D
 - [x] **Neon PostgreSQL** – Lokale PostgreSQL durch serverlosen Cloud-Dienst ersetzt
   - Logical Replication (WAL) aktiviert (für PowerSync)
   - Direct Connection URL konfiguriert
-- [x] **fly.io Backend** – FastAPI auf fly.io deployt (`meal-planner-api.fly.dev`)
+- [x] **fly.io Backend** – FastAPI auf fly.io deployt (`meal-planner-api-long-feather-1592.fly.dev`)
   - fly.toml konfiguriert (Region: fra, 256 MB RAM)
   - Alle Secrets via `fly secrets set` hinterlegt
 - [x] **PowerSync** – Offline-Sync für Native (iOS/Android)

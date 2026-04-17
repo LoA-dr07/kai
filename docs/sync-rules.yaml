@@ -1,0 +1,20 @@
+# PowerSync Sync Rules
+# Deploy this in the PowerSync Dashboard → Sync Rules editor.
+# All tables are synced to all clients (no per-user filtering needed
+# since the app uses a single shared household with no authentication).
+
+bucket_definitions:
+  global:
+    data:
+      - SELECT * FROM households
+      - SELECT * FROM household_members
+      - SELECT * FROM users
+      - SELECT * FROM recipes
+      - SELECT * FROM ingredients
+      - SELECT * FROM recipe_ingredients
+      - SELECT * FROM tags
+      - SELECT * FROM recipe_tags
+      - SELECT * FROM recipe_ratings
+      - SELECT * FROM meal_plans
+      - SELECT * FROM meal_plan_entries
+      - SELECT * FROM meal_plan_entry_users
