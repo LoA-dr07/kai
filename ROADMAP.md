@@ -170,6 +170,32 @@ Ziel: Strukturierte Präferenzdaten auf Haushalts- und Mitgliederebene für zuk�
 
 ---
 
+### Phase 9 – Multi-Device-Deployment
+
+Ziel: Die App läuft produktiv auf mehreren Geräten gleichzeitig. Backend und Datenbank sind in der Cloud gehostet. Native-Geräte haben Offline-Unterstützung via PowerSync.
+
+**Tasks:**
+- [x] **Neon PostgreSQL** – Lokale PostgreSQL durch serverlosen Cloud-Dienst ersetzt
+  - Logical Replication (WAL) aktiviert (für PowerSync)
+  - Direct Connection URL konfiguriert
+- [x] **fly.io Backend** – FastAPI auf fly.io deployt (`meal-planner-api.fly.dev`)
+  - fly.toml konfiguriert (Region: fra, 256 MB RAM)
+  - Alle Secrets via `fly secrets set` hinterlegt
+- [x] **PowerSync** – Offline-Sync für Native (iOS/Android)
+  - RSA-Schlüsselpaar generiert (JWT-Signing)
+  - `GET /auth/powersync-token` und `GET /auth/jwks.json` Endpunkte implementiert
+  - Sync Rules auf Development- und Production-Instanz deployt
+  - JWKS URI im Dashboard hinterlegt
+- [x] **Web: REST API Fallback** – `@powersync/web` nicht kompatibel mit Expo 54 + Metro
+  - `.web.ts` Hook-Dateien für `useRecipes`, `useMealPlan`, `useHousehold`, `useUsers`
+  - Web-Hooks nutzen React Query + REST API statt PowerSync SQLite
+  - `database.ts` (Web) gibt `null` zurück – kein Worker-Fehler
+- [x] **`.env`-Verwaltung** – `backends/.env` aus Git-Tracking entfernt
+  - `backends/.env.example` und `mobile/.env.example` aktualisiert
+  - `mobile/.env` zu `.gitignore` hinzugefügt
+
+---
+
 ## Empfohlener Workflow (Entwicklung mit Claude)
 
 ### Schritt-für-Schritt pro Feature
