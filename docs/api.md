@@ -117,9 +117,12 @@ Alle Rezepte als JSON exportieren (inkl. Zutaten-Namen, ohne IDs).
   "description": "...",
   "servings": 4,
   "prep_time_minutes": 45,
+  "source_url": null,
   "ingredients": [
     { "ingredient_name": "Hackfleisch", "amount": 500, "unit": "g" }
-  ]
+  ],
+  "ratings": [{ "user_id": 1, "stars": 5 }],
+  "tags": ["Pasta", "Fleisch"]
 }]
 ```
 

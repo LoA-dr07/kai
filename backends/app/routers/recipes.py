@@ -178,6 +178,7 @@ def export_recipes(db: Session = Depends(get_db)):
                 RecipeRatingOut(user_id=rating.user_id, stars=rating.stars)
                 for rating in r.ratings
             ],
+            tags=[t.name for t in r.tags],
         )
         for r in recipes
     ]
@@ -225,6 +226,13 @@ def import_recipes(recipes: list[RecipeExportItem], db: Session = Depends(get_db
                 user_id=rating.user_id,
                 stars=rating.stars,
             ))
+        for tag_name in item.tags:
+            tag = db.query(Tag).filter(Tag.name == tag_name).first()
+            if not tag:
+                tag = Tag(name=tag_name)
+                db.add(tag)
+                db.flush()
+            recipe.tags.append(tag)
         created_ids.append(recipe.id)
         created += 1
     db.commit()
