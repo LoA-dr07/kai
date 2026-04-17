@@ -1,15 +1,25 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { PowerSyncContext } from '@powersync/react';
+
+import { db, connector } from '../lib/powersync/database';
 
 export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());
 
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <Stack>
+  useEffect(() => {
+    if (!db) return;
+    db.connect(connector).catch(console.error);
+    return () => {
+      db.disconnect().catch(console.error);
+    };
+  }, []);
+
+  const screens = (
+    <QueryClientProvider client={queryClient}>
+      <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="recipe/new"
@@ -27,8 +37,17 @@ export default function RootLayout() {
           name="recipe/[id]/cook"
           options={{ title: 'Kochen' }}
         />
-        </Stack>
-      </QueryClientProvider>
+      </Stack>
+    </QueryClientProvider>
+  );
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      {db ? (
+        <PowerSyncContext.Provider value={db}>
+          {screens}
+        </PowerSyncContext.Provider>
+      ) : screens}
     </GestureHandlerRootView>
   );
 }
