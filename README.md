@@ -49,7 +49,7 @@ POWERSYNC_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----
 
 **`mobile/.env`** anlegen (Vorlage: `mobile/.env.example`):
 ```env
-EXPO_PUBLIC_API_URL=https://meal-planner-api.fly.dev
+EXPO_PUBLIC_API_URL=https://meal-planner-api-long-feather-1592.fly.dev
 EXPO_PUBLIC_POWERSYNC_URL=https://<instanz>.powersync.journeyapps.com
 ```
 
@@ -92,7 +92,7 @@ fly secrets set POWERSYNC_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n..." -a meal-p
 
 1. PowerSync Dashboard → **Development-Instanz** → DB verbinden (Neon Direct URL)
 2. Sync Rules definieren & deployen (Vorlage: `docs/sync-rules.yaml`)
-3. Auth → JWKS URI: `https://meal-planner-api.fly.dev/auth/jwks.json`
+3. Auth → JWKS URI: `https://meal-planner-api-long-feather-1592.fly.dev/auth/jwks.json`
 4. Gleiche Schritte für **Production-Instanz** wiederholen
 
 ### 7. Backend deployen
@@ -136,7 +136,7 @@ $env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.x.x"; npx expo start --go --lan
 
 QR-Code mit der **Expo Go App** scannen.
 
-> **Tipp:** Für Mobile-Tests kann `EXPO_PUBLIC_API_URL` auch auf `https://meal-planner-api.fly.dev` zeigen – dann ist kein lokales Backend nötig.
+> **Tipp:** Für Mobile-Tests kann `EXPO_PUBLIC_API_URL` auch auf `https://meal-planner-api-long-feather-1592.fly.dev` zeigen – dann ist kein lokales Backend nötig.
 
 ### Lokale Entwicklung (Backend + Web)
 

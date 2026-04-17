@@ -16,7 +16,7 @@
            ▼                      ▼
 ┌──────────────────────────────────────────────────────┐
 │            Backend (FastAPI · Python)                │
-│            fly.io · https://meal-planner-api.fly.dev │
+│            fly.io · https://meal-planner-api-long-feather-1592.fly.dev │
 │            Swagger UI: /docs                         │
 │            CORS: allow_origins=["*"]                 │
 └──────────────────────┬───────────────────────────────┘
@@ -114,7 +114,7 @@ PowerSync benötigt einen signierten JWT zur Verbindung. Das Backend stellt zwei
 | `GET /auth/jwks.json` | Gibt Public Key zurück (für PowerSync-Validierung) |
 
 Im PowerSync Dashboard wird die JWKS URI hinterlegt:
-`https://meal-planner-api.fly.dev/auth/jwks.json`
+`https://meal-planner-api-long-feather-1592.fly.dev/auth/jwks.json`
 
 ### Platform-spezifische Dateien
 
