@@ -1,7 +1,8 @@
 # API-Referenz – Meal-Planner
 
-**Base URL:** `http://localhost:8000`
-**Interaktive Dokumentation:** `http://localhost:8000/docs` (Swagger UI)
+**Base URL (Produktion):** `https://meal-planner-api.fly.dev`
+**Base URL (lokal):** `http://localhost:8000`
+**Interaktive Dokumentation:** `https://meal-planner-api.fly.dev/docs` (Swagger UI)
 **Content-Type:** `application/json`
 
 ---
@@ -16,6 +17,37 @@
 | `snack` | Snack |
 | `dinner` | Abendessen |
 | `dessert` | Dessert |
+
+---
+
+## PowerSync-Authentifizierung (`/auth`)
+
+**Voraussetzung:** `POWERSYNC_PRIVATE_KEY` und `POWERSYNC_PUBLIC_KEY` in `backends/.env` konfiguriert.
+
+### `GET /auth/powersync-token`
+Gibt einen signierten JWT zurück, den der PowerSync-Client zur Authentifizierung verwendet.
+
+**Response 200:**
+```json
+{ "token": "eyJ..." }
+```
+**Response 503:** `POWERSYNC_PRIVATE_KEY` nicht konfiguriert
+
+---
+
+### `GET /auth/jwks.json`
+Gibt den öffentlichen RSA-Schlüssel als JWKS zurück. Diese URL wird im PowerSync Dashboard unter **Auth → JWKS URI** hinterlegt.
+
+**Response 200:**
+```json
+{
+  "keys": [{
+    "kty": "RSA", "use": "sig", "alg": "RS256",
+    "kid": "powersync-key-1", "n": "...", "e": "..."
+  }]
+}
+```
+**Response 503:** `POWERSYNC_PUBLIC_KEY` nicht konfiguriert
 
 ---
 
