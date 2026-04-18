@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Platform,
   View,
   Text,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
+import { useStatus } from '@powersync/react';
 import { useHousehold, useUpdateHouseholdSettings } from '../../lib/hooks/useHousehold';
 import {
   useUsers,
@@ -668,6 +670,19 @@ function AddMemberForm({ onClose }: { onClose: () => void }) {
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
+function PowerSyncDebug() {
+  const status = useStatus();
+  return (
+    <View style={styles.debugBox}>
+      <Text style={styles.debugTitle}>Debug: PowerSync</Text>
+      <Text style={styles.debugText}>API: {process.env.EXPO_PUBLIC_API_URL ?? '⚠️ nicht gesetzt'}</Text>
+      <Text style={styles.debugText}>PS URL: {process.env.EXPO_PUBLIC_POWERSYNC_URL ?? '⚠️ nicht gesetzt'}</Text>
+      <Text style={styles.debugText}>Status: {status?.connected ? '✅ verbunden' : '❌ nicht verbunden'}</Text>
+      <Text style={styles.debugText}>Fehler: {status?.anyError ? JSON.stringify(status.anyError) : '–'}</Text>
+    </View>
+  );
+}
+
 export default function SettingsScreen() {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
@@ -712,6 +727,7 @@ export default function SettingsScreen() {
       contentContainerStyle={[styles.content, isWide && styles.contentWide]}
       keyboardShouldPersistTaps="handled"
     >
+      {Platform.OS !== 'web' && <PowerSyncDebug />}
       {isWide ? (
         <View style={styles.wideLayout}>
           <View style={styles.wideCol}>
@@ -736,6 +752,9 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
   content: { padding: 16, paddingBottom: 40 },
+  debugBox: { backgroundColor: '#1a1a2e', borderRadius: 8, padding: 12, marginBottom: 16 },
+  debugTitle: { color: '#fff', fontWeight: 'bold', marginBottom: 4 },
+  debugText: { color: '#adf', fontSize: 11, marginBottom: 2 },
   contentWide: { maxWidth: 960, alignSelf: 'center', width: '100%' },
   wideLayout: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
   wideCol: { flex: 1 },
