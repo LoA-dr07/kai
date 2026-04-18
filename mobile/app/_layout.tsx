@@ -11,7 +11,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!db) return;
-    db.connect(connector).catch(console.error);
+    db.connect(connector).catch((err) => {
+      console.error('PowerSync connect error:', err);
+      alert('PowerSync Verbindungsfehler: ' + String(err));
+    });
     return () => {
       db.disconnect().catch(console.error);
     };
