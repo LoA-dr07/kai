@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useStatus } from '@powersync/react';
+import { api } from '../../lib/api';
 import { useHousehold, useUpdateHouseholdSettings } from '../../lib/hooks/useHousehold';
 import {
   useUsers,
@@ -672,13 +673,33 @@ function AddMemberForm({ onClose }: { onClose: () => void }) {
 
 function PowerSyncDebug() {
   const status = useStatus();
+  const [tokenResult, setTokenResult] = useState<string>('–');
+
+  const testToken = async () => {
+    setTokenResult('⏳ lädt...');
+    try {
+      const res = await api.get('/auth/powersync-token');
+      const tok = res.data?.token;
+      setTokenResult(tok ? `✅ OK (${tok.slice(0, 20)}...)` : '⚠️ kein Token in Antwort');
+    } catch (e: any) {
+      setTokenResult(`❌ ${e?.message ?? String(e)}`);
+    }
+  };
+
   return (
     <View style={styles.debugBox}>
       <Text style={styles.debugTitle}>Debug: PowerSync</Text>
-      <Text style={styles.debugText}>API: {process.env.EXPO_PUBLIC_API_URL ?? '⚠️ nicht gesetzt'}</Text>
+      <Text style={styles.debugText}>API URL: {process.env.EXPO_PUBLIC_API_URL ?? '⚠️ nicht gesetzt'}</Text>
       <Text style={styles.debugText}>PS URL: {process.env.EXPO_PUBLIC_POWERSYNC_URL ?? '⚠️ nicht gesetzt'}</Text>
-      <Text style={styles.debugText}>Status: {status?.connected ? '✅ verbunden' : '❌ nicht verbunden'}</Text>
-      <Text style={styles.debugText}>Fehler: {status?.anyError ? JSON.stringify(status.anyError) : '–'}</Text>
+      <Text style={styles.debugText}>Verbunden: {status?.connected ? '✅ ja' : '❌ nein'}</Text>
+      <Text style={styles.debugText}>Verbindet: {status?.connecting ? '⏳ ja' : 'nein'}</Text>
+      <Text style={styles.debugText}>Letzter Sync: {status?.lastSyncedAt ? new Date(status.lastSyncedAt).toLocaleTimeString() : '–'}</Text>
+      <Text style={styles.debugText}>Download-Fehler: {status?.downloadError ? String(status.downloadError) : '–'}</Text>
+      <Text style={styles.debugText}>Sonstiger Fehler: {status?.anyError ? JSON.stringify(status.anyError) : '–'}</Text>
+      <TouchableOpacity style={styles.debugBtn} onPress={testToken}>
+        <Text style={styles.debugBtnText}>Token testen</Text>
+      </TouchableOpacity>
+      <Text style={styles.debugText}>Token: {tokenResult}</Text>
     </View>
   );
 }
@@ -755,6 +776,8 @@ const styles = StyleSheet.create({
   debugBox: { backgroundColor: '#1a1a2e', borderRadius: 8, padding: 12, marginBottom: 16 },
   debugTitle: { color: '#fff', fontWeight: 'bold', marginBottom: 4 },
   debugText: { color: '#adf', fontSize: 11, marginBottom: 2 },
+  debugBtn: { backgroundColor: '#334', borderRadius: 6, padding: 8, marginTop: 8, marginBottom: 4, alignItems: 'center' },
+  debugBtnText: { color: '#fff', fontSize: 12 },
   contentWide: { maxWidth: 960, alignSelf: 'center', width: '100%' },
   wideLayout: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
   wideCol: { flex: 1 },
