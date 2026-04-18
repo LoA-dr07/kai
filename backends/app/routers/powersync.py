@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException
 router = APIRouter(tags=["auth"])
 
 _JWKS_CACHE: dict | None = None
+_KID = "powersync-key-2"
 
 
 def _build_jwks(public_key_pem: str) -> dict:
@@ -25,7 +26,7 @@ def _build_jwks(public_key_pem: str) -> dict:
                 "kty": "RSA",
                 "use": "sig",
                 "alg": "RS256",
-                "kid": "powersync-key-1",
+                "kid": _KID,
                 "n": to_b64url(nums.n),
                 "e": to_b64url(nums.e),
             }
@@ -91,7 +92,7 @@ async def get_powersync_token() -> dict:
     }
 
     try:
-        token = jwt.encode(payload, private_key, algorithm="RS256")
+        token = jwt.encode(payload, private_key, algorithm="RS256", headers={"kid": _KID})
     except Exception as exc:
         raise HTTPException(
             status_code=500,
