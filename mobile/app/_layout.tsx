@@ -26,6 +26,14 @@ export default function RootLayout() {
           options={{ title: 'Rezept erstellen', presentation: 'modal' }}
         />
         <Stack.Screen
+          name="recipe/bulk-import"
+          options={{ title: 'Rezepte importieren', presentation: 'modal' }}
+        />
+        <Stack.Screen
+          name="recipe/import-preview"
+          options={{ title: 'Vorschau', presentation: 'modal' }}
+        />
+        <Stack.Screen
           name="recipe/[id]/index"
           options={{ title: 'Rezept' }}
         />
