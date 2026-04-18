@@ -84,10 +84,12 @@ async def get_powersync_token() -> dict:
     private_key = raw_key.replace("\\n", "\n")
 
     now = int(time.time())
+    powersync_url = os.getenv("POWERSYNC_URL", "")
     payload = {
         "sub": "household-user",
         "iat": now,
         "exp": now + 3600,
+        "aud": powersync_url,
         "parameters": {},
     }
 
