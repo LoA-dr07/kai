@@ -34,11 +34,11 @@ export function useMealPlans(): { data: MealPlan[]; isLoading: boolean; error: E
   );
 
   const data = useMemo<MealPlan[]>(() =>
-    planRows.map(plan => ({
+    (planRows ?? []).map(plan => ({
       id: Number(plan.id),
       name: plan.name as string,
       week_start_date: plan.week_start_date as string,
-      entries: entryRows
+      entries: (entryRows ?? [])
         .filter(e => e.meal_plan_id === plan.id)
         .map(e => ({
           id: Number(e.id),
@@ -63,7 +63,7 @@ export function useMealPlans(): { data: MealPlan[]; isLoading: boolean; error: E
                 ratings: [],
               }
             : null,
-          assigned_user_ids: entryUserRows
+          assigned_user_ids: (entryUserRows ?? [])
             .filter(eu => eu.entry_id === e.id)
             .map(eu => Number(eu.user_id)),
         })) as MealPlanEntry[],
