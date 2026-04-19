@@ -21,17 +21,22 @@ config.resolver.resolverMainFields = ['react-native', 'browser', 'module', 'main
 
 // @powersync/web bundles whatwg-url which overrides globalThis.URL with a
 // broken implementation on Android/iOS (TextDecoder incompatibility in Hermes).
-// Block it on native – native builds use @powersync/react-native instead.
+// Block both module-name and absolute-path forms on native.
+const BLOCK_ON_NATIVE = [/[/\\]node_modules[/\\]whatwg-url[/\\]/, /[/\\]node_modules[/\\]@powersync[/\\]web[/\\]/];
+
 const originalResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (
-    (platform === 'android' || platform === 'ios') &&
-    (moduleName === '@powersync/web' ||
+  const isNative = platform === 'android' || platform === 'ios' || platform === 'native';
+  if (isNative) {
+    const isBlockedName =
+      moduleName === '@powersync/web' ||
       moduleName.startsWith('@powersync/web/') ||
       moduleName === 'whatwg-url' ||
-      moduleName.startsWith('whatwg-url/'))
-  ) {
-    return { type: 'empty' };
+      moduleName.startsWith('whatwg-url/');
+    const isBlockedPath = BLOCK_ON_NATIVE.some(re => re.test(moduleName));
+    if (isBlockedName || isBlockedPath) {
+      return { type: 'empty' };
+    }
   }
   if (originalResolveRequest) {
     return originalResolveRequest(context, moduleName, platform);
