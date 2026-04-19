@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { Component, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PowerSyncContext } from '@powersync/react';
 
@@ -44,6 +44,20 @@ const eb = StyleSheet.create({
 
 export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());
+
+  // Global JS error handler – catches fatal errors that bypass ErrorBoundary.
+  // Remove this block once the crash is identified.
+  useEffect(() => {
+    const prev = (ErrorUtils as any).getGlobalHandler();
+    (ErrorUtils as any).setGlobalHandler((error: Error, isFatal?: boolean) => {
+      Alert.alert(
+        isFatal ? '💥 FATAL JS ERROR' : '⚠️ JS Error',
+        `${error?.message ?? 'unknown'}\n\n${error?.stack?.slice(0, 600) ?? ''}`,
+        [{ text: 'OK' }],
+      );
+    });
+    return () => (ErrorUtils as any).setGlobalHandler(prev);
+  }, []);
 
   useEffect(() => {
     if (!db) return;
