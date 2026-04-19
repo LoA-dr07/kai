@@ -19,4 +19,5 @@ Hier werden Feature-Ideen gesammelt, die noch nicht implementiert sind.
 ## KI-Chat
 
 - **Datenbankzugriff im KI-Chat**: Der KI-Chat soll Zugriff auf die Daten der Datenbank erhalten (Rezepte, Wochenplan, etc.), um kontextbezogene Antworten und Vorschläge geben zu können.
+- **Mehrere Konversationen**: Der KI-Chat soll mehrere separate Konversationen unterstützen, die unabhängig voneinander geführt und gespeichert werden können.
 
