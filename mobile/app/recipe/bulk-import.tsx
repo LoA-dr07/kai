@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   ActivityIndicator,
   ScrollView,
@@ -379,7 +380,7 @@ export default function BulkImportScreen() {
   if (step === 'results' && results) {
     const totalFailed = results.failed.length + previewErrors.length;
     return (
-      <>
+      <GestureHandlerRootView style={{ flex: 1 }}>
         <Stack.Screen options={{ title: 'Import-Ergebnis' }} />
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
           <View style={styles.card}>
@@ -427,7 +428,7 @@ export default function BulkImportScreen() {
             <Text style={styles.secondaryBtnText}>Weiteren Import starten</Text>
           </TouchableOpacity>
         </ScrollView>
-      </>
+      </GestureHandlerRootView>
     );
   }
 
@@ -437,7 +438,7 @@ export default function BulkImportScreen() {
 
   if (step === 'configure') {
     return (
-      <>
+      <GestureHandlerRootView style={{ flex: 1 }}>
         <Stack.Screen
           options={{
             title: `${configs.length} Rezept${configs.length !== 1 ? 'e' : ''} konfigurieren`,
@@ -545,7 +546,7 @@ export default function BulkImportScreen() {
             </Text>
           )}
         </ScrollView>
-      </>
+      </GestureHandlerRootView>
     );
   }
 
@@ -554,7 +555,7 @@ export default function BulkImportScreen() {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack.Screen options={{ title: 'Rezepte aus URLs importieren' }} />
       <ScrollView
         style={styles.container}
@@ -658,7 +659,7 @@ export default function BulkImportScreen() {
           )}
         </TouchableOpacity>
       </ScrollView>
-    </>
+    </GestureHandlerRootView>
   );
 }
 
