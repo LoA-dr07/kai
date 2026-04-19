@@ -20,7 +20,7 @@ export function useHousehold(): { data: Household | undefined; isLoading: boolea
   `);
 
   const data = useMemo<Household | undefined>(() => {
-    const h = householdRows[0];
+    const h = (householdRows ?? [])[0];
     if (!h) return undefined;
 
     const settings: HouseholdSettings =
@@ -28,7 +28,7 @@ export function useHousehold(): { data: Household | undefined; isLoading: boolea
         ? JSON.parse(h.settings || '{}')
         : (h.settings ?? {});
 
-    const members: User[] = memberRows
+    const members: User[] = (memberRows ?? [])
       .filter(m => m.household_id === h.id)
       .map(m => ({
         id: Number(m.id),

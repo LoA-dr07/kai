@@ -1,34 +1,46 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { Component, useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PowerSyncContext } from '@powersync/react';
-import { ScrollView, Text, View } from 'react-native';
 
 import { db, connector } from '../lib/powersync/database';
 
-class ErrorBoundary extends Component<{ children: React.ReactNode }, { error: Error | null }> {
+class ErrorBoundary extends Component<
+  { children: React.ReactNode },
+  { error: Error | null }
+> {
   state = { error: null };
-  static getDerivedStateFromError(error: Error) { return { error }; }
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
   render() {
     if (this.state.error) {
+      const msg = (this.state.error as Error).message;
       return (
-        <ScrollView style={{ flex: 1, padding: 20, backgroundColor: '#1a1a2e' }}>
-          <Text style={{ color: '#f66', fontSize: 16, fontWeight: 'bold', marginTop: 60, marginBottom: 12 }}>
-            App-Fehler (bitte Screenshot machen):
-          </Text>
-          <Text style={{ color: '#adf', fontSize: 12 }}>
-            {String(this.state.error)}
-          </Text>
-          <Text style={{ color: '#adf', fontSize: 10, marginTop: 12 }}>
-            {(this.state.error as any)?.stack}
-          </Text>
-        </ScrollView>
+        <View style={eb.container}>
+          <Text style={eb.title}>Fehler</Text>
+          <Text style={eb.msg}>{msg}</Text>
+          <TouchableOpacity style={eb.btn} onPress={() => this.setState({ error: null })}>
+            <Text style={eb.btnText}>Neu laden</Text>
+          </TouchableOpacity>
+        </View>
       );
     }
     return this.props.children;
   }
 }
+
+const eb = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#fff' },
+  title: { fontSize: 20, fontWeight: '700', color: '#C62828', marginBottom: 12 },
+  msg: { fontSize: 14, color: '#333', textAlign: 'center', marginBottom: 24 },
+  btn: { backgroundColor: '#2E7D32', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 24 },
+  btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+});
 
 export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());
