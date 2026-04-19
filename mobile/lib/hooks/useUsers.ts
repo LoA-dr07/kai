@@ -14,7 +14,7 @@ export function useUsers(): { data: User[]; isLoading: boolean; error: Error | u
   );
   const data = useMemo<User[]>(
     () =>
-      rows.map(r => ({
+      (rows ?? []).map(r => ({
         id: Number(r.id),
         name: r.name as string,
         avatar_color: r.avatar_color as string,

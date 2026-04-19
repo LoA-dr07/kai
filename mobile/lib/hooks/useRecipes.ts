@@ -34,19 +34,19 @@ const RECIPE_RATINGS_SQL = `SELECT * FROM recipe_ratings`;
 
 /** Assembles flat SQLite rows into the nested Recipe type. */
 function buildRecipes(
-  recipeRows: any[],
-  riRows: any[],
-  tagRows: any[],
-  ratingRows: any[],
+  recipeRows: any[] | undefined,
+  riRows: any[] | undefined,
+  tagRows: any[] | undefined,
+  ratingRows: any[] | undefined,
 ): Recipe[] {
-  return recipeRows.map(r => ({
+  return (recipeRows ?? []).map(r => ({
     id: Number(r.id),
     name: r.name as string,
     description: r.description as string | null,
     servings: Number(r.servings),
     prep_time_minutes: r.prep_time_minutes != null ? Number(r.prep_time_minutes) : null,
     source_url: r.source_url as string | null,
-    ingredients: riRows
+    ingredients: (riRows ?? [])
       .filter(ri => ri.recipe_id === r.id)
       .map(ri => ({
         id: Number(ri.id),
@@ -58,7 +58,7 @@ function buildRecipes(
           name: ri.ingredient_name as string,
         },
       })),
-    tags: tagRows
+    tags: (tagRows ?? [])
       .filter(t => t.recipe_id === r.id)
       .map(t => ({
         id: Number(t.id),
@@ -66,7 +66,7 @@ function buildRecipes(
         is_predefined: Boolean(t.is_predefined),
         category: t.category as string | null,
       })),
-    ratings: ratingRows
+    ratings: (ratingRows ?? [])
       .filter(rr => rr.recipe_id === r.id)
       .map(rr => ({
         user_id: Number(rr.user_id),
@@ -82,7 +82,7 @@ export function useRecipes(): { data: Recipe[]; isLoading: boolean; error: Error
   const { data: ratingRows } = useQuery(RECIPE_RATINGS_SQL);
 
   const data = useMemo(
-    () => buildRecipes(recipeRows, riRows, tagRows, ratingRows),
+    () => buildRecipes(recipeRows ?? [], riRows ?? [], tagRows ?? [], ratingRows ?? []),
     [recipeRows, riRows, tagRows, ratingRows],
   );
 
@@ -113,9 +113,9 @@ export function useRecipe(id: number): { data: Recipe | undefined; isLoading: bo
   );
 
   const data = useMemo<Recipe | undefined>(() => {
-    const r = recipeRows[0];
+    const r = (recipeRows ?? [])[0];
     if (!r) return undefined;
-    return buildRecipes([r], riRows, tagRows, ratingRows)[0];
+    return buildRecipes([r], riRows ?? [], tagRows ?? [], ratingRows ?? [])[0];
   }, [recipeRows, riRows, tagRows, ratingRows]);
 
   return { data, isLoading: l1 || l2, error };
@@ -126,7 +126,7 @@ export function useIngredients(): { data: Ingredient[]; isLoading: boolean; erro
     'SELECT * FROM ingredients ORDER BY name',
   );
   const data = useMemo<Ingredient[]>(
-    () => rows.map(r => ({ id: Number(r.id), name: r.name as string })),
+    () => (rows ?? []).map(r => ({ id: Number(r.id), name: r.name as string })),
     [rows],
   );
   return { data, isLoading, error };
@@ -137,7 +137,7 @@ export function useTags(): { data: Tag[]; isLoading: boolean; error: Error | und
     'SELECT * FROM tags ORDER BY name',
   );
   const data = useMemo<Tag[]>(
-    () => rows.map(t => ({
+    () => (rows ?? []).map(t => ({
       id: Number(t.id),
       name: t.name as string,
       is_predefined: Boolean(t.is_predefined),
