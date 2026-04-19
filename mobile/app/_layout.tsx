@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { Component, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PowerSyncContext } from '@powersync/react';
 
@@ -59,15 +59,15 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="recipe/new"
-          options={{ title: 'Rezept erstellen', presentation: 'modal' }}
+          options={{ title: 'Rezept erstellen', presentation: Platform.OS === 'ios' ? 'modal' : 'card' }}
         />
         <Stack.Screen
           name="recipe/bulk-import"
-          options={{ title: 'Rezepte importieren', presentation: 'modal' }}
+          options={{ title: 'Rezepte importieren', presentation: Platform.OS === 'ios' ? 'modal' : 'card' }}
         />
         <Stack.Screen
           name="recipe/import-preview"
-          options={{ title: 'Vorschau', presentation: 'modal' }}
+          options={{ title: 'Vorschau', presentation: Platform.OS === 'ios' ? 'modal' : 'card' }}
         />
         <Stack.Screen
           name="recipe/[id]/index"
@@ -75,7 +75,7 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="recipe/[id]/edit"
-          options={{ title: 'Rezept bearbeiten', presentation: 'modal' }}
+          options={{ title: 'Rezept bearbeiten', presentation: Platform.OS === 'ios' ? 'modal' : 'card' }}
         />
         <Stack.Screen
           name="recipe/[id]/cook"
