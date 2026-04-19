@@ -5,6 +5,13 @@ Hier werden Feature-Ideen gesammelt, die noch nicht implementiert sind.
 
 ---
 
+## Einkaufsliste
+
+- **Einkaufsliste aus Wochenplan generieren**: Automatische Generierung einer Einkaufsliste auf Basis des aktuellen Wochenplans.
+  - Jeder Eintrag soll **zweimal abhakbar** sein:
+    1. **Validierungshaken**: Nutzer prüft vorab, ob ein Artikel noch vorrätig ist (bereits vorhandene Zutaten abhaken).
+    2. **Einkaufshaken**: Beim tatsächlichen Einkauf im Supermarkt abhaken.
+
 ## Rezeptplanung
 
 - **Intuitive UI für die Rezeptplanung**: Die Oberfläche der Wochenplanung soll überarbeitet und benutzerfreundlicher gestaltet werden.
