@@ -146,24 +146,25 @@ function ToggleGroup({
 
 function CheckboxGrid({
   options,
-  selected,
+  selected = [],
   onChange,
 }: {
   options: { key: string; label: string }[];
-  selected: string[];
+  selected?: string[];
   onChange: (keys: string[]) => void;
 }) {
+  const safeSelected = selected ?? [];
   const toggle = (key: string) => {
-    if (selected.includes(key)) {
-      onChange(selected.filter(k => k !== key));
+    if (safeSelected.includes(key)) {
+      onChange(safeSelected.filter(k => k !== key));
     } else {
-      onChange([...selected, key]);
+      onChange([...safeSelected, key]);
     }
   };
   return (
     <View style={styles.chipWrap}>
       {options.map(opt => {
-        const active = selected.includes(opt.key);
+        const active = safeSelected.includes(opt.key);
         return (
           <TouchableOpacity
             key={opt.key}
