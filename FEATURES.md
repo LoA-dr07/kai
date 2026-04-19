@@ -5,6 +5,10 @@ Hier werden Feature-Ideen gesammelt, die noch nicht implementiert sind.
 
 ---
 
+## Rezeptplanung
+
+- **Intuitive UI für die Rezeptplanung**: Die Oberfläche der Wochenplanung soll überarbeitet und benutzerfreundlicher gestaltet werden.
+
 ## KI-Chat
 
 - **Datenbankzugriff im KI-Chat**: Der KI-Chat soll Zugriff auf die Daten der Datenbank erhalten (Rezepte, Wochenplan, etc.), um kontextbezogene Antworten und Vorschläge geben zu können.
