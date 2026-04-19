@@ -2,19 +2,21 @@
 # Deploy this in the PowerSync Dashboard → Sync Rules editor.
 # All tables are synced to all clients (no per-user filtering needed
 # since the app uses a single shared household with no authentication).
+#
+# Junction tables (no natural id) get a synthetic id from their composite key.
 
 bucket_definitions:
   global:
     data:
       - SELECT * FROM households
-      - SELECT * FROM household_members
+      - SELECT household_id || '_' || user_id AS id, household_id, user_id FROM household_members
       - SELECT * FROM users
       - SELECT * FROM recipes
       - SELECT * FROM ingredients
       - SELECT * FROM recipe_ingredients
       - SELECT * FROM tags
-      - SELECT * FROM recipe_tags
+      - SELECT recipe_id || '_' || tag_id AS id, recipe_id, tag_id FROM recipe_tags
       - SELECT * FROM recipe_ratings
       - SELECT * FROM meal_plans
       - SELECT * FROM meal_plan_entries
-      - SELECT * FROM meal_plan_entry_users
+      - SELECT entry_id || '_' || user_id AS id, entry_id, user_id FROM meal_plan_entry_users
