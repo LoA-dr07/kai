@@ -21,4 +21,5 @@ Hier werden Feature-Ideen gesammelt, die noch nicht implementiert sind.
 - **Datenbankzugriff im KI-Chat**: Der KI-Chat soll Zugriff auf die Daten der Datenbank erhalten (Rezepte, Wochenplan, etc.), um kontextbezogene Antworten und Vorschläge geben zu können.
 - **Mehrere Konversationen**: Der KI-Chat soll mehrere separate Konversationen unterstützen, die unabhängig voneinander geführt und gespeichert werden können.
 - **Datenveränderung aus dem Chat**: Der KI-Chat soll aktiv Daten in der App anlegen und bearbeiten können – z. B. Wochenplan erstellen/bearbeiten, Einkaufsliste generieren. Der Chat agiert dabei als Assistent mit Schreibzugriff auf die Datenbank (via API-Aktionen).
+- **Voice Input**: Spracheingabe als Eingabemöglichkeit im KI-Chat, sodass Nachrichten per Mikrofon diktiert werden können.
 
