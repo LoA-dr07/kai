@@ -174,6 +174,7 @@ EXPO_PUBLIC_API_URL=http://192.168.x.x:8000  # LAN-IP des PCs (ipconfig)
 
 - `README.md` – Setup-Anleitung (Ersteinrichtung, Starten)
 - `ROADMAP.md` – Feature-Tracker und Entwicklungsphasen
+- `FEATURES.md` – Gesammelte Feature-Ideen zur späteren Implementierung
 - `docs/architecture.md` – Datenbankschema, Systemarchitektur
 - `docs/api.md` – Vollständige API-Referenz
 - `docs/frontend.md` – Screens, Hooks, Komponenten
@@ -187,3 +188,4 @@ EXPO_PUBLIC_API_URL=http://192.168.x.x:8000  # LAN-IP des PCs (ipconfig)
 - Neuer Screen, Hook oder Komponente → `docs/frontend.md`
 - Neuer Befehl, Konvention oder Designentscheidung → `CLAUDE.md`
 - Neue Feature-Phase abgeschlossen → `ROADMAP.md` (Tasks als `[x]` markieren)
+- Feature implementiert → Eintrag aus `FEATURES.md` löschen
