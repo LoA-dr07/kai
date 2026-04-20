@@ -76,6 +76,12 @@ Der KI-Chat erhält vollständigen Lesezugriff auf alle App-Daten:
 
 Damit kann die KI kontextbezogene Vorschläge machen (z.B. „Was kann ich diese Woche noch kochen?" oder „Welche Zutaten fehlen mir noch?").
 
+**Explizit einzuschließen – Haushalt-Einstellungen** (aktuell unvollständig übergeben):
+- `cooking_days`, `cold_meal_days`, `hot_meal_time` – Kochgewohnheiten
+- `leftovers_frequency`, `shared_meals_importance` – Familienverhalten
+- `weekly_budget`, `preferred_cuisines`, `cooking_skill_level`
+- Pro Person: `disliked_ingredients`, `liked_cuisines`, `spice_tolerance`, `portion_size`
+
 ### Mehrere Konversationen
 
 Der KI-Chat unterstützt mehrere separate, unabhängig gespeicherte Konversationen.
