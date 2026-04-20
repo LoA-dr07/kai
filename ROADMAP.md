@@ -196,6 +196,37 @@ Ziel: Die App läuft produktiv auf mehreren Geräten gleichzeitig. Backend und D
 
 ---
 
+### Phase 10 – Einkaufsliste, Wochenplan-UI & KI-Chat-Erweiterungen
+
+Ziel: Vollständige Einkaufslisten-Funktion, verbesserte Wochenplan-Oberfläche und erweiterte KI-Chat-Fähigkeiten.
+
+**Tasks:**
+- [x] **Einkaufsliste** – Generierung aus Wochenplan, Abhak-System, manuelle Einträge, Persistenz
+  - Backend: `ShoppingList`, `ShoppingListItem` Modelle; `GET/POST /shopping-list` Router
+  - Zeitraumbasierte Generierung mit Zutaten-Aggregation; Zusammenführen oder Überschreiben aktiver Liste
+  - Frontend: Neuer Tab „Einkaufsliste" mit Checkbox-System, Erledigt-Bereich, manuellem Hinzufügen
+- [x] **Intuitive UI für Rezeptplanung** – Überarbeitete Wochenplan-Oberfläche
+  - Personen-Zeilen pro Mahlzeit-Slot (eine Zeile pro Haushaltsmitglied)
+  - Long-Press-Bottom-Sheet: Verschieben, Kopieren, Löschen, Wöchentlich wiederholen
+  - „Zuletzt verwendet"-Bereich im Rezept-Picker
+  - Drag & Drop auf Web/Desktop
+  - Backend: `repeat_weekly`-Feld auf `MealPlanEntry`
+- [x] **KI-Chat: Mehrere Konversationen** – Persistente, separate Konversationen
+  - Backend: `Conversation`, `ConversationMessage` Modelle; CRUD-Endpunkte `/ai/conversations`
+  - Frontend: Konversationsliste mit Verlauf-Modal, Wechsel und Löschen
+- [x] **KI-Chat: Erweiterter Datenbankzugriff** – KI sieht alle App-Daten
+  - Vollständige Haushalt-Einstellungen, alle Mitglieder-Präferenzen
+  - Aktueller Wochenplan und Einkaufsliste im Kontext
+- [x] **KI-Chat: Datenveränderung** – KI kann Aktionen vorschlagen, Nutzer bestätigt
+  - `pending_actions` in API-Antwort; Aktionstypen: Mahlzeit eintragen/löschen, Einkaufsliste generieren/ergänzen
+  - Bestätigungskarten im Chat-Interface
+- [x] **KI-Chat: Sprachausgabe (TTS)** – Antworten vorlesen (Mobile)
+  - `expo-speech` Integration; 🔊-Button neben KI-Antworten
+- [x] Alembic-Migration `0008_shopping_list_conversations.py`
+- [x] Dokumentation aktualisiert
+
+---
+
 ## Empfohlener Workflow (Entwicklung mit Claude)
 
 ### Schritt-für-Schritt pro Feature

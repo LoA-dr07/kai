@@ -11,6 +11,7 @@ class MealPlanEntryBase(BaseModel):
     recipe_id: Optional[int] = None
     custom_meal: Optional[str] = Field(default=None, max_length=255)
     assigned_user_ids: list[int] = []
+    repeat_weekly: bool = False
 
     @model_validator(mode="after")
     def recipe_or_custom_meal(self):
@@ -27,6 +28,7 @@ class MealPlanEntryUpdate(BaseModel):
     recipe_id: Optional[int] = None
     custom_meal: Optional[str] = Field(default=None, max_length=255)
     assigned_user_ids: Optional[list[int]] = None
+    repeat_weekly: Optional[bool] = None
 
 
 class MealPlanEntryOut(BaseModel):
@@ -37,6 +39,7 @@ class MealPlanEntryOut(BaseModel):
     custom_meal: Optional[str] = None
     recipe: Optional[RecipeOut] = None
     assigned_user_ids: list[int] = []
+    repeat_weekly: bool = False
 
     @model_validator(mode="before")
     @classmethod
@@ -50,6 +53,7 @@ class MealPlanEntryOut(BaseModel):
                 "custom_meal": data.custom_meal,
                 "recipe": data.recipe,
                 "assigned_user_ids": [u.id for u in data.assigned_users],
+                "repeat_weekly": data.repeat_weekly,
             }
         return data
 

@@ -20,7 +20,7 @@ export function useMealPlans(): { data: MealPlan[]; isLoading: boolean; error: E
   );
   const { data: entryRows, isLoading: l2 } = useQuery(`
     SELECT mpe.id, mpe.meal_plan_id, mpe.day_of_week, mpe.meal_type,
-           mpe.recipe_id, mpe.custom_meal,
+           mpe.recipe_id, mpe.custom_meal, mpe.repeat_weekly,
            r.name  AS recipe_name,
            r.description AS recipe_description,
            r.servings AS recipe_servings,
@@ -63,6 +63,7 @@ export function useMealPlans(): { data: MealPlan[]; isLoading: boolean; error: E
                 ratings: [],
               }
             : null,
+          repeat_weekly: Boolean(e.repeat_weekly),
           assigned_user_ids: (entryUserRows ?? [])
             .filter(eu => eu.entry_id === e.id)
             .map(eu => Number(eu.user_id)),
