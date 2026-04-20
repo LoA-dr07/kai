@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey, Enum, Table
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, Enum, Table, Boolean
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 from app.enums import MealType  # noqa: F401 – re-exported for backwards-compat
@@ -33,6 +33,7 @@ class MealPlanEntry(Base):
     meal_type = Column(Enum(MealType), nullable=False)
     recipe_id = Column(Integer, ForeignKey("recipes.id", ondelete="SET NULL"), nullable=True)
     custom_meal = Column(String(255), nullable=True)  # free-text alternative to a recipe
+    repeat_weekly = Column(Boolean, nullable=False, default=False)
 
     meal_plan = relationship("MealPlan", back_populates="entries")
     recipe = relationship("Recipe", back_populates="meal_plan_entries")

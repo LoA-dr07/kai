@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import date
-from typing import Optional, Literal
+from typing import Optional, Literal, Any
 from app.enums import MealType
 
 
@@ -40,11 +40,21 @@ class RecipeSuggestion(BaseModel):
     is_new_recipe: bool = False
 
 
+# Pending actions from AI that need user confirmation before execution
+class PendingAction(BaseModel):
+    type: str  # "create_recipe" | "add_meal_plan_entry" | "delete_meal_plan_entry" | "generate_shopping_list" | "check_shopping_item" | "add_shopping_item"
+    description: str  # Human-readable description of what will happen
+    data: dict[str, Any]  # Action-specific payload
+
+
 class AiChatRequest(BaseModel):
     messages: list[ChatMessage]
     week_start_date: Optional[date] = None
+    conversation_id: Optional[int] = None
 
 
 class AiChatResponse(BaseModel):
     reply: str
     recipe_suggestions: list[RecipeSuggestion] = []
+    pending_actions: list[PendingAction] = []
+    conversation_id: Optional[int] = None

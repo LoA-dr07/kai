@@ -618,11 +618,12 @@ Freier KI-Chat für Rezeptvorschläge und Ernährungsberatung (via Claude API).
   "messages": [
     { "role": "user", "content": "Schlage mir ein schnelles Abendessen vor" }
   ],
-  "week_start_date": "2026-03-23"
+  "week_start_date": "2026-03-23",
+  "conversation_id": 1
 }
 ```
 
-`messages`: Vollständige Gesprächshistorie (abwechselnd `user` / `assistant`). `week_start_date`: Optional, wird als Kontext mitgeliefert.
+`messages`: Vollständige Gesprächshistorie (abwechselnd `user` / `assistant`). `week_start_date`: Optional, wird als Kontext mitgeliefert. `conversation_id`: Optional, verknüpft die Nachricht mit einer gespeicherten Konversation.
 
 **Response 200:**
 ```json
@@ -641,16 +642,189 @@ Freier KI-Chat für Rezeptvorschläge und Ernährungsberatung (via Claude API).
       "reason": "Sehr schnell, kein Kochen nötig",
       "is_new_recipe": true
     }
-  ]
+  ],
+  "pending_actions": [
+    {
+      "type": "add_meal_plan_entry",
+      "description": "Pasta Carbonara am Montag zum Abendessen eintragen",
+      "data": { "day_of_week": 0, "meal_type": "dinner", "recipe_id": 5 }
+    }
+  ],
+  "conversation_id": 1
 }
 ```
 
 `recipe_id`: Gesetzt wenn das Rezept in der Haushaltsdatenbank existiert, sonst `null`.
 `is_new_recipe`: `true` wenn das Rezept nicht in der Datenbank ist.
 `recipe_suggestions`: Leer wenn keine Rezeptvorschläge gemacht werden.
+`pending_actions`: Liste von Aktionen, die der Nutzer vor der Ausführung bestätigen muss. Mögliche `type`-Werte: `add_meal_plan_entry`, `delete_meal_plan_entry`, `generate_shopping_list`, `add_shopping_item`. Jede Aktion enthält `type`, `description` (menschenlesbare Erklärung) und `data` (aktionsspezifische Nutzlast).
+`conversation_id`: ID der Konversation, mit der diese Nachricht verknüpft ist (falls `conversation_id` im Request angegeben).
 
 **Response 503:** `ANTHROPIC_API_KEY` nicht konfiguriert
 **Response 502:** Claude API-Fehler
+
+---
+
+### `GET /ai/conversations`
+Alle gespeicherten Konversationen abrufen (max. 10, sortiert nach `updated_at` absteigend).
+
+**Response 200:** `Conversation[]`
+```json
+[
+  {
+    "id": 1,
+    "title": "Mahlzeitenplanung KW 16",
+    "created_at": "2026-04-20T10:00:00",
+    "updated_at": "2026-04-20T10:15:00"
+  }
+]
+```
+
+---
+
+### `POST /ai/conversations`
+Neue Konversation erstellen.
+
+**Request Body:**
+```json
+{ "title": "Mahlzeitenplanung KW 16" }
+```
+
+`title`: Optional. Wenn nicht angegeben, wird ein Standard-Titel vergeben.
+
+**Response 201:** `Conversation`
+
+---
+
+### `PATCH /ai/conversations/{id}`
+Titel einer Konversation aktualisieren.
+
+**Request Body:**
+```json
+{ "title": "Neuer Titel" }
+```
+
+**Response 200:** `Conversation`
+**Response 404:** Konversation nicht gefunden
+
+---
+
+### `DELETE /ai/conversations/{id}`
+Konversation löschen (inkl. aller Nachrichten).
+
+**Response 204:** Kein Inhalt
+**Response 404:** Konversation nicht gefunden
+
+---
+
+### `GET /ai/conversations/{id}/messages`
+Alle Nachrichten einer Konversation abrufen (chronologisch).
+
+**Response 200:** `ConversationMessage[]`
+```json
+[
+  { "id": 1, "conversation_id": 1, "role": "user", "content": "Schlage mir ein schnelles Abendessen vor", "created_at": "2026-04-20T10:00:00" },
+  { "id": 2, "conversation_id": 1, "role": "assistant", "content": "Ich empfehle ...", "created_at": "2026-04-20T10:00:05" }
+]
+```
+
+**Response 404:** Konversation nicht gefunden
+
+---
+
+## Einkaufsliste (`/shopping-list`)
+
+### `GET /shopping-list`
+Aktive Einkaufsliste abrufen (oder `null` wenn keine vorhanden).
+
+**Response 200:** `ShoppingList | null`
+```json
+{
+  "id": 1,
+  "household_id": 1,
+  "created_at": "2026-04-20T10:00:00",
+  "items": [
+    { "id": 1, "shopping_list_id": 1, "name": "Hackfleisch", "amount": 500, "unit": "g", "is_checked": false },
+    { "id": 2, "shopping_list_id": 1, "name": "Nudeln", "amount": 400, "unit": "g", "is_checked": true }
+  ]
+}
+```
+
+---
+
+### `POST /shopping-list/generate`
+Einkaufsliste aus dem Mahlzeitenplan generieren. Bereits vorhandene Listen werden zusammengeführt oder ersetzt (je nach `merge`-Parameter). Zutaten aus allen Rezepten im angegebenen Zeitraum werden aggregiert.
+
+**Request Body:**
+```json
+{
+  "date_from": "2026-04-21",
+  "date_to": "2026-04-27",
+  "merge": true
+}
+```
+
+`merge`: `true` = Neue Zutaten zur bestehenden Liste hinzufügen; `false` = Bestehende Liste ersetzen.
+
+**Response 200:** `ShoppingList`
+
+---
+
+### `POST /shopping-list/items`
+Manuellen Eintrag zur Einkaufsliste hinzufügen. Erstellt bei Bedarf automatisch eine neue Liste.
+
+**Request Body:**
+```json
+{ "name": "Olivenöl", "amount": 1, "unit": "Flasche" }
+```
+
+`amount` und `unit` sind optional.
+
+**Response 201:** `ShoppingListItem`
+
+---
+
+### `PATCH /shopping-list/items/{id}`
+Einkaufslisteneintrag aktualisieren (alle Felder optional).
+
+**Request Body:**
+```json
+{ "is_checked": true, "name": "Olivenöl", "amount": 2, "unit": "Flaschen" }
+```
+
+**Response 200:** `ShoppingListItem`
+**Response 404:** Eintrag nicht gefunden
+
+---
+
+### `DELETE /shopping-list/items/{id}`
+Einzelnen Eintrag aus der Einkaufsliste löschen.
+
+**Response 204:** Kein Inhalt
+**Response 404:** Eintrag nicht gefunden
+
+---
+
+### `DELETE /shopping-list/done`
+Alle abgehakten Einträge aus der aktiven Einkaufsliste entfernen.
+
+**Response 204:** Kein Inhalt
+
+---
+
+### `DELETE /shopping-list`
+Gesamte aktive Einkaufsliste löschen (inkl. aller Einträge).
+
+**Response 204:** Kein Inhalt
+
+---
+
+## Aktualisierte Endpunkte
+
+### `MealPlanEntry` – neues Feld `repeat_weekly`
+`MealPlanEntry`-Objekte enthalten jetzt das boolesche Feld `repeat_weekly`. Ist es `true`, wird dieser Eintrag jede Woche wiederholt.
+
+`POST /meal-plans/{plan_id}/entries` und `PATCH /meal-plans/{plan_id}/entries/{entry_id}` akzeptieren jetzt optional `repeat_weekly: bool` im Request Body.
 
 ---
 

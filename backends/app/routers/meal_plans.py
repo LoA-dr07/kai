@@ -55,6 +55,7 @@ def create_meal_plan(payload: MealPlanCreate, db: Session = Depends(get_db)):
             meal_type=entry_data.meal_type,
             recipe_id=entry_data.recipe_id,
             custom_meal=entry_data.custom_meal,
+            repeat_weekly=entry_data.repeat_weekly,
         )
         db.add(entry)
         db.flush()
@@ -99,6 +100,7 @@ def add_entry(plan_id: int, payload: MealPlanEntryCreate, db: Session = Depends(
         meal_type=payload.meal_type,
         recipe_id=payload.recipe_id,
         custom_meal=payload.custom_meal,
+        repeat_weekly=payload.repeat_weekly,
     )
     db.add(entry)
     db.flush()
