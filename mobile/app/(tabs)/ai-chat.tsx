@@ -51,6 +51,7 @@ interface SlotPickerState {
 export default function AiChatScreen() {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
+  const isUltraWide = width >= 2560;
 
   const [activeConvId, setActiveConvId] = useState<number | null>(null);
   const [convListVisible, setConvListVisible] = useState(false);
@@ -283,14 +284,55 @@ export default function AiChatScreen() {
     ]);
   };
 
+  const convListContent = (
+    <>
+      <TouchableOpacity style={styles.newConvRow} onPress={handleNewConversation}>
+        <Text style={styles.newConvRowText}>+ Neue Konversation</Text>
+      </TouchableOpacity>
+      <ScrollView>
+        {conversations.length === 0 ? (
+          <Text style={styles.convEmpty}>Keine gespeicherten Konversationen</Text>
+        ) : (
+          conversations.map(conv => (
+            <View key={conv.id} style={[styles.convRow, activeConvId === conv.id && styles.convRowActive]}>
+              <TouchableOpacity style={styles.convRowContent} onPress={() => handleSelectConversation(conv)}>
+                <Text style={[styles.convTitle, activeConvId === conv.id && styles.convTitleActive]} numberOfLines={2}>
+                  {conv.title ?? 'Unbenannte Konversation'}
+                </Text>
+                <Text style={styles.convMeta}>{conv.message_count} Nachrichten · {new Date(conv.updated_at).toLocaleDateString('de-DE')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleDeleteConversation(conv.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={styles.convDelete}>🗑</Text>
+              </TouchableOpacity>
+            </View>
+          ))
+        )}
+      </ScrollView>
+    </>
+  );
+
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-      <View style={[styles.inner, isWide && styles.innerWide]}>
+      <View style={isUltraWide ? styles.ultraWideContainer : undefined}>
+        {/* Permanent sidebar on ultra-wide screens */}
+        {isUltraWide && (
+          <View style={styles.convSidebar}>
+            <View style={styles.convSidebarHeader}>
+              <Text style={styles.convModalTitle}>Verlauf</Text>
+            </View>
+            {convListContent}
+          </View>
+        )}
+
+      <View style={[styles.inner, !isUltraWide && isWide && styles.innerWide]}>
         {/* Conversation header */}
         <View style={styles.convHeader}>
-          <TouchableOpacity style={styles.convListBtn} onPress={() => setConvListVisible(true)}>
-            <Text style={styles.convListBtnText}>☰ Verlauf</Text>
-          </TouchableOpacity>
+          {!isUltraWide && (
+            <TouchableOpacity style={styles.convListBtn} onPress={() => setConvListVisible(true)}>
+              <Text style={styles.convListBtnText}>☰ Verlauf</Text>
+            </TouchableOpacity>
+          )}
+          {isUltraWide && <View style={styles.convListBtn} />}
           <Text style={styles.weekBannerText}>KW {weekNum}, {year}</Text>
           <TouchableOpacity style={styles.newConvBtn} onPress={handleNewConversation}>
             <Text style={styles.newConvBtnText}>+ Neu</Text>
@@ -440,40 +482,22 @@ export default function AiChatScreen() {
           </TouchableOpacity>
         </View>
       </View>
+      </View>
 
-      {/* Conversation list modal */}
-      <Modal visible={convListVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setConvListVisible(false)}>
-        <View style={[styles.convModal, isWide && styles.convModalWide]}>
-          <View style={styles.convModalHeader}>
-            <Text style={styles.convModalTitle}>Konversationen</Text>
-            <TouchableOpacity onPress={() => setConvListVisible(false)}>
-              <Text style={styles.convModalClose}>Schließen</Text>
-            </TouchableOpacity>
+      {/* Conversation list modal (compact/wide screens only) */}
+      {!isUltraWide && (
+        <Modal visible={convListVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setConvListVisible(false)}>
+          <View style={[styles.convModal, isWide && styles.convModalWide]}>
+            <View style={styles.convModalHeader}>
+              <Text style={styles.convModalTitle}>Konversationen</Text>
+              <TouchableOpacity onPress={() => setConvListVisible(false)}>
+                <Text style={styles.convModalClose}>Schließen</Text>
+              </TouchableOpacity>
+            </View>
+            {convListContent}
           </View>
-          <TouchableOpacity style={styles.newConvRow} onPress={handleNewConversation}>
-            <Text style={styles.newConvRowText}>+ Neue Konversation</Text>
-          </TouchableOpacity>
-          <ScrollView>
-            {conversations.length === 0 ? (
-              <Text style={styles.convEmpty}>Keine gespeicherten Konversationen</Text>
-            ) : (
-              conversations.map(conv => (
-                <View key={conv.id} style={[styles.convRow, activeConvId === conv.id && styles.convRowActive]}>
-                  <TouchableOpacity style={styles.convRowContent} onPress={() => handleSelectConversation(conv)}>
-                    <Text style={[styles.convTitle, activeConvId === conv.id && styles.convTitleActive]} numberOfLines={1}>
-                      {conv.title ?? 'Unbenannte Konversation'}
-                    </Text>
-                    <Text style={styles.convMeta}>{conv.message_count} Nachrichten · {new Date(conv.updated_at).toLocaleDateString('de-DE')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDeleteConversation(conv.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Text style={styles.convDelete}>🗑</Text>
-                  </TouchableOpacity>
-                </View>
-              ))
-            )}
-          </ScrollView>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -482,6 +506,9 @@ export default function AiChatScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
+  ultraWideContainer: { flex: 1, flexDirection: 'row' },
+  convSidebar: { width: 300, borderRightWidth: 1, borderRightColor: BORDER, backgroundColor: '#fff', flexShrink: 0 },
+  convSidebarHeader: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: BORDER },
   inner: { flex: 1 },
   innerWide: { maxWidth: 800, alignSelf: 'center', width: '100%' },
 
