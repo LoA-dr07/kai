@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,6 @@ import {
   useWindowDimensions,
   Modal,
 } from 'react-native';
-import * as Speech from 'expo-speech';
 import { showAlert } from '../../lib/alert';
 import { useAiChat } from '../../lib/hooks/useAiChat';
 import { useConversations, useCreateConversation, useDeleteConversation } from '../../lib/hooks/useConversations';
@@ -133,11 +132,12 @@ export default function AiChatScreen() {
   };
 
   const speakText = async (text: string) => {
+    if (Platform.OS === 'web') return;
     try {
-      const available = await Speech.isSpeakingAsync();
-      if (available) {
-        await Speech.stop();
-      }
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const Speech = require('expo-speech');
+      const isSpeaking = await Speech.isSpeakingAsync();
+      if (isSpeaking) await Speech.stop();
       setIsSpeaking(true);
       Speech.speak(text, {
         language: 'de-DE',
@@ -150,7 +150,12 @@ export default function AiChatScreen() {
   };
 
   const stopSpeaking = () => {
-    Speech.stop();
+    if (Platform.OS === 'web') return;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const Speech = require('expo-speech');
+      Speech.stop();
+    } catch { /* ignore */ }
     setIsSpeaking(false);
   };
 
