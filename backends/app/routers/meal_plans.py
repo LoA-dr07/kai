@@ -4,6 +4,7 @@ from app.db.session import get_db
 from app.models.meal_plan import MealPlan, MealPlanEntry
 from app.models.recipe import Recipe
 from app.models.user import User
+from app.models.household import Household
 from app.schemas.meal_plan import (
     MealPlanCreate, MealPlanUpdate, MealPlanOut,
     MealPlanEntryCreate, MealPlanEntryUpdate, MealPlanEntryOut,
@@ -43,7 +44,12 @@ def list_meal_plans(db: Session = Depends(get_db)):
 
 @router.post("", response_model=MealPlanOut, status_code=status.HTTP_201_CREATED)
 def create_meal_plan(payload: MealPlanCreate, db: Session = Depends(get_db)):
-    plan = MealPlan(name=payload.name, week_start_date=payload.week_start_date)
+    household = db.query(Household).first()
+    plan = MealPlan(
+        name=payload.name,
+        week_start_date=payload.week_start_date,
+        household_id=household.id if household else None,
+    )
     db.add(plan)
     db.flush()
 
