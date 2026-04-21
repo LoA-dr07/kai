@@ -34,6 +34,14 @@ const GREEN = Colors.green;
 const GREEN_LIGHT = Colors.greenLight;
 const BORDER = Colors.border;
 
+const MEAL_TYPE_TAG_NAMES: Record<MealType, string> = {
+  breakfast: 'Frühstück',
+  lunch: 'Mittagessen',
+  snack: 'Snack',
+  dinner: 'Abendessen',
+  dessert: 'Dessert',
+};
+
 // --- UserChips ---
 function UserChips({ users, selectedIds, onToggle }: { users: User[]; selectedIds: number[]; onToggle: (id: number) => void }) {
   if (users.length === 0) return null;
@@ -159,8 +167,14 @@ export default function MealPlanScreen() {
     setFreeText('');
     setSearchText('');
     setSelectedUserIds(preselectedUserId ? [preselectedUserId] : []);
-    setFilterExpanded(false);
-    setSelectedTagIds([]);
+    const tagNamesToMatch = [MEAL_TYPE_TAG_NAMES[mealType]];
+    if (preselectedUserId) {
+      const user = users.find(u => u.id === preselectedUserId);
+      if (user) tagNamesToMatch.push(user.name);
+    }
+    const preTagIds = tags.filter(t => tagNamesToMatch.includes(t.name)).map(t => t.id);
+    setSelectedTagIds(preTagIds);
+    setFilterExpanded(preTagIds.length > 0);
     setMinRatings({});
     setModalVisible(true);
   };
@@ -171,8 +185,12 @@ export default function MealPlanScreen() {
     setFreeText(entry.custom_meal ?? '');
     setSearchText('');
     setSelectedUserIds(entry.assigned_user_ids ?? []);
-    setFilterExpanded(false);
-    setSelectedTagIds([]);
+    const tagNamesToMatch = [MEAL_TYPE_TAG_NAMES[mealType]];
+    const firstAssignedUser = users.find(u => entry.assigned_user_ids?.includes(u.id));
+    if (firstAssignedUser) tagNamesToMatch.push(firstAssignedUser.name);
+    const preTagIds = tags.filter(t => tagNamesToMatch.includes(t.name)).map(t => t.id);
+    setSelectedTagIds(preTagIds);
+    setFilterExpanded(preTagIds.length > 0);
     setMinRatings({});
     setModalVisible(true);
   };
