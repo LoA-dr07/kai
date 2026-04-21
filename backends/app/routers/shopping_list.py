@@ -1,11 +1,9 @@
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import and_
 from sqlalchemy.orm import Session, joinedload
 from app.db.session import get_db
 from app.models.shopping_list import ShoppingList, ShoppingListItem
 from app.models.meal_plan import MealPlan, MealPlanEntry
-from app.models.recipe import Recipe, RecipeIngredient, Ingredient
 from app.models.household import Household
 from app.schemas.shopping_list import (
     ShoppingListOut,
@@ -49,8 +47,16 @@ def generate_shopping_list(
     household = _get_household(db)
     existing = _get_active_list(db, household.id)
 
-    # Gather all meal plan entries within the date range
-    all_plans = db.query(MealPlan).filter(MealPlan.household_id == household.id).all()
+    # Gather all meal plan entries within the date range.
+    # household_id is intentionally not filtered: plans are created without it
+    # (single-household app), matching the behaviour of list_meal_plans.
+    all_plans = (
+        db.query(MealPlan)
+        .options(
+            joinedload(MealPlan.entries).joinedload(MealPlanEntry.recipe)
+        )
+        .all()
+    )
 
     entries_in_range: list[MealPlanEntry] = []
     for plan in all_plans:

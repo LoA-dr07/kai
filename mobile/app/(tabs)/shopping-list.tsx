@@ -24,6 +24,7 @@ import {
 import { Colors } from '../../lib/theme';
 import { getMondayOf, isoDate, getISOWeek } from '../../lib/dateUtils';
 import type { ShoppingListItem } from '../../lib/types';
+import axios from 'axios';
 
 const GREEN = Colors.green;
 const GREEN_LIGHT = Colors.greenLight;
@@ -110,8 +111,11 @@ export default function ShoppingListScreen() {
     try {
       await generate.mutateAsync({ date_from: dateFrom, date_to: dateTo, merge });
       setGenerateModalVisible(false);
-    } catch {
-      showAlert('Fehler', 'Einkaufsliste konnte nicht erstellt werden.');
+    } catch (err) {
+      const detail = axios.isAxiosError(err) && err.response?.data?.detail
+        ? String(err.response.data.detail)
+        : 'Einkaufsliste konnte nicht erstellt werden.';
+      showAlert('Fehler', detail);
     }
   };
 
