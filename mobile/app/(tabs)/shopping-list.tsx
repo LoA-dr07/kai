@@ -72,6 +72,7 @@ function ItemRow({
 export default function ShoppingListScreen() {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
+  const isUltraWide = width >= 2560;
 
   const { data: list, isLoading, refetch } = useShoppingList();
   const generate = useGenerateShoppingList();
@@ -198,18 +199,21 @@ export default function ShoppingListScreen() {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={[styles.listContent, isWide && styles.listContentWide]}
+          contentContainerStyle={[styles.listContent, isWide && styles.listContentWide, isUltraWide && styles.listContentUltraWide]}
           refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
         >
           {/* Unchecked items */}
-          {uncheckedItems.map(item => (
-            <ItemRow
-              key={item.id}
-              item={item}
-              onToggle={() => handleToggle(item)}
-              onDelete={() => handleDelete(item)}
-            />
-          ))}
+          <View style={isUltraWide ? styles.itemsGrid : undefined}>
+            {uncheckedItems.map(item => (
+              <View key={item.id} style={isUltraWide ? styles.itemGridCell : undefined}>
+                <ItemRow
+                  item={item}
+                  onToggle={() => handleToggle(item)}
+                  onDelete={() => handleDelete(item)}
+                />
+              </View>
+            ))}
+          </View>
 
           {/* Done section */}
           {checkedItems.length > 0 && (
@@ -220,14 +224,17 @@ export default function ShoppingListScreen() {
                   <Text style={styles.clearDoneBtn}>Alle löschen</Text>
                 </TouchableOpacity>
               </View>
-              {checkedItems.map(item => (
-                <ItemRow
-                  key={item.id}
-                  item={item}
-                  onToggle={() => handleToggle(item)}
-                  onDelete={() => handleDelete(item)}
-                />
-              ))}
+              <View style={isUltraWide ? styles.itemsGrid : undefined}>
+                {checkedItems.map(item => (
+                  <View key={item.id} style={isUltraWide ? styles.itemGridCell : undefined}>
+                    <ItemRow
+                      item={item}
+                      onToggle={() => handleToggle(item)}
+                      onDelete={() => handleDelete(item)}
+                    />
+                  </View>
+                ))}
+              </View>
             </View>
           )}
         </ScrollView>
@@ -379,6 +386,9 @@ const styles = StyleSheet.create({
 
   listContent: { padding: 12 },
   listContentWide: { maxWidth: 680, alignSelf: 'center', width: '100%' },
+  listContentUltraWide: { maxWidth: 1400 },
+  itemsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  itemGridCell: { width: '49.5%' },
 
   doneSection: { marginTop: 16 },
   doneSectionHeader: {

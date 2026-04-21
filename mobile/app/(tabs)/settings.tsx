@@ -672,6 +672,7 @@ function AddMemberForm({ onClose }: { onClose: () => void }) {
 export default function SettingsScreen() {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
+  const isUltraWide = width >= 2560;
   const { data: household, isLoading: loadingHousehold } = useHousehold();
   const { data: users, isLoading: loadingUsers } = useUsers();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -710,7 +711,7 @@ export default function SettingsScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, isWide && styles.contentWide]}
+      contentContainerStyle={[styles.content, isWide && styles.contentWide, isUltraWide && styles.contentUltraWide]}
       keyboardShouldPersistTaps="handled"
     >
       {isWide ? (
@@ -738,7 +739,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },
   content: { padding: 16, paddingBottom: 40 },
   contentWide: { maxWidth: 960, alignSelf: 'center', width: '100%' },
-  wideLayout: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
+  contentUltraWide: { maxWidth: 1600 },
+  wideLayout: { flexDirection: 'row', gap: 24, alignItems: 'flex-start' },
   wideCol: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 

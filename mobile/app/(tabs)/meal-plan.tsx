@@ -86,11 +86,13 @@ export default function MealPlanScreen() {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
   const isDesktop = width >= 1024;
+  const isUltraWide = width >= 2560;
 
   const CONTENT_PADDING = 12;
   const CARD_GAP = 10;
-  const numDayCols = isDesktop ? 3 : isWide ? 2 : 1;
-  const containerWidth = Math.min(width, 1200 + CONTENT_PADDING * 2) - CONTENT_PADDING * 2;
+  const numDayCols = isUltraWide ? 7 : isDesktop ? 3 : isWide ? 2 : 1;
+  const containerMaxWidth = isUltraWide ? 3200 : 1200;
+  const containerWidth = Math.min(width, containerMaxWidth + CONTENT_PADDING * 2) - CONTENT_PADDING * 2;
   const dayCardWidth = isWide ? (containerWidth - CARD_GAP * (numDayCols - 1)) / numDayCols : undefined;
 
   const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(new Date()));
@@ -359,7 +361,7 @@ export default function MealPlanScreen() {
       {isLoading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={GREEN} size="large" />
       ) : (
-        <ScrollView contentContainerStyle={[styles.scrollContent, isWide && styles.scrollContentWide]}>
+        <ScrollView contentContainerStyle={[styles.scrollContent, isWide && styles.scrollContentWide, isUltraWide && { maxWidth: containerMaxWidth + CONTENT_PADDING * 2 }]}>
           <View style={isWide ? styles.dayGrid : undefined}>
             {DAYS_DE.map((dayName, dayIdx) => {
               const date = new Date(weekStart);
@@ -738,7 +740,7 @@ const styles = StyleSheet.create({
   addRowText: { fontSize: 13, color: '#AAA' },
 
   modalContainer: { flex: 1, backgroundColor: '#fff' },
-  modalContainerWide: { maxWidth: 680, width: '100%', alignSelf: 'center' },
+  modalContainerWide: { maxWidth: 800, width: '100%', alignSelf: 'center' },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: BORDER },
   modalTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
   modalClose: { fontSize: 16, color: GREEN, fontWeight: '600' },

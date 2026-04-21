@@ -35,7 +35,8 @@ export default function RecipesScreen() {
   const router = useRouter();
   const { filter_ids } = useLocalSearchParams<{ filter_ids?: string }>();
   const { width } = useWindowDimensions();
-  const numColumns = width >= 1400 ? 4 : width >= 1024 ? 3 : width >= 768 ? 2 : 1;
+  const isUltraWide = width >= 2560;
+  const numColumns = isUltraWide ? 6 : width >= 1400 ? 4 : width >= 1024 ? 3 : width >= 768 ? 2 : 1;
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
   const importMutation = useImportRecipes();
   const [isExporting, setIsExporting] = useState(false);
@@ -248,7 +249,7 @@ export default function RecipesScreen() {
         keyExtractor={item => String(item.id)}
         numColumns={numColumns}
         columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
-        contentContainerStyle={[styles.list, numColumns > 1 && styles.listWide]}
+        contentContainerStyle={[styles.list, numColumns > 1 && styles.listWide, isUltraWide && styles.listUltraWide]}
         onRefresh={refetch}
         refreshing={isRefetching}
         ListEmptyComponent={
@@ -397,6 +398,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { padding: 16, paddingBottom: 120 },
   listWide: { maxWidth: 1600, alignSelf: 'center', width: '100%' },
+  listUltraWide: { maxWidth: 2600 },
   columnWrapper: { gap: 12 },
   emptyContainer: { alignItems: 'center', marginTop: 80 },
   emptyTitle: { fontSize: 18, fontWeight: '600', color: '#444', marginBottom: 8 },
