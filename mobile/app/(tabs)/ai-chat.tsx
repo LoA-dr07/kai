@@ -313,7 +313,7 @@ export default function AiChatScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-      <View style={isUltraWide ? styles.ultraWideContainer : undefined}>
+      <View style={isUltraWide ? styles.ultraWideContainer : styles.outerContainer}>
         {/* Permanent sidebar on ultra-wide screens */}
         {isUltraWide && (
           <View style={styles.convSidebar}>
@@ -506,6 +506,7 @@ export default function AiChatScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
+  outerContainer: { flex: 1 },
   ultraWideContainer: { flex: 1, flexDirection: 'row' },
   convSidebar: { width: 300, borderRightWidth: 1, borderRightColor: BORDER, backgroundColor: '#fff', flexShrink: 0 },
   convSidebarHeader: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: BORDER },
