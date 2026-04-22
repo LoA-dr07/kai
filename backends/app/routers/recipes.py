@@ -134,21 +134,45 @@ def create_tag(payload: TagCreate, db: Session = Depends(get_db)):
 
 @router.post("/tags/repair", response_model=TagRepairResult)
 def repair_imported_tags(db: Session = Depends(get_db)):
-    """Re-link recipes whose tags are case-variant duplicates of predefined tags."""
-    predefined = db.query(Tag).filter(Tag.is_predefined == True).all()
+    """
+    Two-step repair for tag data imported before users were renamed:
+
+    1. Ensure every user has a predefined family tag with their current name.
+       If an import-created non-predefined tag with that name already exists,
+       promote it to predefined/family instead of creating a duplicate.
+
+    2. Merge all remaining non-predefined tags that case-insensitively match a
+       predefined tag into the predefined one and remove the orphan.
+    """
     merged = 0
     affected: set[int] = set()
 
-    for pre_tag in predefined:
-        dups = (
-            db.query(Tag)
-            .filter(
-                Tag.is_predefined == False,
-                Tag.id != pre_tag.id,
-                func.lower(Tag.name) == pre_tag.name.lower(),
-            )
-            .all()
-        )
+    # Step 1: sync user names → predefined family tags
+    for user in db.query(User).order_by(User.id).all():
+        family_tag = db.query(Tag).filter(
+            func.lower(Tag.name) == user.name.lower(),
+            Tag.category == "family",
+        ).first()
+        if not family_tag:
+            # No family tag for this user – promote an existing tag or create one
+            any_tag = db.query(Tag).filter(
+                func.lower(Tag.name) == user.name.lower()
+            ).first()
+            if any_tag:
+                any_tag.is_predefined = True
+                any_tag.category = "family"
+                any_tag.name = user.name  # normalize casing
+            else:
+                db.add(Tag(name=user.name, is_predefined=True, category="family"))
+    db.flush()
+
+    # Step 2: merge non-predefined tags that match a predefined tag (case-insensitive)
+    for pre_tag in db.query(Tag).filter(Tag.is_predefined == True).all():
+        dups = db.query(Tag).filter(
+            Tag.is_predefined == False,
+            Tag.id != pre_tag.id,
+            func.lower(Tag.name) == pre_tag.name.lower(),
+        ).all()
         for dup in dups:
             for recipe in list(dup.recipes):
                 if pre_tag not in recipe.tags:
