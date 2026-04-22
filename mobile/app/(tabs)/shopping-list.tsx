@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   Modal,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { showAlert, showConfirm } from '../../lib/alert';
 import {
@@ -30,11 +31,54 @@ const GREEN = Colors.green;
 const GREEN_LIGHT = Colors.greenLight;
 const BORDER = Colors.border;
 
-// --- Format quantity ---
+// --- Helpers ---
+
 function formatQty(item: ShoppingListItem): string {
   if (!item.amount && !item.unit) return '';
   const amt = item.amount ? (Number.isInteger(item.amount) ? String(item.amount) : item.amount.toFixed(1)) : '';
   return [amt, item.unit].filter(Boolean).join(' ');
+}
+
+function formatDateLabel(iso: string): string {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+}
+
+// --- DateInput: native HTML date picker on web, text input on native ---
+function DateInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  if (Platform.OS === 'web') {
+    return (
+      <input
+        type="date"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          borderWidth: 1,
+          border: `1px solid ${BORDER}`,
+          borderRadius: 10,
+          padding: '10px 12px',
+          fontSize: 15,
+          backgroundColor: '#FAFAFA',
+          color: '#1A1A1A',
+          width: '100%',
+          boxSizing: 'border-box',
+          outline: 'none',
+          fontFamily: 'inherit',
+        } as React.CSSProperties}
+      />
+    );
+  }
+  return (
+    <TextInput
+      style={styles.input}
+      value={value}
+      onChangeText={onChange}
+      placeholder="JJJJ-MM-TT"
+      keyboardType="numbers-and-punctuation"
+      maxLength={10}
+    />
+  );
 }
 
 // --- Single list item row ---
@@ -69,6 +113,8 @@ function ItemRow({
   );
 }
 
+type Preset = 'this_week' | 'next_week' | 'today' | 'tomorrow' | 'custom';
+
 // --- Main screen ---
 export default function ShoppingListScreen() {
   const { width } = useWindowDimensions();
@@ -87,19 +133,43 @@ export default function ShoppingListScreen() {
   const [newItemName, setNewItemName] = useState('');
   const [newItemAmount, setNewItemAmount] = useState('');
   const [newItemUnit, setNewItemUnit] = useState('');
-  const [generateModalVisible, setGenerateModalVisible] = useState(false);
 
-  const thisMonday = getMondayOf(new Date());
+  // Date picker modal
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState<Preset>('this_week');
+
+  // Conflict modal (shown after date is confirmed, if list already has items)
+  const [conflictVisible, setConflictVisible] = useState(false);
+
+  // Compute preset date ranges (stable references via useMemo-equivalent inline)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayIso = isoDate(today);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowIso = isoDate(tomorrow);
+
+  const thisMonday = getMondayOf(today);
   const thisMondayIso = isoDate(thisMonday);
   const thisSunday = new Date(thisMonday);
   thisSunday.setDate(thisSunday.getDate() + 6);
   const thisSundayIso = isoDate(thisSunday);
-  const weekNum = getISOWeek(thisMonday);
 
   const nextMonday = new Date(thisMonday);
   nextMonday.setDate(nextMonday.getDate() + 7);
+  const nextMondayIso = isoDate(nextMonday);
   const nextSunday = new Date(nextMonday);
   nextSunday.setDate(nextSunday.getDate() + 6);
+  const nextSundayIso = isoDate(nextSunday);
+
+  const PRESETS: { id: Preset; label: string; from: string; to: string }[] = [
+    { id: 'today',     label: 'Heute',         from: todayIso,      to: todayIso },
+    { id: 'tomorrow',  label: 'Morgen',         from: tomorrowIso,   to: tomorrowIso },
+    { id: 'this_week', label: 'Diese Woche',    from: thisMondayIso, to: thisSundayIso },
+    { id: 'next_week', label: 'Nächste Woche',  from: nextMondayIso, to: nextSundayIso },
+    { id: 'custom',    label: 'Benutzerdefiniert', from: thisMondayIso, to: thisSundayIso },
+  ];
 
   const [dateFrom, setDateFrom] = useState(thisMondayIso);
   const [dateTo, setDateTo] = useState(thisSundayIso);
@@ -107,23 +177,41 @@ export default function ShoppingListScreen() {
   const uncheckedItems = list?.items.filter(i => !i.is_checked) ?? [];
   const checkedItems = list?.items.filter(i => i.is_checked) ?? [];
 
+  // --- Handlers ---
+
+  const handlePresetSelect = (preset: (typeof PRESETS)[number]) => {
+    setSelectedPreset(preset.id);
+    if (preset.id !== 'custom') {
+      setDateFrom(preset.from);
+      setDateTo(preset.to);
+    }
+  };
+
+  const handleDatePickerConfirm = () => {
+    setDatePickerVisible(false);
+    if (list && list.items.length > 0) {
+      setConflictVisible(true);
+    } else {
+      handleGenerate(false);
+    }
+  };
+
+  const handleGeneratePress = () => {
+    setSelectedPreset('this_week');
+    setDateFrom(thisMondayIso);
+    setDateTo(thisSundayIso);
+    setDatePickerVisible(true);
+  };
+
   const handleGenerate = async (merge: boolean) => {
+    setConflictVisible(false);
     try {
       await generate.mutateAsync({ date_from: dateFrom, date_to: dateTo, merge });
-      setGenerateModalVisible(false);
     } catch (err) {
       const detail = axios.isAxiosError(err) && err.response?.data?.detail
         ? String(err.response.data.detail)
         : 'Einkaufsliste konnte nicht erstellt werden.';
       showAlert('Fehler', detail);
-    }
-  };
-
-  const handleGeneratePress = () => {
-    if (list && list.items.length > 0) {
-      setGenerateModalVisible(true);
-    } else {
-      handleGenerate(false);
     }
   };
 
@@ -163,6 +251,12 @@ export default function ShoppingListScreen() {
       deleteList.mutate();
     });
   };
+
+  // --- Date range label for header button ---
+  const dateRangeLabel = (() => {
+    if (dateFrom === dateTo) return formatDateLabel(dateFrom);
+    return `${formatDateLabel(dateFrom)} – ${formatDateLabel(dateTo)}`;
+  })();
 
   return (
     <View style={styles.root}>
@@ -210,11 +304,7 @@ export default function ShoppingListScreen() {
           <View style={isUltraWide ? styles.itemsGrid : undefined}>
             {uncheckedItems.map(item => (
               <View key={item.id} style={isUltraWide ? styles.itemGridCell : undefined}>
-                <ItemRow
-                  item={item}
-                  onToggle={() => handleToggle(item)}
-                  onDelete={() => handleDelete(item)}
-                />
+                <ItemRow item={item} onToggle={() => handleToggle(item)} onDelete={() => handleDelete(item)} />
               </View>
             ))}
           </View>
@@ -231,11 +321,7 @@ export default function ShoppingListScreen() {
               <View style={isUltraWide ? styles.itemsGrid : undefined}>
                 {checkedItems.map(item => (
                   <View key={item.id} style={isUltraWide ? styles.itemGridCell : undefined}>
-                    <ItemRow
-                      item={item}
-                      onToggle={() => handleToggle(item)}
-                      onDelete={() => handleDelete(item)}
-                    />
+                    <ItemRow item={item} onToggle={() => handleToggle(item)} onDelete={() => handleDelete(item)} />
                   </View>
                 ))}
               </View>
@@ -244,7 +330,108 @@ export default function ShoppingListScreen() {
         </ScrollView>
       )}
 
-      {/* Add item modal */}
+      {/* ── Date range picker modal ── */}
+      <Modal
+        visible={datePickerVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setDatePickerVisible(false)}
+      >
+        <View style={styles.overlay}>
+          <View style={[styles.pickerCard, isWide && styles.pickerCardWide]}>
+            <Text style={styles.pickerTitle}>Zeitraum wählen</Text>
+
+            {/* Preset chips */}
+            <View style={styles.presetRow}>
+              {PRESETS.map(p => (
+                <TouchableOpacity
+                  key={p.id}
+                  style={[styles.presetChip, selectedPreset === p.id && styles.presetChipActive]}
+                  onPress={() => handlePresetSelect(p)}
+                >
+                  <Text style={[styles.presetChipText, selectedPreset === p.id && styles.presetChipTextActive]}>
+                    {p.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Custom date inputs */}
+            {selectedPreset === 'custom' && (
+              <View style={styles.customDateRow}>
+                <View style={styles.customDateField}>
+                  <Text style={styles.inputLabel}>Von</Text>
+                  <DateInput value={dateFrom} onChange={setDateFrom} />
+                </View>
+                <View style={styles.customDateSep} />
+                <View style={styles.customDateField}>
+                  <Text style={styles.inputLabel}>Bis</Text>
+                  <DateInput value={dateTo} onChange={setDateTo} />
+                </View>
+              </View>
+            )}
+
+            {/* Selected range summary */}
+            {selectedPreset !== 'custom' && (
+              <Text style={styles.rangeSummary}>{dateRangeLabel}</Text>
+            )}
+
+            {/* Actions */}
+            <View style={styles.pickerBtns}>
+              <TouchableOpacity style={styles.pickerBtnCancel} onPress={() => setDatePickerVisible(false)}>
+                <Text style={styles.pickerBtnCancelText}>Abbrechen</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.pickerBtnConfirm, generate.isPending && styles.pickerBtnConfirmDisabled]}
+                onPress={handleDatePickerConfirm}
+                disabled={generate.isPending}
+              >
+                {generate.isPending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.pickerBtnConfirmText}>Generieren</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Conflict modal ── */}
+      <Modal
+        visible={conflictVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setConflictVisible(false)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.conflictCard}>
+            <Text style={styles.conflictTitle}>Aktive Liste vorhanden</Text>
+            <Text style={styles.conflictBody}>
+              Es gibt bereits eine aktive Einkaufsliste. Möchtest du sie überschreiben oder die neuen Artikel hinzufügen?
+            </Text>
+            <View style={styles.conflictBtns}>
+              <TouchableOpacity
+                style={[styles.conflictBtn, styles.conflictBtnOutline]}
+                onPress={() => handleGenerate(true)}
+              >
+                <Text style={styles.conflictBtnOutlineText}>Zusammenführen</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.conflictBtn, styles.conflictBtnFill]}
+                onPress={() => handleGenerate(false)}
+              >
+                <Text style={styles.conflictBtnFillText}>Überschreiben</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={() => setConflictVisible(false)}>
+              <Text style={styles.conflictCancel}>Abbrechen</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Add item modal ── */}
       <Modal
         visible={addModalVisible}
         animationType="slide"
@@ -303,40 +490,6 @@ export default function ShoppingListScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* Generate modal – conflict resolution */}
-      <Modal
-        visible={generateModalVisible}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setGenerateModalVisible(false)}
-      >
-        <View style={styles.overlay}>
-          <View style={styles.conflictCard}>
-            <Text style={styles.conflictTitle}>Aktive Liste vorhanden</Text>
-            <Text style={styles.conflictBody}>
-              Es gibt bereits eine aktive Einkaufsliste. Möchtest du sie überschreiben oder die neuen Artikel hinzufügen?
-            </Text>
-            <View style={styles.conflictBtns}>
-              <TouchableOpacity
-                style={[styles.conflictBtn, styles.conflictBtnOutline]}
-                onPress={() => handleGenerate(true)}
-              >
-                <Text style={styles.conflictBtnOutlineText}>Zusammenführen</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.conflictBtn, styles.conflictBtnFill]}
-                onPress={() => handleGenerate(false)}
-              >
-                <Text style={styles.conflictBtnFillText}>Überschreiben</Text>
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity onPress={() => setGenerateModalVisible(false)}>
-              <Text style={styles.conflictCancel}>Abbrechen</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -377,13 +530,7 @@ const styles = StyleSheet.create({
   addBtnText: { color: GREEN, fontSize: 14, fontWeight: '700' },
   deleteListBtn: { fontSize: 20 },
 
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-    gap: 12,
-  },
+  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
   emptyIcon: { fontSize: 56 },
   emptyTitle: { fontSize: 20, fontWeight: '700', color: '#1A1A1A' },
   emptySubtitle: { fontSize: 14, color: '#888', textAlign: 'center', lineHeight: 20 },
@@ -406,6 +553,85 @@ const styles = StyleSheet.create({
   doneSectionTitle: { fontSize: 13, fontWeight: '700', color: '#888', textTransform: 'uppercase', letterSpacing: 0.5 },
   clearDoneBtn: { fontSize: 13, color: '#B71C1C', fontWeight: '600' },
 
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+
+  // Date picker card
+  pickerCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 420,
+    gap: 16,
+  },
+  pickerCardWide: { maxWidth: 480 },
+  pickerTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
+
+  presetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  presetChip: {
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    backgroundColor: '#fff',
+  },
+  presetChipActive: { borderColor: GREEN, backgroundColor: GREEN_LIGHT },
+  presetChipText: { fontSize: 14, color: '#555', fontWeight: '600' },
+  presetChipTextActive: { color: GREEN },
+
+  customDateRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 0 },
+  customDateField: { flex: 1 },
+  customDateSep: { width: 12 },
+
+  rangeSummary: { fontSize: 13, color: '#666', textAlign: 'center', fontWeight: '500' },
+
+  pickerBtns: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  pickerBtnCancel: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: BORDER,
+  },
+  pickerBtnCancelText: { fontSize: 14, color: '#555', fontWeight: '600' },
+  pickerBtnConfirm: {
+    flex: 2,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: GREEN,
+  },
+  pickerBtnConfirmDisabled: { backgroundColor: '#A5D6A7' },
+  pickerBtnConfirmText: { fontSize: 14, color: '#fff', fontWeight: '700' },
+
+  // Conflict card
+  conflictCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 360,
+    gap: 16,
+  },
+  conflictTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
+  conflictBody: { fontSize: 14, color: '#555', lineHeight: 20 },
+  conflictBtns: { flexDirection: 'row', gap: 10 },
+  conflictBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
+  conflictBtnOutline: { borderWidth: 1.5, borderColor: GREEN },
+  conflictBtnFill: { backgroundColor: GREEN },
+  conflictBtnOutlineText: { color: GREEN, fontSize: 14, fontWeight: '700' },
+  conflictBtnFillText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  conflictCancel: { textAlign: 'center', color: '#888', fontSize: 14, fontWeight: '500' },
+
+  // Add-item modal
   modal: { flex: 1, backgroundColor: '#fff' },
   modalWide: { maxWidth: 560, alignSelf: 'center', width: '100%' },
   modalHeader: {
@@ -441,31 +667,6 @@ const styles = StyleSheet.create({
   },
   saveBtnDisabled: { backgroundColor: '#A5D6A7' },
   saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  conflictCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    maxWidth: 360,
-    gap: 16,
-  },
-  conflictTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
-  conflictBody: { fontSize: 14, color: '#555', lineHeight: 20 },
-  conflictBtns: { flexDirection: 'row', gap: 10 },
-  conflictBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
-  conflictBtnOutline: { borderWidth: 1.5, borderColor: GREEN },
-  conflictBtnFill: { backgroundColor: GREEN },
-  conflictBtnOutlineText: { color: GREEN, fontSize: 14, fontWeight: '700' },
-  conflictBtnFillText: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  conflictCancel: { textAlign: 'center', color: '#888', fontSize: 14, fontWeight: '500' },
 });
 
 const rowStyles = StyleSheet.create({
