@@ -230,12 +230,51 @@ Metro wählt `.web.ts`-Dateien automatisch für Web-Builds.
 | meal_type | ENUM | `breakfast`, `lunch`, `snack`, `dinner`, `dessert` |
 | recipe_id | INTEGER FK → recipes.id SET NULL | Optional |
 | custom_meal | VARCHAR(255) | Freitext (Alternative zu recipe_id) |
+| repeat_weekly | BOOLEAN | Eintrag wöchentlich wiederholen |
 
 #### `meal_plan_entry_users` *(Junction)*
 | Spalte | Typ | Beschreibung |
 |--------|-----|--------------|
 | entry_id | INTEGER FK → meal_plan_entries.id CASCADE | |
 | user_id | INTEGER FK → users.id CASCADE | |
+
+#### `shopping_lists`
+| Spalte | Typ | Beschreibung |
+|--------|-----|--------------|
+| id | INTEGER PK | |
+| household_id | INTEGER FK → households.id | |
+| created_at | TIMESTAMP | Erstellungszeitpunkt |
+
+#### `shopping_list_items`
+| Spalte | Typ | Beschreibung |
+|--------|-----|--------------|
+| id | INTEGER PK | |
+| shopping_list_id | INTEGER FK → shopping_lists.id CASCADE | |
+| name | VARCHAR(255) | Artikel-Name |
+| amount | FLOAT | Menge (optional) |
+| unit | VARCHAR(50) | Einheit (optional, z.B. `g`, `ml`, `Stück`) |
+| is_checked | BOOLEAN | Abgehakt (erledigt) |
+| is_manual | BOOLEAN | Manuell hinzugefügt (nicht aus Rezept generiert) |
+| sort_order | INTEGER | Reihenfolge innerhalb der Liste |
+| custom_meal_ref | VARCHAR(255) | Verweis auf Freitext-Mahlzeit (falls aus custom_meal generiert) |
+
+#### `conversations`
+| Spalte | Typ | Beschreibung |
+|--------|-----|--------------|
+| id | INTEGER PK | |
+| household_id | INTEGER FK → households.id | |
+| title | VARCHAR(255) | Konversationstitel (auto-generiert aus erster Nachricht) |
+| created_at | TIMESTAMP | Erstellungszeitpunkt |
+| updated_at | TIMESTAMP | Letzte Aktualisierung |
+
+#### `conversation_messages`
+| Spalte | Typ | Beschreibung |
+|--------|-----|--------------|
+| id | INTEGER PK | |
+| conversation_id | INTEGER FK → conversations.id CASCADE | |
+| role | VARCHAR(20) | `user` oder `assistant` |
+| content | TEXT | Nachrichteninhalt |
+| created_at | TIMESTAMP | Erstellungszeitpunkt |
 
 ---
 
@@ -268,6 +307,7 @@ Household ──< HouseholdMember >── User
 | `0005_phase7_ai_settings.py` | Neue Spalten: `households.settings` (JSONB), `users.preferences` (JSONB) |
 | `0006_add_tag_category_family_members.py` | Neue Spalte `tags.category`; Familienmitglieder-Tags (Mama, Papa, Kind) |
 | `0007_add_recipe_source_url.py` | Neue Spalte `recipes.source_url` (VARCHAR 2048, nullable) |
+| `0008_shopping_list_conversations.py` | Neue Tabellen: `shopping_lists`, `shopping_list_items`, `conversations`, `conversation_messages`; neue Spalte `meal_plan_entries.repeat_weekly` (BOOLEAN) |
 
 Migration ausführen: `alembic upgrade head`
 

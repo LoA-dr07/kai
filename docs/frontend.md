@@ -14,11 +14,12 @@ mobile/
 │   ├── _layout.tsx         # Root-Layout (QueryClientProvider)
 │   ├── index.tsx           # Weiterleitung → /recipes
 │   ├── (tabs)/
-│   │   ├── _layout.tsx     # Tab-Navigation (Rezepte | Wochenplan | KI-Chat | Einstellungen)
-│   │   ├── recipes.tsx     # Rezeptliste-Screen
-│   │   ├── meal-plan.tsx   # Wochenplan-Screen
-│   │   ├── ai-chat.tsx     # KI-Chat-Screen
-│   │   └── settings.tsx    # Einstellungen-Screen (Haushalt + Mitglieder)
+│   │   ├── _layout.tsx         # Tab-Navigation (Rezepte | Wochenplan | Einkaufsliste | KI-Chat | Einstellungen)
+│   │   ├── recipes.tsx         # Rezeptliste-Screen
+│   │   ├── meal-plan.tsx       # Wochenplan-Screen
+│   │   ├── shopping-list.tsx   # Einkaufsliste-Screen
+│   │   ├── ai-chat.tsx         # KI-Chat-Screen
+│   │   └── settings.tsx        # Einstellungen-Screen (Haushalt + Mitglieder)
 │   └── recipe/
 │       ├── new.tsx         # Neues Rezept erstellen
 │       └── [id]/
@@ -50,7 +51,9 @@ mobile/
 │       ├── useHousehold.ts            # Native: PowerSync SQLite
 │       ├── useHousehold.web.ts        # Web: REST API Fallback
 │       ├── useAiMealPlanSuggestion.ts # KI-Wochenplan-Hook (beide Plattformen)
-│       └── useAiChat.ts               # KI-Chat-Hook (beide Plattformen)
+│       ├── useAiChat.ts               # KI-Chat-Hook (beide Plattformen)
+│       ├── useShoppingList.ts         # Einkaufslisten-Hooks (beide Plattformen)
+│       └── useConversations.ts        # KI-Konversations-Hooks (beide Plattformen)
 └── assets/                 # Bilder, Icons
 ```
 
@@ -78,18 +81,34 @@ mobile/
 - Zeigt eine Woche als Grid: 7 Tage × 5 Mahlzeiten (Frühstück, Mittagessen, Snack, Abendessen, Dessert)
 - Wochennavigation: vorherige / nächste Woche; **KI ✨-Button** öffnet den KI-Vorschlagsmodal (`AiSuggestionModal`)
 - Pro Zelle: geplantes Rezept oder Freitext, farbige User-Avatar-Chips
+- **Pro-Person-Zeilen:** Bei unterschiedlichen Mahlzeiten pro Haushaltsmitglied werden separate Zeilen pro Person angezeigt
+- **Long-Press Bottom Sheet:** Langes Drücken auf einen Eintrag öffnet ein Action-Sheet mit Optionen: Verschieben, Kopieren, Löschen, Wöchentlich wiederholen
+- **Zuletzt verwendete Rezepte:** Schnellzugriff auf kürzlich eingetragene Rezepte beim Hinzufügen eines Eintrags
+- **Web Drag & Drop:** Einträge können per Drag & Drop zwischen Zellen verschoben werden (nur Web)
+- **`repeat_weekly`-Indikator:** Wiederholende Einträge werden visuell gekennzeichnet
 - Zelle antippen → Bearbeitungsmodal (Rezept auswählen oder Freitext eingeben, User zuweisen)
 - Responsiv: Tablet-Layout ab 768px Breite
+
+### `(tabs)/shopping-list.tsx` – Einkaufsliste
+- Einkaufsliste mit Generierung aus dem Mahlzeitenplan, Checkbox-System und manuellen Einträgen
+- **Generieren:** Zeitraum (Datum von/bis) auswählen und Liste aus den geplanten Mahlzeiten erzeugen; Konflikt-Dialog bei bereits vorhandener Liste (zusammenführen oder ersetzen)
+- **Checkbox-System:** Einträge abhaken; abgehakte Einträge werden in einem „Erledigt"-Abschnitt gesammelt
+- **Manuelle Einträge:** Einzelne Artikel mit Name, Menge und Einheit manuell hinzufügen
+- **Erledigt-Sektion:** Zusammenführung aller abgehakten Einträge mit Option „Erledigte löschen"
+- **Gesamte Liste löschen** über Header-Button
 
 ### `(tabs)/ai-chat.tsx` – KI-Chat
 - Chat-Interface mit KI-Assistent (Claude API via `POST /ai/chat`)
 - Haushaltsmitglieder, Präferenzen, Nie-Bewertungen und verfügbare Rezepte werden automatisch als Kontext mitgegeben
+- **Multi-Konversationen:** Konversationsliste-Modal zum Wechseln, Erstellen und Löschen von Gesprächsverläufen
 - **Nachrichtenblase:** User-Nachrichten rechts (grün), KI-Antworten links (weiß)
 - **Rezeptvorschlag-Karten:** Erscheinen direkt unter KI-Antworten für jedes vorgeschlagene Gericht
   - Zeigt: Rezeptname, Begründung, ✨-Markierung für neue Rezepte (nicht in DB)
   - **„+ Zum Wochenplan hinzufügen":** Klappt Inline-Picker auf mit Wochentag- und Mahlzeitstyp-Chips
   - Nach Auswahl von Tag + Mahlzeit: „Eintragen"-Button → Eintrag wird sofort gespeichert
   - Bestätigung: Button wechselt zu „✓ Zum Wochenplan hinzugefügt"
+- **Pending Action Cards:** Aktionskarten für KI-vorgeschlagene Aktionen (z.B. Mahlzeit eintragen, Einkaufsliste generieren), die der Nutzer bestätigen oder ablehnen kann
+- **TTS (Text-to-Speech):** Vorlesen von KI-Antworten via `expo-speech` (nur Mobile)
 - Willkommensnachricht beim ersten Öffnen (zählt nicht zur API-Gesprächshistorie)
 - Wochenbanner zeigt die aktuelle Kalenderwoche
 - `KeyboardAvoidingView` für iOS-Tastatur-Handling
@@ -212,6 +231,28 @@ Alle Meal-Plan-Mutations invalidieren `['meal-plans']`.
 | `useAiMealPlanSuggestion()` | `useAiMealPlanSuggestion.ts` | Mutation | KI-Wochenplan generieren (`POST /ai/meal-plan-suggestion`), Timeout 60 s |
 | `useAiChat()` | `useAiChat.ts` | Mutation | KI-Chat-Nachricht senden (`POST /ai/chat`), Timeout 60 s |
 
+### Einkaufslisten-Hooks (`useShoppingList.ts`)
+
+| Hook | Typ | Beschreibung |
+|------|-----|--------------|
+| `useShoppingList()` | Query | Aktive Einkaufsliste abrufen (`GET /shopping-list`), Cache-Key: `['shopping-list']` |
+| `useGenerateShoppingList()` | Mutation | Liste aus Mahlzeitenplan generieren (`POST /shopping-list/generate`), invalidiert `['shopping-list']` |
+| `useAddShoppingItem()` | Mutation | Manuellen Eintrag hinzufügen (`POST /shopping-list/items`), invalidiert `['shopping-list']` |
+| `useToggleShoppingItem()` | Mutation | Eintrag abhaken/wiederherstellen (`PATCH /shopping-list/items/{id}`), invalidiert `['shopping-list']` |
+| `useDeleteShoppingItem()` | Mutation | Einzelnen Eintrag löschen (`DELETE /shopping-list/items/{id}`), invalidiert `['shopping-list']` |
+| `useClearDoneItems()` | Mutation | Alle abgehakten Einträge löschen (`DELETE /shopping-list/done`), invalidiert `['shopping-list']` |
+| `useDeleteShoppingList()` | Mutation | Gesamte Liste löschen (`DELETE /shopping-list`), invalidiert `['shopping-list']` |
+
+### Konversations-Hooks (`useConversations.ts`)
+
+| Hook | Typ | Beschreibung |
+|------|-----|--------------|
+| `useConversations()` | Query | Alle Konversationen abrufen (`GET /ai/conversations`), Cache-Key: `['conversations']` |
+| `useConversationMessages(id)` | Query | Alle Nachrichten einer Konversation (`GET /ai/conversations/{id}/messages`), Cache-Key: `['conversations', id, 'messages']` |
+| `useCreateConversation()` | Mutation | Neue Konversation erstellen (`POST /ai/conversations`), invalidiert `['conversations']` |
+| `useUpdateConversationTitle()` | Mutation | Konversationstitel ändern (`PATCH /ai/conversations/{id}`), invalidiert `['conversations']` |
+| `useDeleteConversation()` | Mutation | Konversation löschen (`DELETE /ai/conversations/{id}`), invalidiert `['conversations']` |
+
 ---
 
 ## TypeScript-Typen (`mobile/lib/types.ts`)
@@ -238,6 +279,7 @@ interface MealPlanEntry {
   custom_meal: string | null;
   recipe: Recipe | null;
   assigned_user_ids: number[];
+  repeat_weekly: boolean;  // Eintrag wöchentlich wiederholen
 }
 
 interface User {
@@ -245,6 +287,66 @@ interface User {
   name: string;
   avatar_color: string;  // Hex, z.B. "#2E7D32"
   short_name: string;    // z.B. "MA"
+}
+
+// Einkaufsliste
+interface ShoppingList {
+  id: number;
+  household_id: number;
+  created_at: string;
+  items: ShoppingListItem[];
+}
+
+interface ShoppingListItem {
+  id: number;
+  shopping_list_id: number;
+  name: string;
+  amount: number | null;
+  unit: string | null;
+  is_checked: boolean;
+}
+
+interface GenerateShoppingListPayload {
+  date_from: string;  // "YYYY-MM-DD"
+  date_to: string;    // "YYYY-MM-DD"
+  merge: boolean;
+}
+
+// KI-Konversationen
+interface Conversation {
+  id: number;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ConversationMessage {
+  id: number;
+  conversation_id: number;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
+}
+
+// KI-Chat – Pending Actions
+interface PendingAction {
+  type: 'add_meal_plan_entry' | 'delete_meal_plan_entry' | 'generate_shopping_list' | 'add_shopping_item';
+  description: string;
+  data: Record<string, unknown>;
+}
+
+// Aktualisierte KI-Chat-Typen
+interface AiChatRequest {
+  messages: { role: 'user' | 'assistant'; content: string }[];
+  week_start_date?: string;
+  conversation_id?: number;  // Optional: Verknüpfung mit gespeicherter Konversation
+}
+
+interface AiChatResponse {
+  reply: string;
+  recipe_suggestions: RecipeSuggestion[];
+  pending_actions: PendingAction[];  // Aktionen zur Nutzerbestätigung
+  conversation_id?: number;          // ID der verknüpften Konversation
 }
 ```
 
@@ -397,6 +499,7 @@ const isTablet = width >= 768;
 | `/` | Weiterleitung → `/recipes` |
 | `/(tabs)/recipes` | Rezeptliste |
 | `/(tabs)/meal-plan` | Wochenplan |
+| `/(tabs)/shopping-list` | Einkaufsliste |
 | `/(tabs)/ai-chat` | KI-Chat |
 | `/recipe/bulk-import` | Bulk-Import aus URLs |
 | `/recipe/new` | Neues Rezept |
