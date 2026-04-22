@@ -147,13 +147,27 @@ def _build_chat_system_message(
     settings: HouseholdSettings,
     current_meal_plan: MealPlan | None = None,
     shopping_list: ShoppingList | None = None,
+    week_start_date: str | None = None,
 ) -> str:
+    from datetime import date, timedelta
+
     DAY_NAMES = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
     MEAL_LABELS = {"breakfast": "Frühstück", "lunch": "Mittagessen", "snack": "Snack", "dinner": "Abendessen", "dessert": "Dessert"}
+
+    # Compute calendar context so the AI knows exact dates for "diese/nächste Woche"
+    today = date.today()
+    this_monday = today - timedelta(days=today.weekday())
+    next_monday = this_monday + timedelta(days=7)
+    week_after_monday = this_monday + timedelta(days=14)
 
     lines = []
     lines.append(f"Du bist ein Meal-Planner-Assistent für den Haushalt '{household.name}'.")
     lines.append("Beantworte Fragen zu Rezepten, Ernährung, Wochenplan und Einkaufsliste auf Deutsch.")
+    lines.append(f"HEUTE: {today.isoformat()} ({DAY_NAMES[today.weekday()]})")
+    lines.append(f"DIESE WOCHE: {this_monday.isoformat()} – {(this_monday + timedelta(days=6)).isoformat()}  (week_start_date={this_monday.isoformat()})")
+    lines.append(f"NÄCHSTE WOCHE: {next_monday.isoformat()} – {(next_monday + timedelta(days=6)).isoformat()}  (week_start_date={next_monday.isoformat()})")
+    lines.append(f"ÜBERNÄCHSTE WOCHE: {week_after_monday.isoformat()} – {(week_after_monday + timedelta(days=6)).isoformat()}  (week_start_date={week_after_monday.isoformat()})")
+    lines.append("Verwende immer den angegebenen week_start_date-Wert (Montag der Woche) in pending_actions.")
     lines.append("")
 
     # Full household settings
@@ -479,6 +493,7 @@ def ai_chat(payload: AiChatRequest, db: Session = Depends(get_db)):
         settings=settings,
         current_meal_plan=current_meal_plan,
         shopping_list=shopping_list,
+        week_start_date=payload.week_start_date,
     )
 
     # Build message history
