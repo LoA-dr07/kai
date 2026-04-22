@@ -511,13 +511,27 @@ def ai_chat(payload: AiChatRequest, db: Session = Depends(get_db)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Interner Fehler bei der KI-Anfrage: {e}")
 
-    # Parse structured response
+    # Parse structured response.
+    # The AI sometimes emits prose before the JSON object, so try to locate
+    # the JSON by searching for the last {"reply": marker when direct parse fails.
+    parsed: dict | None = None
     try:
         parsed = json.loads(raw_text)
+    except json.JSONDecodeError:
+        for marker in ('{"reply":', '{ "reply":'):
+            idx = raw_text.rfind(marker)
+            if idx != -1:
+                try:
+                    parsed = json.loads(raw_text[idx:])
+                    break
+                except json.JSONDecodeError:
+                    pass
+
+    if parsed is not None:
         reply = str(parsed.get("reply", raw_text))
         raw_suggestions = parsed.get("recipe_suggestions", [])
         raw_actions = parsed.get("pending_actions", [])
-    except (json.JSONDecodeError, AttributeError):
+    else:
         reply = raw_text
         raw_suggestions = []
         raw_actions = []
