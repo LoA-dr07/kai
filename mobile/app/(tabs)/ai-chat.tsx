@@ -64,17 +64,16 @@ export default function AiChatScreen() {
   const [weekStart] = useState<Date>(() => getMondayOf(new Date()));
   const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-  const inputFocused = useRef(false);
   const handleSendRef = useRef<() => void>(() => {});
 
-  // Keep ref in sync without re-running the keyboard effect
+  // Keep ref current after every render (no stale closure in the keyboard effect)
   useEffect(() => { handleSendRef.current = handleSend; });
 
-  // Ctrl+Enter on web: attach once, use refs so no stale closures
+  // Ctrl+Enter on web — no focus tracking needed; handleSend guards against empty input
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (inputFocused.current && e.ctrlKey && e.key === 'Enter') {
+      if (e.ctrlKey && e.key === 'Enter') {
         e.preventDefault();
         handleSendRef.current();
       }
@@ -299,8 +298,11 @@ export default function AiChatScreen() {
         newConfirmed.add(actionIndex);
         return { ...dm, confirmedActions: newConfirmed };
       }));
-    } catch {
-      showAlert('Fehler', `Aktion konnte nicht ausgeführt werden.`);
+    } catch (err) {
+      const detail = axios.isAxiosError(err) && err.response?.data?.detail
+        ? String(err.response.data.detail)
+        : err instanceof Error ? err.message : 'Aktion konnte nicht ausgeführt werden.';
+      showAlert('Fehler', detail);
     }
   };
 
@@ -487,21 +489,27 @@ export default function AiChatScreen() {
                         <TouchableOpacity
                           style={styles.confirmAllBtn}
                           onPress={async () => {
-                            // Group add_meal_plan_entry actions by week so we only create
-                            // one plan per week even when running sequentially.
-                            const planIdCache: Record<string, number> = {};
-                            for (let i = 0; i < dm.pendingActions!.length; i++) {
-                              if (dm.confirmedActions?.has(i)) continue;
-                              const a = dm.pendingActions![i];
-                              let overridePlanId: number | undefined;
-                              if (a.type === 'add_meal_plan_entry') {
-                                const ws = (a.data.week_start_date as string | undefined) || weekStartIso;
-                                if (!planIdCache[ws]) {
-                                  planIdCache[ws] = await resolveOrCreatePlan(ws);
+                            try {
+                              // Cache plan ids per week to avoid creating duplicate plans
+                              const planIdCache: Record<string, number> = {};
+                              for (let i = 0; i < dm.pendingActions!.length; i++) {
+                                if (dm.confirmedActions?.has(i)) continue;
+                                const a = dm.pendingActions![i];
+                                let overridePlanId: number | undefined;
+                                if (a.type === 'add_meal_plan_entry') {
+                                  const ws = (a.data.week_start_date as string | undefined) || weekStartIso;
+                                  if (!planIdCache[ws]) {
+                                    planIdCache[ws] = await resolveOrCreatePlan(ws);
+                                  }
+                                  overridePlanId = planIdCache[ws];
                                 }
-                                overridePlanId = planIdCache[ws];
+                                await executeAction(msgIndex, i, a, overridePlanId);
                               }
-                              await executeAction(msgIndex, i, a, overridePlanId);
+                            } catch (err) {
+                              const detail = axios.isAxiosError(err) && err.response?.data?.detail
+                                ? String(err.response.data.detail)
+                                : err instanceof Error ? err.message : 'Fehler beim Ausführen der Aktionen.';
+                              showAlert('Fehler', detail);
                             }
                           }}
                         >
@@ -556,8 +564,6 @@ export default function AiChatScreen() {
             returnKeyType="send"
             onSubmitEditing={handleSend}
             blurOnSubmit={false}
-            onFocus={() => { inputFocused.current = true; }}
-            onBlur={() => { inputFocused.current = false; }}
           />
           <TouchableOpacity
             style={[styles.sendBtn, (!input.trim() || chatMutation.isPending) && styles.sendBtnDisabled]}
