@@ -5,8 +5,187 @@
 Familien-Mahlzeitenplaner für gemeinsame Nutzung im Haushalt (3 Mitglieder).
 Features: Rezeptverwaltung, Wochenplanung, Haushaltsmitglieder, Import/Export, Tags, Sternebewertungen.
 
-**Stack:** FastAPI + PostgreSQL (Backend) · React Native / Expo + Expo Web (Frontend)
+**Stack:** FastAPI + Neon PostgreSQL (Backend, deployed auf fly.io) · React Native / Expo + Expo Web (Frontend)
 **Entwicklungsumgebung:** Windows (PowerShell · `.\venv\Scripts\Activate.ps1`)
+
+---
+
+## Befehle
+
+### Web-App starten
+```powershell
+cd mobile
+# .env: EXPO_PUBLIC_API_URL=https://meal-planner-api-long-feather-1592.fly.dev
+npx expo start --web
+# Öffnet http://localhost:8081 – Backend läuft auf fly.io, kein lokales Backend nötig
+```
+
+### Mobile App starten
+```powershell
+# Voraussetzung: PC und Handy im selben WLAN
+
+cd mobile
+# .env: EXPO_PUBLIC_API_URL=https://meal-planner-api-long-feather-1592.fly.dev
+#        EXPO_PUBLIC_POWERSYNC_URL=https://<instanz>.powersync.journeyapps.com
+$env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.178.83"; npx expo start --go --lan
+# Alternativ: npm run mobile
+
+# Beim ersten Mal: Windows-Firewall muss eingehende Verbindungen auf Port 8081 (TCP) erlauben
+```
+
+### Backend deployen (fly.io)
+```powershell
+cd backends
+flyctl deploy
+# App: meal-planner-api-long-feather-1592  (Region: fra)
+# URL: https://meal-planner-api-long-feather-1592.fly.dev
+# API-Docs: https://meal-planner-api-long-feather-1592.fly.dev/docs
+```
+
+### Backend neu starten (ohne neues Deploy)
+```powershell
+flyctl restart --app meal-planner-api-long-feather-1592
+```
+
+### Tests
+```powershell
+cd backends
+.\venv\Scripts\Activate.ps1
+pytest
+```
+
+### Datenbank-Migration (gegen Neon)
+```powershell
+cd backends
+.\venv\Scripts\Activate.ps1
+# backends/.env muss DATABASE_URL auf Neon zeigen
+alembic upgrade head
+```
+
+### Neue Migration erstellen
+```powershell
+cd backends
+.\venv\Scripts\Activate.ps1
+alembic revision --autogenerate -m "beschreibung"
+```
+
+### Datenbank-Seed (Haushalt + 3 User)
+```powershell
+cd backends
+.\venv\Scripts\Activate.ps1
+python -m app.db.seed
+```
+
+---
+
+## Architektur
+
+```
+mobile/          ← React Native / Expo (iOS · Android · Web)
+  app/(tabs)/    ← Hauptscreens (Tab-Navigation)
+  components/    ← Wiederverwendbare UI-Komponenten
+  lib/
+    api.ts       ← Axios-Client (EXPO_PUBLIC_API_URL → fly.io)
+    hooks/       ← React Query Hooks (+ PowerSync für Native)
+    types.ts     ← TypeScript-Typen
+    alert.ts     ← Plattform-kompatibles Alert-Utility
+
+backends/        ← FastAPI (Python), deployed auf fly.io
+  fly.toml       ← Fly.io-Deployment-Konfiguration
+  Dockerfile     ← Container-Image für fly.io
+  app/
+    main.py      ← App-Init, Router-Registrierung, CORS
+    models/      ← SQLAlchemy ORM-Modelle
+    routers/     ← API-Endpunkte
+    schemas/     ← Pydantic Request/Response-Schemas
+    db/
+      session.py ← Datenbankverbindung (SQLAlchemy → Neon PostgreSQL)
+      seed.py    ← Seed-Daten (Haushalt, User, Tags)
+  alembic/
+    versions/    ← Datenbankmigrationen
+```
+
+---
+
+## Entwicklungskonventionen
+
+### Neuer API-Endpunkt
+1. Schema in `backends/app/schemas/<domäne>.py` ergänzen
+2. Logik in `backends/app/routers/<domäne>.py` ergänzen
+3. Falls neuer Router: in `backends/app/main.py` registrieren
+4. `flyctl deploy` aus `backends/`
+
+### Neues Datenbankfeld / neue Tabelle
+1. Modell in `backends/app/models/<datei>.py` anpassen
+2. Alembic-Migration: `alembic revision --autogenerate -m "..."` + prüfen + `alembic upgrade head`
+3. Pydantic-Schema anpassen
+4. `flyctl deploy` aus `backends/`
+
+### Neues Frontend-Feature
+1. React Query Hook in `mobile/lib/hooks/` ergänzen (Muster: `useRecipes.ts`, `useMealPlan.ts`)
+2. Komponente in `mobile/components/` erstellen
+3. Screen in `mobile/app/` verwenden
+
+### Plattform-Kompatibilität (Mobile + Web)
+- **Nie** `Alert.alert()` direkt verwenden → stattdessen `showAlert` / `showConfirm` aus `mobile/lib/alert.ts`
+- Datei-Operationen: `expo-document-picker`, `expo-file-system`, `expo-sharing` (Web-Compat geprüft)
+- Responsive Breakpoint: `width >= 768` → Grid-Layout, `width >= 2560` → 4K-Layout
+- **Buttons ohne sichtbaren Text** (nur Icons oder Symbole) müssen stets mit `<Tooltip label="...">` aus `mobile/components/Tooltip.tsx` gewrappt werden – zeigt Hover-Erklärung auf Web, setzt `accessibilityLabel` auf Mobile. Position-Prop: `'left'` für Buttons am rechten Rand, `'right'` für Buttons am linken Rand, `'bottom'` für Buttons am oberen Bildschirmrand, Standard `'top'` sonst.
+
+### Sprache
+- UI-Texte: **Deutsch**
+- Code, Variablen, Kommentare, Commit-Messages: **Englisch**
+
+---
+
+## Environment-Dateien
+
+**`backends/.env`** (nicht im Git)
+```
+DATABASE_URL=postgresql://USER:PASSWORD@ep-xxx.region.aws.neon.tech/dbname?sslmode=require
+ANTHROPIC_API_KEY=sk-ant-...
+POWERSYNC_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----
+POWERSYNC_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----
+```
+
+**`mobile/.env`** (nicht im Git)
+```
+EXPO_PUBLIC_API_URL=https://meal-planner-api-long-feather-1592.fly.dev
+EXPO_PUBLIC_POWERSYNC_URL=https://<instanz>.powersync.journeyapps.com
+```
+
+---
+
+## Wichtige Designentscheidungen
+
+- **Keine Authentifizierung**: Bewusste Entscheidung – Haushalt teilt eine gemeinsame App-Instanz (3 User als Seed-Daten, kein Login)
+- **CORS offen**: `allow_origins=["*"]` – für Entwicklung und Einzel-Haushalt-Betrieb akzeptabel
+- **Backend auf fly.io**: App-Name `meal-planner-api-long-feather-1592`, Region `fra`. Deploy mit `flyctl deploy` aus `backends/`.
+- **Datenbank auf Neon**: Serverless PostgreSQL. URL in `backends/.env` → `DATABASE_URL`. Migrationen lokal gegen Neon ausführen.
+- **`MealPlanEntry`**: Entweder `recipe_id` (Rezept) oder `custom_meal` (Freitext), nicht beides
+
+---
+
+## Weitere Dokumentation
+
+- `README.md` – Setup-Anleitung (Ersteinrichtung, Starten)
+- `ROADMAP.md` – Feature-Tracker und Entwicklungsphasen
+- `FEATURES.md` – Gesammelte Feature-Ideen zur späteren Implementierung
+- `docs/architecture.md` – Datenbankschema, Systemarchitektur
+- `docs/api.md` – Vollständige API-Referenz
+- `docs/frontend.md` – Screens, Hooks, Komponenten
+
+## Dokumentationspflege
+
+**Wichtig:** Nach jeder Änderung am Projekt müssen die betroffenen Dokumentationsdateien aktualisiert werden:
+
+- Neues Datenbankmodell oder Migration → `docs/architecture.md` (Schema, Migrations-Tabelle)
+- Neuer oder geänderter API-Endpunkt → `docs/api.md`
+- Neuer Screen, Hook oder Komponente → `docs/frontend.md`
+- Neuer Befehl, Konvention oder Designentscheidung → `CLAUDE.md`
+- Neue Feature-Phase abgeschlossen → `ROADMAP.md` (Tasks als `[x]` markieren)
+- Feature implementiert → Eintrag aus `FEATURES.md` löschen
+
 
 ---
 
