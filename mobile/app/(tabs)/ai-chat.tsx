@@ -255,10 +255,20 @@ export default function AiChatScreen() {
           const d = action.data;
           const targetWeekStart = (d.week_start_date as string | undefined) || weekStartIso;
           const planId = overridePlanId ?? await resolveOrCreatePlan(targetWeekStart);
+          // Normalize meal_type: AI sometimes sends German names instead of English enum values
+          const MEAL_TYPE_NORM: Record<string, MealType> = {
+            frühstück: 'breakfast', breakfast: 'breakfast',
+            mittagessen: 'lunch', lunch: 'lunch',
+            snack: 'snack',
+            abendessen: 'dinner', dinner: 'dinner',
+            dessert: 'dessert',
+          };
+          const rawMealType = String(d.meal_type ?? '').toLowerCase();
+          const mealType: MealType = MEAL_TYPE_NORM[rawMealType] ?? d.meal_type as MealType;
           await addEntry.mutateAsync({
             planId,
             day_of_week: Number(d.day_of_week),
-            meal_type: d.meal_type as MealType,
+            meal_type: mealType,
             recipe_id: d.recipe_id as number | null ?? null,
             custom_meal: d.custom_meal as string | null ?? null,
             assigned_user_ids: (d.assigned_user_ids as number[]) ?? users.map(u => u.id),
@@ -490,8 +500,8 @@ export default function AiChatScreen() {
                           style={styles.confirmAllBtn}
                           onPress={async () => {
                             try {
-                              // Cache plan ids per week to avoid creating duplicate plans
                               const planIdCache: Record<string, number> = {};
+                              let count = 0;
                               for (let i = 0; i < dm.pendingActions!.length; i++) {
                                 if (dm.confirmedActions?.has(i)) continue;
                                 const a = dm.pendingActions![i];
@@ -504,7 +514,9 @@ export default function AiChatScreen() {
                                   overridePlanId = planIdCache[ws];
                                 }
                                 await executeAction(msgIndex, i, a, overridePlanId);
+                                count++;
                               }
+                              if (count > 0) showAlert('Fertig', `${count} Aktion${count !== 1 ? 'en' : ''} ausgeführt.`);
                             } catch (err) {
                               const detail = axios.isAxiosError(err) && err.response?.data?.detail
                                 ? String(err.response.data.detail)
