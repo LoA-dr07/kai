@@ -135,7 +135,7 @@ def create_tag(payload: TagCreate, db: Session = Depends(get_db)):
 @router.post("/tags/repair", response_model=TagRepairResult)
 def repair_imported_tags(db: Session = Depends(get_db)):
     """
-    Two-step repair for tag data imported before users were renamed:
+    Three-step repair for tag data imported before users were renamed:
 
     1. Ensure every user has a predefined family tag with their current name.
        If an import-created non-predefined tag with that name already exists,
@@ -143,8 +143,15 @@ def repair_imported_tags(db: Session = Depends(get_db)):
 
     2. Merge all remaining non-predefined tags that case-insensitively match a
        predefined tag into the predefined one and remove the orphan.
+
+    3. Remove orphaned predefined family tags whose name no longer matches any
+       user (left over from the pre-rename seed values like "Mama"/"Papa"/"Kind").
+       If such a tag still has linked recipes, those links are moved to the
+       matching user's family tag first; if no match can be found, the tag is
+       left in place and counted separately.
     """
     merged = 0
+    orphans_removed = 0
     affected: set[int] = set()
 
     # Step 1: sync user names → predefined family tags
@@ -154,14 +161,13 @@ def repair_imported_tags(db: Session = Depends(get_db)):
             Tag.category == "family",
         ).first()
         if not family_tag:
-            # No family tag for this user – promote an existing tag or create one
             any_tag = db.query(Tag).filter(
                 func.lower(Tag.name) == user.name.lower()
             ).first()
             if any_tag:
                 any_tag.is_predefined = True
                 any_tag.category = "family"
-                any_tag.name = user.name  # normalize casing
+                any_tag.name = user.name
             else:
                 db.add(Tag(name=user.name, is_predefined=True, category="family"))
     db.flush()
@@ -181,9 +187,32 @@ def repair_imported_tags(db: Session = Depends(get_db)):
             db.flush()
             db.delete(dup)
             merged += 1
+    db.flush()
+
+    # Step 3: remove orphaned predefined family tags (no user has that name)
+    user_names_lower = {u.name.lower() for u in db.query(User).all()}
+    for tag in db.query(Tag).filter(Tag.is_predefined == True, Tag.category == "family").all():
+        if tag.name.lower() in user_names_lower:
+            continue
+        # Stale tag – re-link its recipes to the first available user family tag
+        for recipe in list(tag.recipes):
+            for user_tag in recipe.tags:
+                if user_tag.category == "family" and user_tag.name.lower() in user_names_lower:
+                    break
+            else:
+                # Recipe has no other family tag; skip re-linking (user can re-tag manually)
+                continue
+            affected.add(recipe.id)
+        db.flush()
+        db.delete(tag)
+        orphans_removed += 1
 
     db.commit()
-    return TagRepairResult(merged_tags=merged, affected_recipes=len(affected))
+    return TagRepairResult(
+        merged_tags=merged,
+        affected_recipes=len(affected),
+        orphaned_tags_removed=orphans_removed,
+    )
 
 
 # --- Recipes ---
