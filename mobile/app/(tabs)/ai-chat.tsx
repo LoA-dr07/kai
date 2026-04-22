@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { showAlert } from '../../lib/alert';
 import { useAiChat } from '../../lib/hooks/useAiChat';
-import { useConversations, useCreateConversation, useDeleteConversation } from '../../lib/hooks/useConversations';
+import { useConversations, useConversationMessages, useCreateConversation, useDeleteConversation } from '../../lib/hooks/useConversations';
 import { useMealPlans, useCreateMealPlan, useAddEntry, useDeleteEntry } from '../../lib/hooks/useMealPlan';
 import { useUsers } from '../../lib/hooks/useUsers';
 import { useGenerateShoppingList, useAddShoppingItem } from '../../lib/hooks/useShoppingList';
@@ -55,6 +55,7 @@ export default function AiChatScreen() {
 
   const [activeConvId, setActiveConvId] = useState<number | null>(null);
   const [convListVisible, setConvListVisible] = useState(false);
+  const [loadingConv, setLoadingConv] = useState(false);
 
   const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([{ message: WELCOME_MESSAGE }]);
   const [input, setInput] = useState('');
@@ -70,6 +71,21 @@ export default function AiChatScreen() {
 
   const chatMutation = useAiChat();
   const { data: conversations = [], refetch: refetchConversations } = useConversations();
+  const { data: convMessages, isLoading: convMessagesLoading } = useConversationMessages(activeConvId);
+
+  useEffect(() => {
+    if (!loadingConv || convMessagesLoading) return;
+    if (convMessages && convMessages.length > 0) {
+      setDisplayMessages([
+        { message: WELCOME_MESSAGE },
+        ...convMessages.map(m => ({ message: { role: m.role, content: m.content } })),
+      ]);
+    } else {
+      setDisplayMessages([{ message: WELCOME_MESSAGE }]);
+    }
+    setLoadingConv(false);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 100);
+  }, [convMessages, convMessagesLoading, loadingConv]);
   const createConversation = useCreateConversation();
   const deleteConversation = useDeleteConversation();
   const { data: allPlans } = useMealPlans();
@@ -255,6 +271,7 @@ export default function AiChatScreen() {
   // Conversation management
   const handleNewConversation = () => {
     setActiveConvId(null);
+    setLoadingConv(false);
     setDisplayMessages([{ message: WELCOME_MESSAGE }]);
     setInput('');
     setConvListVisible(false);
@@ -262,6 +279,7 @@ export default function AiChatScreen() {
 
   const handleSelectConversation = (conv: Conversation) => {
     setActiveConvId(conv.id);
+    setLoadingConv(true);
     setDisplayMessages([{ message: WELCOME_MESSAGE }]);
     setInput('');
     setConvListVisible(false);
