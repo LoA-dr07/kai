@@ -209,17 +209,35 @@ export default function AiChatScreen() {
     }
   };
 
+  // Resolve or create a meal plan for the given week_start_date.
+  // Returns the plan id. Kept outside executeAction so "Alle bestätigen"
+  // can reuse the same plan across multiple sequential adds.
+  const resolveOrCreatePlan = async (targetWeekStart: string): Promise<number> => {
+    const existing = allPlans?.find(p => p.week_start_date === targetWeekStart);
+    if (existing) return existing.id;
+    const targetDate = new Date(targetWeekStart);
+    const targetWeekNum = getISOWeek(targetDate);
+    const targetYear = targetDate.getFullYear();
+    const newPlan = await createPlan.mutateAsync({
+      name: `KW ${targetWeekNum} ${targetYear}`,
+      week_start_date: targetWeekStart,
+    });
+    return newPlan.id;
+  };
+
   // Pending action execution
-  const executeAction = async (msgIndex: number, actionIndex: number, action: PendingAction) => {
+  const executeAction = async (
+    msgIndex: number,
+    actionIndex: number,
+    action: PendingAction,
+    overridePlanId?: number,
+  ) => {
     try {
       switch (action.type) {
         case 'add_meal_plan_entry': {
           const d = action.data;
-          let planId = currentPlan?.id;
-          if (!planId) {
-            const newPlan = await createPlan.mutateAsync({ name: `KW ${weekNum} ${year}`, week_start_date: weekStartIso });
-            planId = newPlan.id;
-          }
+          const targetWeekStart = (d.week_start_date as string | undefined) || weekStartIso;
+          const planId = overridePlanId ?? await resolveOrCreatePlan(targetWeekStart);
           await addEntry.mutateAsync({
             planId,
             day_of_week: Number(d.day_of_week),
@@ -444,7 +462,37 @@ export default function AiChatScreen() {
                 {/* Pending actions */}
                 {dm.pendingActions && dm.pendingActions.length > 0 && (
                   <View style={styles.actionsBlock}>
-                    <Text style={styles.actionsTitle}>Vorgeschlagene Aktionen</Text>
+                    <View style={styles.actionsTitleRow}>
+                      <Text style={styles.actionsTitle}>Vorgeschlagene Aktionen</Text>
+                      {dm.pendingActions.length > 1 &&
+                        dm.pendingActions.some((_, i) => !dm.confirmedActions?.has(i)) && (
+                        <TouchableOpacity
+                          style={styles.confirmAllBtn}
+                          onPress={async () => {
+                            // Group add_meal_plan_entry actions by week so we only create
+                            // one plan per week even when running sequentially.
+                            const planIdCache: Record<string, number> = {};
+                            for (let i = 0; i < dm.pendingActions!.length; i++) {
+                              if (dm.confirmedActions?.has(i)) continue;
+                              const a = dm.pendingActions![i];
+                              let overridePlanId: number | undefined;
+                              if (a.type === 'add_meal_plan_entry') {
+                                const ws = (a.data.week_start_date as string | undefined) || weekStartIso;
+                                if (!planIdCache[ws]) {
+                                  planIdCache[ws] = await resolveOrCreatePlan(ws);
+                                }
+                                overridePlanId = planIdCache[ws];
+                              }
+                              await executeAction(msgIndex, i, a, overridePlanId);
+                            }
+                          }}
+                        >
+                          <Text style={styles.confirmAllBtnText}>
+                            ✓ Alle bestätigen ({dm.pendingActions.filter((_, i) => !dm.confirmedActions?.has(i)).length})
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                     {dm.pendingActions.map((action, actionIndex) => {
                       const confirmed = dm.confirmedActions?.has(actionIndex);
                       return (
@@ -580,7 +628,10 @@ const styles = StyleSheet.create({
   confirmAddBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
   actionsBlock: { marginLeft: 8, marginBottom: 8, gap: 6, maxWidth: '90%' },
-  actionsTitle: { fontSize: 12, fontWeight: '700', color: '#888', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 },
+  actionsTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  actionsTitle: { fontSize: 12, fontWeight: '700', color: '#888', textTransform: 'uppercase', letterSpacing: 0.4 },
+  confirmAllBtn: { backgroundColor: GREEN, borderRadius: 8, paddingVertical: 5, paddingHorizontal: 10 },
+  confirmAllBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   actionCard: { backgroundColor: '#fff', borderWidth: 1, borderColor: BORDER, borderRadius: 12, padding: 12, gap: 8 },
   actionCardConfirmed: { backgroundColor: '#F1F8E9', borderColor: GREEN },
   actionDescription: { fontSize: 14, color: '#1A1A1A', lineHeight: 20 },
