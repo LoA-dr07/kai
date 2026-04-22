@@ -490,6 +490,14 @@ export default function AiChatScreen() {
             returnKeyType="send"
             onSubmitEditing={handleSend}
             blurOnSubmit={false}
+            {...(Platform.OS === 'web' ? {
+              onKeyDown: (e: any) => {
+                if (e.ctrlKey && e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSend();
+                }
+              },
+            } : {})}
           />
           <TouchableOpacity
             style={[styles.sendBtn, (!input.trim() || chatMutation.isPending) && styles.sendBtnDisabled]}
@@ -497,6 +505,7 @@ export default function AiChatScreen() {
             disabled={!input.trim() || chatMutation.isPending}
           >
             <Text style={styles.sendBtnText}>Senden</Text>
+            {Platform.OS === 'web' && <Text style={styles.sendBtnHint}>Strg+↵</Text>}
           </TouchableOpacity>
         </View>
       </View>
@@ -581,9 +590,10 @@ const styles = StyleSheet.create({
 
   inputBar: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, gap: 8, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: BORDER },
   inputField: { flex: 1, borderWidth: 1, borderColor: BORDER, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, backgroundColor: '#FAFAFA', maxHeight: 120 },
-  sendBtn: { backgroundColor: GREEN, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 10 },
+  sendBtn: { backgroundColor: GREEN, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 8, alignItems: 'center' },
   sendBtnDisabled: { backgroundColor: '#A5D6A7' },
   sendBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  sendBtnHint: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '500', marginTop: 1 },
 
   convModal: { flex: 1, backgroundColor: '#fff' },
   convModalWide: { maxWidth: 480, alignSelf: 'center', width: '100%' },
