@@ -92,18 +92,25 @@ function ItemRow({
   onDelete: () => void;
 }) {
   const qty = formatQty(item);
+  const isCustom = !!item.custom_meal_ref;
   return (
-    <View style={[rowStyles.row, item.is_checked && rowStyles.rowChecked]}>
+    <View style={[rowStyles.row, isCustom && rowStyles.rowCustom, item.is_checked && rowStyles.rowChecked]}>
       <TouchableOpacity onPress={onToggle} style={rowStyles.checkBtn} activeOpacity={0.7}>
-        <View style={[rowStyles.checkbox, item.is_checked && rowStyles.checkboxChecked]}>
+        <View style={[rowStyles.checkbox, isCustom && rowStyles.checkboxCustom, item.is_checked && rowStyles.checkboxChecked]}>
           {item.is_checked && <Text style={rowStyles.checkmark}>✓</Text>}
         </View>
       </TouchableOpacity>
       <View style={rowStyles.nameBlock}>
-        <Text style={[rowStyles.name, item.is_checked && rowStyles.nameChecked]} numberOfLines={1}>
-          {item.name}
-          {item.custom_meal_ref ? '  📝' : ''}
-        </Text>
+        <View style={rowStyles.nameRow}>
+          <Text style={[rowStyles.name, item.is_checked && rowStyles.nameChecked]} numberOfLines={1}>
+            {item.name}
+          </Text>
+          {isCustom && !item.is_checked && (
+            <View style={rowStyles.customBadge}>
+              <Text style={rowStyles.customBadgeText}>Freitext</Text>
+            </View>
+          )}
+        </View>
         {qty ? <Text style={rowStyles.qty}>{qty}</Text> : null}
       </View>
       <TouchableOpacity onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -682,6 +689,7 @@ const rowStyles = StyleSheet.create({
     borderColor: BORDER,
     gap: 10,
   },
+  rowCustom: { backgroundColor: '#FFF8E1', borderColor: '#F9A825', borderWidth: 1.5 },
   rowChecked: { backgroundColor: '#F5F5F5', borderColor: '#E0E0E0' },
   checkBtn: { padding: 2 },
   checkbox: {
@@ -693,11 +701,20 @@ const rowStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  checkboxCustom: { borderColor: '#F9A825' },
   checkboxChecked: { backgroundColor: GREEN, borderColor: GREEN },
   checkmark: { color: '#fff', fontSize: 13, fontWeight: '700' },
   nameBlock: { flex: 1 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   name: { fontSize: 15, color: '#1A1A1A', fontWeight: '500' },
   nameChecked: { color: '#AAA', textDecorationLine: 'line-through' },
   qty: { fontSize: 12, color: '#888', marginTop: 1 },
+  customBadge: {
+    backgroundColor: '#F9A825',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  customBadgeText: { fontSize: 11, color: '#fff', fontWeight: '700', letterSpacing: 0.3 },
   deleteBtn: { fontSize: 13, color: '#B71C1C', fontWeight: '700' },
 });
