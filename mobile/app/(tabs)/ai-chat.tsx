@@ -65,7 +65,7 @@ export default function AiChatScreen() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const inputFocused = useRef(false);
-  const handleSendRef = useRef(handleSend);
+  const handleSendRef = useRef<() => void>(() => {});
 
   // Keep ref in sync without re-running the keyboard effect
   useEffect(() => { handleSendRef.current = handleSend; });
