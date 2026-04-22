@@ -64,6 +64,24 @@ export default function AiChatScreen() {
   const [weekStart] = useState<Date>(() => getMondayOf(new Date()));
   const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  const inputFocused = useRef(false);
+  const handleSendRef = useRef(handleSend);
+
+  // Keep ref in sync without re-running the keyboard effect
+  useEffect(() => { handleSendRef.current = handleSend; });
+
+  // Ctrl+Enter on web: attach once, use refs so no stale closures
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (inputFocused.current && e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        handleSendRef.current();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const weekStartIso = isoDate(weekStart);
   const weekNum = getISOWeek(weekStart);
@@ -538,14 +556,8 @@ export default function AiChatScreen() {
             returnKeyType="send"
             onSubmitEditing={handleSend}
             blurOnSubmit={false}
-            {...(Platform.OS === 'web' ? {
-              onKeyDown: (e: any) => {
-                if (e.ctrlKey && e.key === 'Enter') {
-                  e.preventDefault();
-                  handleSend();
-                }
-              },
-            } : {})}
+            onFocus={() => { inputFocused.current = true; }}
+            onBlur={() => { inputFocused.current = false; }}
           />
           <TouchableOpacity
             style={[styles.sendBtn, (!input.trim() || chatMutation.isPending) && styles.sendBtnDisabled]}
