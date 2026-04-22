@@ -30,6 +30,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="shopping-list"
+        options={{
+          title: 'Einkaufsliste',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'cart' : 'cart-outline'} size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="ai-chat"
         options={{
           title: 'KI-Chat',

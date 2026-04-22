@@ -163,6 +163,7 @@ export interface MealPlanEntry {
   custom_meal: string | null;
   recipe: Recipe | null;
   assigned_user_ids: number[];
+  repeat_weekly: boolean;
 }
 
 export interface MealPlan {
@@ -179,6 +180,7 @@ export interface MealPlanEntryCreatePayload {
   recipe_id?: number | null;
   custom_meal?: string | null;
   assigned_user_ids?: number[];
+  repeat_weekly?: boolean;
 }
 
 export interface MealPlanEntryUpdatePayload {
@@ -187,6 +189,7 @@ export interface MealPlanEntryUpdatePayload {
   recipe_id?: number | null;
   custom_meal?: string | null;
   assigned_user_ids?: number[];
+  repeat_weekly?: boolean;
 }
 
 // --- AI Meal Plan Suggestion ---
@@ -213,6 +216,49 @@ export interface AiMealPlanSuggestion {
   entries: AiMealPlanSuggestionEntry[];
 }
 
+// --- Shopping List ---
+
+export interface ShoppingListItem {
+  id: number;
+  name: string;
+  amount: number | null;
+  unit: string | null;
+  is_checked: boolean;
+  is_manual: boolean;
+  sort_order: number;
+  custom_meal_ref: string | null;
+}
+
+export interface ShoppingList {
+  id: number;
+  household_id: number | null;
+  created_at: string;
+  items: ShoppingListItem[];
+}
+
+export interface GenerateShoppingListPayload {
+  date_from: string;
+  date_to: string;
+  merge: boolean;
+}
+
+// --- Conversations ---
+
+export interface Conversation {
+  id: number;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+}
+
+export interface ConversationMessage {
+  id: number;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
+}
+
 // --- AI Chat ---
 
 export interface ChatMessage {
@@ -227,12 +273,21 @@ export interface RecipeSuggestion {
   is_new_recipe: boolean;
 }
 
+export interface PendingAction {
+  type: 'add_meal_plan_entry' | 'delete_meal_plan_entry' | 'generate_shopping_list' | 'add_shopping_item' | 'create_recipe';
+  description: string;
+  data: Record<string, unknown>;
+}
+
 export interface AiChatRequest {
   messages: ChatMessage[];
   week_start_date?: string;
+  conversation_id?: number | null;
 }
 
 export interface AiChatResponse {
   reply: string;
   recipe_suggestions: RecipeSuggestion[];
+  pending_actions: PendingAction[];
+  conversation_id: number | null;
 }
