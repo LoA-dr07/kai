@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.recipe import Recipe, Ingredient, RecipeIngredient, Tag, RecipeRating
@@ -13,6 +14,7 @@ from app.schemas.recipe import (
     RecipeUrlImport, RecipeUrlPreview,
     RecipeBulkUrlItem, RecipeBulkUrlImport, BulkUrlImportResult, BulkUrlImportFailure,
     RecipeUrlPreviewResult, RecipeBulkPreviewResult,
+    TagRepairResult,
 )
 from app.utils.recipe_scraper import (
     scrape_recipe_url as _scrape_recipe_url,
@@ -120,14 +122,44 @@ def list_tags(db: Session = Depends(get_db)):
 
 @router.post("/tags", response_model=TagOut, status_code=status.HTTP_201_CREATED)
 def create_tag(payload: TagCreate, db: Session = Depends(get_db)):
-    existing = db.query(Tag).filter(Tag.name == payload.name).first()
+    existing = db.query(Tag).filter(func.lower(Tag.name) == payload.name.strip().lower()).first()
     if existing:
         return existing
-    tag = Tag(name=payload.name, is_predefined=False)
+    tag = Tag(name=payload.name.strip(), is_predefined=False)
     db.add(tag)
     db.commit()
     db.refresh(tag)
     return tag
+
+
+@router.post("/tags/repair", response_model=TagRepairResult)
+def repair_imported_tags(db: Session = Depends(get_db)):
+    """Re-link recipes whose tags are case-variant duplicates of predefined tags."""
+    predefined = db.query(Tag).filter(Tag.is_predefined == True).all()
+    merged = 0
+    affected: set[int] = set()
+
+    for pre_tag in predefined:
+        dups = (
+            db.query(Tag)
+            .filter(
+                Tag.is_predefined == False,
+                Tag.id != pre_tag.id,
+                func.lower(Tag.name) == pre_tag.name.lower(),
+            )
+            .all()
+        )
+        for dup in dups:
+            for recipe in list(dup.recipes):
+                if pre_tag not in recipe.tags:
+                    recipe.tags.append(pre_tag)
+                affected.add(recipe.id)
+            db.flush()
+            db.delete(dup)
+            merged += 1
+
+    db.commit()
+    return TagRepairResult(merged_tags=merged, affected_recipes=len(affected))
 
 
 # --- Recipes ---
@@ -227,12 +259,16 @@ def import_recipes(recipes: list[RecipeExportItem], db: Session = Depends(get_db
                 stars=rating.stars,
             ))
         for tag_name in item.tags:
-            tag = db.query(Tag).filter(Tag.name == tag_name).first()
+            normalized = tag_name.strip()
+            if not normalized:
+                continue
+            tag = db.query(Tag).filter(func.lower(Tag.name) == normalized.lower()).first()
             if not tag:
-                tag = Tag(name=tag_name)
+                tag = Tag(name=normalized)
                 db.add(tag)
                 db.flush()
-            recipe.tags.append(tag)
+            if tag not in recipe.tags:
+                recipe.tags.append(tag)
         created_ids.append(recipe.id)
         created += 1
     db.commit()
