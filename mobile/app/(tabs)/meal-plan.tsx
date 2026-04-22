@@ -339,6 +339,11 @@ export default function MealPlanScreen() {
               <Text style={styles.cancelMoveBtnText}>Abbrechen</Text>
             </TouchableOpacity>
           )}
+          {weekStartIso !== isoDate(getMondayOf(new Date())) && (
+            <TouchableOpacity onPress={() => { setWeekStart(getMondayOf(new Date())); setMoveMode(null); }} style={styles.todayBtn}>
+              <Text style={styles.todayBtnText}>Heute</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity onPress={() => setAiModalVisible(true)} style={styles.aiBtn}>
             <Text style={styles.aiBtnText}>KI ✨</Text>
           </TouchableOpacity>
@@ -703,6 +708,8 @@ const styles = StyleSheet.create({
   weekNavRight: { flexDirection: 'row', alignItems: 'center' },
   cancelMoveBtn: { borderWidth: 1.5, borderColor: '#888', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4, marginRight: 6 },
   cancelMoveBtnText: { fontSize: 13, color: '#555', fontWeight: '600' },
+  todayBtn: { borderWidth: 1.5, borderColor: GREEN, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4, marginRight: 6 },
+  todayBtnText: { fontSize: 13, color: GREEN, fontWeight: '700' },
   aiBtn: { backgroundColor: GREEN, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, marginRight: 2 },
   aiBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
