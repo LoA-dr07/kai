@@ -129,7 +129,7 @@ def _build_user_message(
             if recipe.ratings else "–"
         )
         prep = f"{recipe.prep_time_minutes}min" if recipe.prep_time_minutes else "?"
-        parts = [f"[{recipe.id}] {recipe.name}", prep, f"⭐{avg_rating}"]
+        parts = [f"[{recipe.id}] {recipe.name}", prep, f"⭐{avg_rating}", f"{recipe.servings} Portionen"]
         if tag_names:
             parts.append(f"Tags: {tag_names}")
         lines.append("  " + " | ".join(parts))
@@ -195,7 +195,7 @@ def _build_chat_system_message(
         )
         ing_count = len(recipe.ingredients)
         prep = f"{recipe.prep_time_minutes}min" if recipe.prep_time_minutes else "?"
-        parts = [f"[{recipe.id}] {recipe.name}", f"{prep}", f"⭐{avg_rating}", f"{ing_count} Zutaten"]
+        parts = [f"[{recipe.id}] {recipe.name}", f"{prep}", f"⭐{avg_rating}", f"{recipe.servings} Portionen", f"{ing_count} Zutaten"]
         if tag_names:
             parts.append(f"Tags: {tag_names}")
         lines.append("  " + " | ".join(parts))
