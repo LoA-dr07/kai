@@ -516,7 +516,16 @@ export default function AiChatScreen() {
                                 await executeAction(msgIndex, i, a, overridePlanId);
                                 count++;
                               }
-                              if (count > 0) showAlert('Fertig', `${count} Aktion${count !== 1 ? 'en' : ''} ausgeführt.`);
+                              if (count > 0) {
+                                const weeks = Object.keys(planIdCache);
+                                const weekHint = weeks.length > 0
+                                  ? `\n\nBitte im Wochenplan zur richtigen Woche navigieren (${weeks.map(w => {
+                                      const d = new Date(w);
+                                      return `KW ${getISOWeek(d)} ${d.getFullYear()}`;
+                                    }).join(', ')}).`
+                                  : '';
+                                showAlert('Fertig', `${count} Aktion${count !== 1 ? 'en' : ''} ausgeführt.${weekHint}`);
+                              }
                             } catch (err) {
                               const detail = axios.isAxiosError(err) && err.response?.data?.detail
                                 ? String(err.response.data.detail)
