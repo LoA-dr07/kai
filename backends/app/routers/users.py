@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.user import User
@@ -47,23 +48,31 @@ def update_user(user_id: int, payload: UserUpdate, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="User not found")
 
     if payload.name is not None:
+        new_name = payload.name.strip()
         old_name = user.name
-        user.name = payload.name
+        user.name = new_name
         # Rename matching family tag
-        tag = (
-            db.query(Tag).filter(Tag.name == old_name, Tag.category == "family").first()
-        )
+        tag = db.query(Tag).filter(
+            func.lower(Tag.name) == old_name.lower(), Tag.category == "family"
+        ).first()
         if tag:
-            # If a tag with the new name already exists, delete the old one instead of renaming
-            conflict = (
-                db.query(Tag)
-                .filter(Tag.name == payload.name, Tag.category == "family")
-                .first()
-            )
+            # Check for any existing tag with the new name (including non-family import tags)
+            conflict = db.query(Tag).filter(
+                func.lower(Tag.name) == new_name.lower(), Tag.id != tag.id
+            ).first()
             if conflict:
+                # Merge: carry over recipes from the old family tag to the conflict tag,
+                # then promote the conflict tag to predefined family status
+                for recipe in list(tag.recipes):
+                    if conflict not in recipe.tags:
+                        recipe.tags.append(conflict)
+                conflict.is_predefined = True
+                conflict.category = "family"
+                conflict.name = new_name  # normalize casing
+                db.flush()
                 db.delete(tag)
             else:
-                tag.name = payload.name
+                tag.name = new_name
 
     if payload.avatar_color is not None:
         user.avatar_color = payload.avatar_color
