@@ -172,3 +172,9 @@ class RecipeUrlPreviewResult(BaseModel):
 
 class RecipeBulkPreviewResult(BaseModel):
     results: list[RecipeUrlPreviewResult]
+
+
+class TagRepairResult(BaseModel):
+    merged_tags: int
+    affected_recipes: int
+    orphaned_tags_removed: int
