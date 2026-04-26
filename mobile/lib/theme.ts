@@ -1,4 +1,4 @@
-/** Shared color and style constants for the meal planner app. */
+/** Shared color and style constants for the KAI app. */
 
 export const Colors = {
   green: '#2E7D32',
