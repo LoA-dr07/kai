@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+
+    <!-- Dark indigo background gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#16133E"/>
+      <stop offset="100%" stop-color="#1E1A5C"/>
+    </linearGradient>
+
+    <!-- Cyan radial glow — illuminates the right (AI) half -->
+    <radialGradient id="glowGrad" cx="72%" cy="50%" r="48%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Subtle vignette to ground the composition -->
+    <radialGradient id="vignette" cx="50%" cy="50%" r="70%" gradientUnits="objectBoundingBox">
+      <stop offset="0%"   stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.28"/>
+    </radialGradient>
+
+  </defs>
+
+  <!-- ─── Background ─────────────────────────────── -->
+  <rect width="1024" height="1024" rx="185" ry="185" fill="url(#bgGrad)"/>
+  <rect width="1024" height="1024" rx="185" ry="185" fill="url(#glowGrad)"/>
+  <rect width="1024" height="1024" rx="185" ry="185" fill="url(#vignette)"/>
+
+  <!-- ─── Wordmark ────────────────────────────────── -->
+  <!--
+    K  →  white   (#FFFFFF)  — the familiar, warm part of the name
+    AI →  cyan    (#06B6D4)  — signals the AI identity embedded in the name
+  -->
+  <text
+    x="512"
+    y="600"
+    text-anchor="middle"
+    font-family="'Helvetica Neue', 'Arial Black', Arial, sans-serif"
+    font-weight="900"
+    font-size="380"
+    letter-spacing="14">
+    <tspan fill="#FFFFFF">K</tspan><tspan fill="#06B6D4">AI</tspan>
+  </text>
+
+  <!-- ─── Accent: three connected nodes (neural / AI motif) ──── -->
+  <!-- Node 1 -->
+  <circle cx="395" cy="718" r="9" fill="#06B6D4" fill-opacity="0.60"/>
+  <!-- Connector 1–2 -->
+  <line x1="404" y1="718" x2="503" y2="718"
+        stroke="#06B6D4" stroke-width="2" stroke-opacity="0.28" stroke-linecap="round"/>
+  <!-- Node 2 -->
+  <circle cx="512" cy="718" r="9" fill="#06B6D4" fill-opacity="0.38"/>
+  <!-- Connector 2–3 -->
+  <line x1="521" y1="718" x2="620" y2="718"
+        stroke="#06B6D4" stroke-width="2" stroke-opacity="0.18" stroke-linecap="round"/>
+  <!-- Node 3 -->
+  <circle cx="629" cy="718" r="9" fill="#06B6D4" fill-opacity="0.22"/>
+
+</svg>
