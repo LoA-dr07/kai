@@ -7,7 +7,7 @@ import { AppSchema } from './schema';
 
 export const db = new PowerSyncDatabase({
   schema: AppSchema,
-  database: { dbFilename: 'meal-planner.db' },
+  database: { dbFilename: 'kai.db' },
 });
 
 export const connector = new AppBackendConnector();
