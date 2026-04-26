@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
-    "scheme": "mealplanner",
+    "name": "KAI",
+    "slug": "kai",
+    "scheme": "kai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,15 +10,15 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#16133E"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "package": "com.loa.mealplanner",
+      "package": "com.loa.kai",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#16133E",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
