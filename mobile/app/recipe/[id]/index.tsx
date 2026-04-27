@@ -15,6 +15,7 @@ import { showAlert } from '../../../lib/alert';
 import { useRecipe, useDeleteRecipe, useRateRecipe, useUpdateIngredient, useUpdateRecipeIngredient, useIngredients, useUpdateRecipe } from '../../../lib/hooks/useRecipes';
 import { useUsers } from '../../../lib/hooks/useUsers';
 import type { Tag, User } from '../../../lib/types';
+import { ErrorScreen } from '../../../components/ErrorScreen';
 import { Tooltip } from '../../../components/Tooltip';
 import { Colors } from '../../../lib/theme';
 import { AddToMealPlanModal } from '../../../components/AddToMealPlanModal';
@@ -133,11 +134,7 @@ export default function RecipeDetailScreen() {
   }
 
   if (error || !recipe) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Rezept nicht gefunden.</Text>
-      </View>
-    );
+    return <ErrorScreen message="Rezept nicht gefunden." />;
   }
 
   function handleDelete() {
@@ -496,7 +493,6 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingBottom: 48 },
   contentWide: { maxWidth: 800, alignSelf: 'center', width: '100%' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: { fontSize: 16, color: '#D32F2F' },
   description: {
     fontSize: 16,
     color: '#444',

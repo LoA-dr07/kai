@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { ErrorScreen } from '../../../components/ErrorScreen';
 import { useRecipe } from '../../../lib/hooks/useRecipes';
 import type { RecipeIngredient } from '../../../lib/types';
 import { Colors } from '../../../lib/theme';
@@ -35,11 +36,7 @@ export default function CookScreen() {
   }
 
   if (error || !recipe) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Rezept nicht gefunden.</Text>
-      </View>
-    );
+    return <ErrorScreen message="Rezept nicht gefunden." />;
   }
 
   const ingredientsPanel = (
@@ -146,7 +143,6 @@ const BORDER = Colors.border;
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F0F4F0' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: { fontSize: 16, color: '#D32F2F' },
 
   // ── Split ───────────────────────────────────────────────────────
   splitWrapper: {
