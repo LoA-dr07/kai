@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { ErrorScreen } from '../../components/ErrorScreen';
 import { RatingSection } from '../../components/RatingSection';
 import { Tooltip } from '../../components/Tooltip';
 import {
@@ -175,8 +176,8 @@ function TagSection({
 
 export default function BulkImportScreen() {
   const router = useRouter();
-  const { data: allTags = [] } = useTags();
-  const { data: users = [] } = useUsers();
+  const { data: allTags = [], isLoading: tagsLoading, error: tagsError } = useTags();
+  const { data: users = [], isLoading: usersLoading, error: usersError } = useUsers();
   const bulkPreview = useBulkPreviewFromUrl();
   const bulkImport = useBulkImportFromUrl();
   const createTag = useCreateTag();
@@ -546,6 +547,26 @@ export default function BulkImportScreen() {
             </Text>
           )}
         </ScrollView>
+      </GestureHandlerRootView>
+    );
+  }
+
+  if (tagsLoading || usersLoading) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Stack.Screen options={{ title: 'Rezepte aus URLs importieren' }} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={GREEN} />
+        </View>
+      </GestureHandlerRootView>
+    );
+  }
+
+  if (tagsError || usersError) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Stack.Screen options={{ title: 'Rezepte aus URLs importieren' }} />
+        <ErrorScreen message="Daten konnten nicht geladen werden." />
       </GestureHandlerRootView>
     );
   }

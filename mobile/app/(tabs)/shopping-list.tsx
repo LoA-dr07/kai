@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ErrorScreen } from '../../components/ErrorScreen';
 import {
   View,
   Text,
@@ -128,7 +129,7 @@ export default function ShoppingListScreen() {
   const isWide = width >= 768;
   const isUltraWide = width >= 2560;
 
-  const { data: list, isLoading, refetch } = useShoppingList();
+  const { data: list, isLoading, refetch, error } = useShoppingList();
   const generate = useGenerateShoppingList();
   const addItem = useAddShoppingItem();
   const toggleItem = useToggleShoppingItem();
@@ -294,6 +295,8 @@ export default function ShoppingListScreen() {
 
       {isLoading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={GREEN} size="large" />
+      ) : error ? (
+        <ErrorScreen message="Einkaufsliste konnte nicht geladen werden." onRetry={refetch} />
       ) : !list || list.items.length === 0 ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyIcon}>🛒</Text>

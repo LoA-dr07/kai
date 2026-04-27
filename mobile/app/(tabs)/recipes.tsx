@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { ErrorScreen } from '../../components/ErrorScreen';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -169,14 +170,7 @@ export default function RecipesScreen() {
   }
 
   if (error) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Fehler beim Laden der Rezepte.</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
-          <Text style={styles.retryBtnText}>Erneut versuchen</Text>
-        </TouchableOpacity>
-      </View>
-    );
+    return <ErrorScreen message="Rezepte konnten nicht geladen werden." onRetry={refetch} />;
   }
 
   return (
@@ -403,9 +397,6 @@ const styles = StyleSheet.create({
   emptyContainer: { alignItems: 'center', marginTop: 80 },
   emptyTitle: { fontSize: 18, fontWeight: '600', color: '#444', marginBottom: 8 },
   emptySubtitle: { fontSize: 15, color: '#888' },
-  errorText: { fontSize: 16, color: '#D32F2F', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: GREEN },
-  retryBtnText: { color: GREEN, fontSize: 15, fontWeight: '500' },
   fabGroup: {
     position: 'absolute',
     bottom: 24,
