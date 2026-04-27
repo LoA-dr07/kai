@@ -1,7 +1,8 @@
-import { ActivityIndicator, View, Text } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { showAlert } from '../../../lib/alert';
+import { ErrorScreen } from '../../../components/ErrorScreen';
 import RecipeForm from '../../../components/RecipeForm';
 import { useRecipe, useUpdateRecipe } from '../../../lib/hooks/useRecipes';
 
@@ -24,9 +25,7 @@ export default function EditRecipeScreen() {
   if (!recipe) {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: '#D32F2F', fontSize: 16 }}>Rezept nicht gefunden.</Text>
-        </View>
+        <ErrorScreen message="Rezept nicht gefunden." />
       </GestureHandlerRootView>
     );
   }
