@@ -1,8 +1,9 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { showAlert } from '../../lib/alert';
+import { ErrorScreen } from '../../components/ErrorScreen';
 import RecipeForm from '../../components/RecipeForm';
 import { RatingSection } from '../../components/RatingSection';
 import { useCreateRecipe } from '../../lib/hooks/useRecipes';
@@ -16,7 +17,7 @@ export default function ImportPreviewScreen() {
   const { data } = useLocalSearchParams<{ data: string }>();
   const router = useRouter();
   const createRecipe = useCreateRecipe();
-  const { data: users = [] } = useUsers();
+  const { data: users = [], isLoading: usersLoading, error: usersError } = useUsers();
   const [ratings, setRatings] = useState<Record<number, number>>({});
 
   function handleRate(userId: number, stars: number | undefined) {
@@ -26,6 +27,24 @@ export default function ImportPreviewScreen() {
       else next[userId] = stars;
       return next;
     });
+  }
+
+  if (usersLoading) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={Colors.green} />
+        </View>
+      </GestureHandlerRootView>
+    );
+  }
+
+  if (usersError) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ErrorScreen message="Nutzer konnten nicht geladen werden." />
+      </GestureHandlerRootView>
+    );
   }
 
   if (!data) {

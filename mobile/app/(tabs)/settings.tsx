@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ErrorScreen } from '../../components/ErrorScreen';
 import {
   View,
   Text,
@@ -673,14 +674,22 @@ export default function SettingsScreen() {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
   const isUltraWide = width >= 2560;
-  const { data: household, isLoading: loadingHousehold } = useHousehold();
-  const { data: users, isLoading: loadingUsers } = useUsers();
+  const { data: household, isLoading: loadingHousehold, error: errorHousehold } = useHousehold();
+  const { data: users, isLoading: loadingUsers, error: errorUsers } = useUsers();
   const [showAddForm, setShowAddForm] = useState(false);
 
   if (loadingHousehold || loadingUsers) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={GREEN} />
+      </View>
+    );
+  }
+
+  if (errorHousehold || errorUsers) {
+    return (
+      <View style={styles.center}>
+        <ErrorScreen message="Einstellungen konnten nicht geladen werden." />
       </View>
     );
   }

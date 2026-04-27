@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { ErrorScreen } from '../../components/ErrorScreen';
 import {
   View,
   Text,
@@ -124,7 +125,7 @@ export default function MealPlanScreen() {
   const weekNum = getISOWeek(weekStart);
   const year = weekStart.getFullYear();
 
-  const { data: allPlans, isLoading } = useMealPlans();
+  const { data: allPlans, isLoading, error } = useMealPlans();
   const { data: recipes } = useRecipes();
   const { data: users = [] } = useUsers();
   const { data: tags = [] } = useTags();
@@ -365,6 +366,8 @@ export default function MealPlanScreen() {
 
       {isLoading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={GREEN} size="large" />
+      ) : error ? (
+        <ErrorScreen message="Wochenplan konnte nicht geladen werden." />
       ) : (
         <ScrollView contentContainerStyle={[styles.scrollContent, isWide && styles.scrollContentWide, isUltraWide && { maxWidth: containerMaxWidth + CONTENT_PADDING * 2 }]}>
           <View style={isWide ? styles.dayGrid : undefined}>
