@@ -1,5 +1,11 @@
 # Meal-Planner – Claude Code Konfiguration
 
+## Definition of Done
+
+**Pflicht:** Bei jeder Entwicklungsaufgabe muss die `DOD.md` im Projektstamm eingehalten werden. Das umfasst insbesondere die Pflicht, nach jeder Implementierung eine konkrete Testanleitung (Schritte, Erwartungen, Fehlerhinweise) bereitzustellen.
+
+---
+
 ## Projektübersicht
 
 Familien-Mahlzeitenplaner für gemeinsame Nutzung im Haushalt (3 Mitglieder).
