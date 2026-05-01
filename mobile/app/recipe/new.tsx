@@ -1,4 +1,3 @@
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
 import { showAlert } from '../../lib/alert';
 import RecipeForm from '../../components/RecipeForm';
@@ -27,10 +26,8 @@ function NewRecipeScreenContent() {
 
 export default function NewRecipeScreen() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ScreenErrorBoundary>
-        <NewRecipeScreenContent />
-      </ScreenErrorBoundary>
-    </GestureHandlerRootView>
+    <ScreenErrorBoundary>
+      <NewRecipeScreenContent />
+    </ScreenErrorBoundary>
   );
 }
