@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
 import {
   ActivityIndicator,
   ScrollView,
@@ -174,7 +175,7 @@ function TagSection({
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
-export default function BulkImportScreen() {
+function BulkImportScreenContent() {
   const router = useRouter();
   const { data: allTags = [], isLoading: tagsLoading, error: tagsError } = useTags();
   const { data: users = [], isLoading: usersLoading, error: usersError } = useUsers();
@@ -887,3 +888,11 @@ const styles = StyleSheet.create({
   failedUrl: { fontSize: 12, color: '#555', marginBottom: 3 },
   failedError: { fontSize: 12, color: RED },
 });
+
+export default function BulkImportScreen() {
+  return (
+    <ScreenErrorBoundary>
+      <BulkImportScreenContent />
+    </ScreenErrorBoundary>
+  );
+}

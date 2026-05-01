@@ -3,10 +3,11 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { showAlert } from '../../../lib/alert';
 import { ErrorScreen } from '../../../components/ErrorScreen';
+import { ScreenErrorBoundary } from '../../../components/ScreenErrorBoundary';
 import RecipeForm from '../../../components/RecipeForm';
 import { useRecipe, useUpdateRecipe } from '../../../lib/hooks/useRecipes';
 
-export default function EditRecipeScreen() {
+function EditRecipeScreenContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const recipeId = Number(id);
@@ -61,5 +62,13 @@ export default function EditRecipeScreen() {
         submitLabel="Änderungen speichern"
       />
     </GestureHandlerRootView>
+  );
+}
+
+export default function EditRecipeScreen() {
+  return (
+    <ScreenErrorBoundary>
+      <EditRecipeScreenContent />
+    </ScreenErrorBoundary>
   );
 }
