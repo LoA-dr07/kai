@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { showAlert } from '../../lib/alert';
 import { ErrorScreen } from '../../components/ErrorScreen';
+import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
 import RecipeForm from '../../components/RecipeForm';
 import { RatingSection } from '../../components/RatingSection';
 import { useCreateRecipe } from '../../lib/hooks/useRecipes';
@@ -13,7 +14,7 @@ import type { RecipeUrlPreview } from '../../lib/types';
 import type { FormIngredient } from '../../components/RecipeForm';
 import { Colors } from '../../lib/theme';
 
-export default function ImportPreviewScreen() {
+function ImportPreviewScreenContent() {
   const { data } = useLocalSearchParams<{ data: string }>();
   const router = useRouter();
   const createRecipe = useCreateRecipe();
@@ -135,3 +136,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 });
+
+export default function ImportPreviewScreen() {
+  return (
+    <ScreenErrorBoundary>
+      <ImportPreviewScreenContent />
+    </ScreenErrorBoundary>
+  );
+}
