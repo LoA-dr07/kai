@@ -1,7 +1,7 @@
 {
   "name": "mobile",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "./index.js",
   "scripts": {
     "start": "expo start",
     "mobile": "SET REACT_NATIVE_PACKAGER_HOSTNAME=192.168.178.83 && expo start --go --lan",
