@@ -1,5 +1,4 @@
 import { ActivityIndicator, View, Text, StyleSheet } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { showAlert } from '../../lib/alert';
@@ -32,29 +31,21 @@ function ImportPreviewScreenContent() {
 
   if (usersLoading) {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={Colors.green} />
-        </View>
-      </GestureHandlerRootView>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={Colors.green} />
+      </View>
     );
   }
 
   if (usersError) {
-    return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <ErrorScreen message="Nutzer konnten nicht geladen werden." />
-      </GestureHandlerRootView>
-    );
+    return <ErrorScreen message="Nutzer konnten nicht geladen werden." />;
   }
 
   if (!data) {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: '#D32F2F', fontSize: 16 }}>Keine Importdaten vorhanden.</Text>
-        </View>
-      </GestureHandlerRootView>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: '#D32F2F', fontSize: 16 }}>Keine Importdaten vorhanden.</Text>
+      </View>
     );
   }
 
@@ -63,11 +54,9 @@ function ImportPreviewScreenContent() {
     preview = JSON.parse(data);
   } catch {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: '#D32F2F', fontSize: 16 }}>Importdaten konnten nicht gelesen werden.</Text>
-        </View>
-      </GestureHandlerRootView>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: '#D32F2F', fontSize: 16 }}>Importdaten konnten nicht gelesen werden.</Text>
+      </View>
     );
   }
 
@@ -87,35 +76,33 @@ function ImportPreviewScreenContent() {
   ) : null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <RecipeForm
-        initialName={preview.name}
-        initialDescription={preview.description ?? ''}
-        initialServings={preview.servings}
-        initialPrepTime={preview.prep_time_minutes ?? null}
-        initialIngredients={initialIngredients}
-        extraContent={ratingsContent}
-        onSubmit={async formData => {
-          try {
-            const recipe = await createRecipe.mutateAsync({
-              ...formData,
-              source_url: preview.source_url ?? null,
+    <RecipeForm
+      initialName={preview.name}
+      initialDescription={preview.description ?? ''}
+      initialServings={preview.servings}
+      initialPrepTime={preview.prep_time_minutes ?? null}
+      initialIngredients={initialIngredients}
+      extraContent={ratingsContent}
+      onSubmit={async formData => {
+        try {
+          const recipe = await createRecipe.mutateAsync({
+            ...formData,
+            source_url: preview.source_url ?? null,
+          });
+          for (const [uid, stars] of Object.entries(ratings)) {
+            await api.post(`/recipes/${recipe.id}/ratings`, {
+              user_id: Number(uid),
+              stars,
             });
-            for (const [uid, stars] of Object.entries(ratings)) {
-              await api.post(`/recipes/${recipe.id}/ratings`, {
-                user_id: Number(uid),
-                stars,
-              });
-            }
-            router.replace(`/recipe/${recipe.id}`);
-          } catch {
-            showAlert('Fehler', 'Rezept konnte nicht gespeichert werden.');
           }
-        }}
-        isSubmitting={createRecipe.isPending}
-        submitLabel="Rezept speichern"
-      />
-    </GestureHandlerRootView>
+          router.replace(`/recipe/${recipe.id}`);
+        } catch {
+          showAlert('Fehler', 'Rezept konnte nicht gespeichert werden.');
+        }
+      }}
+      isSubmitting={createRecipe.isPending}
+      submitLabel="Rezept speichern"
+    />
   );
 }
 

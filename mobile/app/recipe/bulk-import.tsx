@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
 import {
   ActivityIndicator,
@@ -382,7 +381,7 @@ function BulkImportScreenContent() {
   if (step === 'results' && results) {
     const totalFailed = results.failed.length + previewErrors.length;
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <>
         <Stack.Screen options={{ title: 'Import-Ergebnis' }} />
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
           <View style={styles.card}>
@@ -430,7 +429,7 @@ function BulkImportScreenContent() {
             <Text style={styles.secondaryBtnText}>Weiteren Import starten</Text>
           </TouchableOpacity>
         </ScrollView>
-      </GestureHandlerRootView>
+      </>
     );
   }
 
@@ -440,7 +439,7 @@ function BulkImportScreenContent() {
 
   if (step === 'configure') {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <>
         <Stack.Screen
           options={{
             title: `${configs.length} Rezept${configs.length !== 1 ? 'e' : ''} konfigurieren`,
@@ -548,27 +547,27 @@ function BulkImportScreenContent() {
             </Text>
           )}
         </ScrollView>
-      </GestureHandlerRootView>
+      </>
     );
   }
 
   if (tagsLoading || usersLoading) {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <>
         <Stack.Screen options={{ title: 'Rezepte aus URLs importieren' }} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={GREEN} />
         </View>
-      </GestureHandlerRootView>
+      </>
     );
   }
 
   if (tagsError || usersError) {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <>
         <Stack.Screen options={{ title: 'Rezepte aus URLs importieren' }} />
         <ErrorScreen message="Daten konnten nicht geladen werden." />
-      </GestureHandlerRootView>
+      </>
     );
   }
 
