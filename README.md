@@ -119,38 +119,23 @@ npx expo start --web
 
 Voraussetzung: PC und Handy im selben WLAN.
 
+`mobile/.env` muss gesetzt sein:
+```env
+EXPO_PUBLIC_API_URL=https://meal-planner-api-long-feather-1592.fly.dev
+EXPO_PUBLIC_POWERSYNC_URL=https://<instanz>.powersync.journeyapps.com
+```
+
 ```powershell
-# Terminal 1: LAN-IP ermitteln (ipconfig → IPv4-Adresse des WLAN-Adapters)
-# mobile/.env anpassen:
-# EXPO_PUBLIC_API_URL=http://192.168.x.x:8000  ← nur für lokalen Backend-Betrieb
-
-# Terminal 2: Backend lokal starten (optional, alternativ fly.io nutzen)
-cd backends
-.\venv\Scripts\Activate.ps1
-uvicorn app.main:app --reload --host 0.0.0.0
-
-# Terminal 3: Expo starten
+# LAN-IP des PCs ermitteln (ipconfig → IPv4-Adresse des WLAN-Adapters)
+# Expo starten
 cd mobile
 $env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.x.x"; npx expo start --go --lan
+# Alternativ: npm run mobile
 ```
 
 QR-Code mit der **Expo Go App** scannen.
 
-> **Tipp:** Für Mobile-Tests kann `EXPO_PUBLIC_API_URL` auch auf `https://meal-planner-api-long-feather-1592.fly.dev` zeigen – dann ist kein lokales Backend nötig.
-
-### Lokale Entwicklung (Backend + Web)
-
-```powershell
-# Terminal 1: Backend
-cd backends
-.\venv\Scripts\Activate.ps1
-uvicorn app.main:app --reload --host 0.0.0.0
-
-# Terminal 2: Frontend
-cd mobile
-# mobile/.env: EXPO_PUBLIC_API_URL=http://localhost:8000
-npx expo start --web
-```
+> **Hinweis:** Das Backend läuft auf fly.io – kein lokales Backend nötig. Offline-Reads laufen über PowerSync (lokales SQLite auf dem Gerät).
 
 ---
 
