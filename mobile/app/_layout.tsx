@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { Component, useEffect, useState } from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PowerSyncContext } from '@powersync/react';
 
@@ -11,12 +11,17 @@ import { Colors } from '../lib/theme';
 
 // ─── Global unhandled-error overlay ─────────────────────────────────────────
 
-function GlobalErrorOverlay({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+function GlobalErrorOverlay({ message, stack, onDismiss }: { message: string; stack?: string; onDismiss: () => void }) {
   return (
     <View style={overlayStyles.backdrop} pointerEvents="box-none">
       <View style={overlayStyles.box}>
         <Text style={overlayStyles.title}>Unbehandelter Fehler</Text>
-        <Text style={overlayStyles.msg} selectable>{message}</Text>
+        <ScrollView style={overlayStyles.scroll} persistentScrollbar>
+          <Text style={overlayStyles.msg} selectable>{message}</Text>
+          {stack ? (
+            <Text style={overlayStyles.stack} selectable>{stack}</Text>
+          ) : null}
+        </ScrollView>
         <TouchableOpacity style={overlayStyles.btn} onPress={onDismiss}>
           <Text style={overlayStyles.btnText}>Schließen</Text>
         </TouchableOpacity>
@@ -39,6 +44,7 @@ const overlayStyles = StyleSheet.create({
     padding: 24,
     margin: 24,
     maxWidth: 480,
+    maxHeight: '80%',
     width: '100%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -47,7 +53,9 @@ const overlayStyles = StyleSheet.create({
     elevation: 10,
   },
   title: { fontSize: 16, fontWeight: '700', color: Colors.red, marginBottom: 10 },
-  msg: { fontSize: 13, color: '#444', lineHeight: 18, marginBottom: 20 },
+  scroll: { maxHeight: 300, marginBottom: 16 },
+  msg: { fontSize: 13, color: '#444', lineHeight: 18, marginBottom: 8 },
+  stack: { fontSize: 10, color: '#888', lineHeight: 14, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
   btn: { backgroundColor: Colors.green, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
   btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });
@@ -81,7 +89,7 @@ class ErrorBoundary extends Component<
 
 export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());
-  const [globalError, setGlobalError] = useState<string | null>(null);
+  const [globalError, setGlobalError] = useState<{ message: string; stack?: string } | null>(null);
 
   useEffect(() => {
     // Catch unhandled JS errors (native) and promise rejections (web+native)
@@ -92,15 +100,21 @@ export default function RootLayout() {
 
     if (typeof global.ErrorUtils !== 'undefined') {
       global.ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
-        setGlobalError(`${isFatal ? '[Fatal] ' : ''}${error?.message ?? String(error)}`);
+        setGlobalError({
+          message: `${isFatal ? '[Fatal] ' : ''}${error?.message ?? String(error)}`,
+          stack: error?.stack,
+        });
         if (!isFatal && prevHandler) prevHandler(error, isFatal);
       });
     }
 
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const onRejection = (e: PromiseRejectionEvent) => {
-        const msg = e.reason instanceof Error ? e.reason.message : String(e.reason);
-        setGlobalError(msg);
+        const err = e.reason instanceof Error ? e.reason : null;
+        setGlobalError({
+          message: err ? err.message : String(e.reason),
+          stack: err?.stack,
+        });
       };
       window.addEventListener('unhandledrejection', onRejection);
       return () => {
@@ -169,7 +183,8 @@ export default function RootLayout() {
       </ErrorBoundary>
       {globalError && (
         <GlobalErrorOverlay
-          message={globalError}
+          message={globalError.message}
+          stack={globalError.stack}
           onDismiss={() => setGlobalError(null)}
         />
       )}
