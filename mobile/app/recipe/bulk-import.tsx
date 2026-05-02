@@ -576,7 +576,7 @@ function BulkImportScreenContent() {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <>
       <Stack.Screen options={{ title: 'Rezepte aus URLs importieren' }} />
       <ScrollView
         style={styles.container}
@@ -680,7 +680,7 @@ function BulkImportScreenContent() {
           )}
         </TouchableOpacity>
       </ScrollView>
-    </GestureHandlerRootView>
+    </>
   );
 }
 
