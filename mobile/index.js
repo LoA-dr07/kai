@@ -1,68 +1,60 @@
 // Custom entry point – must be the very first code executed.
+
+// ---------------------------------------------------------------------------
+// 1. Patch TextDecoder – MUST run before any other require.
 //
-// 1. react-native-url-polyfill replaces whatwg-url with an implementation
-//    that works in Hermes / React Native.  Without this, navigating to any
-//    Stack screen (recipe detail, bulk-import, …) crashes with:
-//    "Cannot read property 'decode' of undefined" inside URLStateMachine,
-//    triggered by React Navigation's getStateFromPath → URL constructor.
-require('react-native-url-polyfill/auto');
-
-// 2. Ensure TextDecoder is available on both global and globalThis.
-// Some PowerSync internals capture it from globalThis at class-init time.
-if (typeof global.TextDecoder === 'undefined' || typeof globalThis.TextDecoder === 'undefined') {
-  const existing =
-    (typeof global.TextDecoder === 'function' && global.TextDecoder) ||
-    (typeof globalThis !== 'undefined' && typeof globalThis.TextDecoder === 'function' && globalThis.TextDecoder) ||
-    null;
-
-  if (existing) {
-    global.TextDecoder = existing;
-    if (typeof globalThis !== 'undefined') globalThis.TextDecoder = existing;
-  } else {
-    // Minimal UTF-8 polyfill for environments that truly lack TextDecoder.
-    const polyfillDecoder = class TextDecoder {
-      decode(input) {
-        if (!input) return '';
-        const bytes =
-          input instanceof Uint8Array
-            ? input
-            : new Uint8Array(
-                input instanceof ArrayBuffer ? input : input.buffer ?? input
-              );
-        let out = '';
-        let i = 0;
-        while (i < bytes.length) {
-          const b = bytes[i++];
-          if (b < 0x80) {
-            out += String.fromCharCode(b);
-          } else if ((b & 0xe0) === 0xc0) {
-            out += String.fromCharCode(((b & 0x1f) << 6) | (bytes[i++] & 0x3f));
-          } else if ((b & 0xf0) === 0xe0) {
-            const c1 = bytes[i++], c2 = bytes[i++];
-            out += String.fromCharCode(((b & 0x0f) << 12) | ((c1 & 0x3f) << 6) | (c2 & 0x3f));
-          } else {
-            i += 3; // skip 4-byte sequences (surrogate pairs not needed here)
-          }
-        }
-        return out;
-      }
-    };
-    global.TextDecoder = polyfillDecoder;
-    if (typeof globalThis !== 'undefined') globalThis.TextDecoder = polyfillDecoder;
+// whatwg-url's URLStateMachine (used by both whatwg-url v5 and
+// whatwg-url-without-unicode v8) creates a module-level decoder:
+//   new TextDecoder("utf-8", { fatal: false, ignoreBOM: false })
+//
+// Hermes's native TextDecoder does not support the 'ignoreBOM' option and
+// throws a TypeError.  The throw is caught silently, leaving utf8Decoder as
+// undefined.  The first call to utf8Decoder.decode() then crashes with:
+//   [Fatal] Cannot read property 'decode' of undefined
+//
+// Fix: wrap the native TextDecoder so unsupported options are stripped before
+// the native constructor is called.  All decoding is still delegated to the
+// native implementation so behaviour is unchanged.
+// ---------------------------------------------------------------------------
+(function patchTextDecoder() {
+  if (typeof globalThis.TextDecoder !== 'function') return;
+  const Native = globalThis.TextDecoder;
+  function SafeTextDecoder(encoding, options) {
+    // Pass only 'fatal' – the only option Hermes reliably supports.
+    // 'ignoreBOM' and others are silently dropped.
+    const safeOpts = options ? { fatal: !!options.fatal } : undefined;
+    try {
+      this._d = new Native(encoding || 'utf-8', safeOpts);
+    } catch (_) {
+      this._d = new Native('utf-8');
+    }
   }
-}
+  SafeTextDecoder.prototype.decode = function (input, opts) {
+    return this._d.decode(input, opts);
+  };
+  Object.defineProperty(SafeTextDecoder.prototype, 'encoding', {
+    get() { return this._d.encoding; },
+  });
+  Object.defineProperty(SafeTextDecoder.prototype, 'fatal', {
+    get() { return this._d.fatal; },
+  });
+  Object.defineProperty(SafeTextDecoder.prototype, 'ignoreBOM', {
+    get() { return false; },
+  });
+  global.TextDecoder = globalThis.TextDecoder = SafeTextDecoder;
+}());
 
-if (typeof global.TextEncoder === 'undefined' || typeof globalThis.TextEncoder === 'undefined') {
+// ---------------------------------------------------------------------------
+// 2. Ensure TextEncoder is on both global and globalThis (PowerSync needs it).
+// ---------------------------------------------------------------------------
+if (typeof global.TextEncoder !== 'function') {
   const existingEnc =
-    (typeof global.TextEncoder === 'function' && global.TextEncoder) ||
     (typeof globalThis !== 'undefined' && typeof globalThis.TextEncoder === 'function' && globalThis.TextEncoder) ||
     null;
-
   if (existingEnc) {
     global.TextEncoder = existingEnc;
-    if (typeof globalThis !== 'undefined') globalThis.TextEncoder = existingEnc;
   } else {
-    const polyfillEncoder = class TextEncoder {
+    const PolyfillEncoder = class TextEncoder {
       encode(str) {
         const out = [];
         for (let i = 0; i < str.length; i++) {
@@ -78,9 +70,14 @@ if (typeof global.TextEncoder === 'undefined' || typeof globalThis.TextEncoder =
         return new Uint8Array(out);
       }
     };
-    global.TextEncoder = polyfillEncoder;
-    if (typeof globalThis !== 'undefined') globalThis.TextEncoder = polyfillEncoder;
+    global.TextEncoder = globalThis.TextEncoder = PolyfillEncoder;
   }
 }
+
+// ---------------------------------------------------------------------------
+// 3. react-native-url-polyfill patches global.URL with a URL implementation
+//    that now works correctly because TextDecoder is fixed above.
+// ---------------------------------------------------------------------------
+require('react-native-url-polyfill/auto');
 
 require('expo-router/entry');
