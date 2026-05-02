@@ -1,17 +1,24 @@
 import { useMemo } from 'react';
-import { useQuery } from '@powersync/react';
-import { useMutation } from '@tanstack/react-query';
+import { usePowerSync } from '@powersync/react';
+import { useQuery as usePS, useMutation } from '@tanstack/react-query';
 import { api } from '../api';
 import type { User, UserPreferences, UserCreate, UserUpdate } from '../types';
 
+const PS_QUERY_OPTS = { staleTime: 0, refetchInterval: 15_000 } as const;
+
 // ---------------------------------------------------------------------------
-// Read hook – PowerSync (local SQLite, reactive, offline-capable)
+// Read hook – db.getAll() via TanStack Query (avoids PowerSync watch() crash
+// when sync connection is already active at screen mount time)
 // ---------------------------------------------------------------------------
 
 export function useUsers(): { data: User[]; isLoading: boolean; error: Error | undefined } {
-  const { data: rows, isLoading, error } = useQuery(
-    'SELECT * FROM users ORDER BY name',
-  );
+  const db = usePowerSync();
+  const { data: rows, isLoading, error } = usePS({
+    queryKey: ['users'],
+    queryFn: () => db.getAll('SELECT * FROM users ORDER BY name'),
+    enabled: !!db,
+    ...PS_QUERY_OPTS,
+  });
   const data = useMemo<User[]>(
     () =>
       (rows ?? []).map(r => ({

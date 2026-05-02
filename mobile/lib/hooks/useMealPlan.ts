@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { useQuery } from '@powersync/react';
-import { useMutation } from '@tanstack/react-query';
+import { usePowerSync } from '@powersync/react';
+import { useQuery as usePS, useMutation } from '@tanstack/react-query';
 import { api } from '../api';
 import type {
   MealPlan,
@@ -10,28 +10,42 @@ import type {
   MealType,
 } from '../types';
 
+const PS_QUERY_OPTS = { staleTime: 0, refetchInterval: 15_000 } as const;
+
 // ---------------------------------------------------------------------------
-// Read hook – PowerSync (local SQLite, reactive, offline-capable)
+// Read hook – db.getAll() via TanStack Query (avoids PowerSync watch() crash)
 // ---------------------------------------------------------------------------
 
 export function useMealPlans(): { data: MealPlan[]; isLoading: boolean; error: Error | undefined } {
-  const { data: planRows, isLoading: l1, error } = useQuery(
-    'SELECT * FROM meal_plans ORDER BY week_start_date DESC',
-  );
-  const { data: entryRows, isLoading: l2 } = useQuery(`
-    SELECT mpe.id, mpe.meal_plan_id, mpe.day_of_week, mpe.meal_type,
-           mpe.recipe_id, mpe.custom_meal, mpe.repeat_weekly,
-           r.name  AS recipe_name,
-           r.description AS recipe_description,
-           r.servings AS recipe_servings,
-           r.prep_time_minutes AS recipe_prep_time_minutes,
-           r.source_url AS recipe_source_url
-    FROM meal_plan_entries mpe
-    LEFT JOIN recipes r ON r.id = mpe.recipe_id
-  `);
-  const { data: entryUserRows } = useQuery(
-    'SELECT * FROM meal_plan_entry_users',
-  );
+  const db = usePowerSync();
+  const { data: planRows, isLoading: l1, error } = usePS({
+    queryKey: ['meal_plans'],
+    queryFn: () => db.getAll('SELECT * FROM meal_plans ORDER BY week_start_date DESC'),
+    enabled: !!db,
+    ...PS_QUERY_OPTS,
+  });
+  const { data: entryRows, isLoading: l2 } = usePS({
+    queryKey: ['meal_plan_entries'],
+    queryFn: () => db.getAll(`
+      SELECT mpe.id, mpe.meal_plan_id, mpe.day_of_week, mpe.meal_type,
+             mpe.recipe_id, mpe.custom_meal, mpe.repeat_weekly,
+             r.name  AS recipe_name,
+             r.description AS recipe_description,
+             r.servings AS recipe_servings,
+             r.prep_time_minutes AS recipe_prep_time_minutes,
+             r.source_url AS recipe_source_url
+      FROM meal_plan_entries mpe
+      LEFT JOIN recipes r ON r.id = mpe.recipe_id
+    `),
+    enabled: !!db,
+    ...PS_QUERY_OPTS,
+  });
+  const { data: entryUserRows } = usePS({
+    queryKey: ['meal_plan_entry_users'],
+    queryFn: () => db.getAll('SELECT * FROM meal_plan_entry_users'),
+    enabled: !!db,
+    ...PS_QUERY_OPTS,
+  });
 
   const data = useMemo<MealPlan[]>(() =>
     (planRows ?? []).map(plan => ({
