@@ -1,13 +1,13 @@
 // Custom entry point – must be the very first code executed.
 //
-// Some packages (e.g. whatwg-url, bundled by @react-navigation and others)
-// capture `TextDecoder` / `TextEncoder` as a top-level variable at module
-// init time.  On Hermes these globals live on `globalThis` but are sometimes
-// absent from `global`, so the captured value ends up as `undefined`.
-// Setting them here – before any other require – ensures every downstream
-// module gets a valid reference.
+// 1. react-native-url-polyfill replaces whatwg-url with an implementation
+//    that works in Hermes / React Native.  Without this, navigating to any
+//    Stack screen (recipe detail, bulk-import, …) crashes with:
+//    "Cannot read property 'decode' of undefined" inside URLStateMachine,
+//    triggered by React Navigation's getStateFromPath → URL constructor.
+require('react-native-url-polyfill/auto');
 
-// Ensure TextDecoder is available on both global and globalThis.
+// 2. Ensure TextDecoder is available on both global and globalThis.
 // Some PowerSync internals capture it from globalThis at class-init time.
 if (typeof global.TextDecoder === 'undefined' || typeof globalThis.TextDecoder === 'undefined') {
   const existing =
