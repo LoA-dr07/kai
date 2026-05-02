@@ -7,12 +7,20 @@
 // Setting them here – before any other require – ensures every downstream
 // module gets a valid reference.
 
-if (typeof global.TextDecoder === 'undefined') {
-  if (typeof globalThis !== 'undefined' && typeof globalThis.TextDecoder === 'function') {
-    global.TextDecoder = globalThis.TextDecoder;
+// Ensure TextDecoder is available on both global and globalThis.
+// Some PowerSync internals capture it from globalThis at class-init time.
+if (typeof global.TextDecoder === 'undefined' || typeof globalThis.TextDecoder === 'undefined') {
+  const existing =
+    (typeof global.TextDecoder === 'function' && global.TextDecoder) ||
+    (typeof globalThis !== 'undefined' && typeof globalThis.TextDecoder === 'function' && globalThis.TextDecoder) ||
+    null;
+
+  if (existing) {
+    global.TextDecoder = existing;
+    if (typeof globalThis !== 'undefined') globalThis.TextDecoder = existing;
   } else {
     // Minimal UTF-8 polyfill for environments that truly lack TextDecoder.
-    global.TextDecoder = class TextDecoder {
+    const polyfillDecoder = class TextDecoder {
       decode(input) {
         if (!input) return '';
         const bytes =
@@ -39,14 +47,22 @@ if (typeof global.TextDecoder === 'undefined') {
         return out;
       }
     };
+    global.TextDecoder = polyfillDecoder;
+    if (typeof globalThis !== 'undefined') globalThis.TextDecoder = polyfillDecoder;
   }
 }
 
-if (typeof global.TextEncoder === 'undefined') {
-  if (typeof globalThis !== 'undefined' && typeof globalThis.TextEncoder === 'function') {
-    global.TextEncoder = globalThis.TextEncoder;
+if (typeof global.TextEncoder === 'undefined' || typeof globalThis.TextEncoder === 'undefined') {
+  const existingEnc =
+    (typeof global.TextEncoder === 'function' && global.TextEncoder) ||
+    (typeof globalThis !== 'undefined' && typeof globalThis.TextEncoder === 'function' && globalThis.TextEncoder) ||
+    null;
+
+  if (existingEnc) {
+    global.TextEncoder = existingEnc;
+    if (typeof globalThis !== 'undefined') globalThis.TextEncoder = existingEnc;
   } else {
-    global.TextEncoder = class TextEncoder {
+    const polyfillEncoder = class TextEncoder {
       encode(str) {
         const out = [];
         for (let i = 0; i < str.length; i++) {
@@ -62,6 +78,8 @@ if (typeof global.TextEncoder === 'undefined') {
         return new Uint8Array(out);
       }
     };
+    global.TextEncoder = polyfillEncoder;
+    if (typeof globalThis !== 'undefined') globalThis.TextEncoder = polyfillEncoder;
   }
 }
 
