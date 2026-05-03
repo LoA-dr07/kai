@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ErrorScreen } from '../../../components/ErrorScreen';
+import { ScreenErrorBoundary } from '../../../components/ScreenErrorBoundary';
 import { useRecipe } from '../../../lib/hooks/useRecipes';
 import type { RecipeIngredient } from '../../../lib/types';
 import { Colors } from '../../../lib/theme';
@@ -18,7 +19,7 @@ import { Colors } from '../../../lib/theme';
 // Kochansicht – Zutaten links | Zubereitung rechts (bei Querformat)
 // -------------------------------------------------------------------
 
-export default function CookScreen() {
+function CookScreenContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const recipeId = Number(id);
@@ -128,6 +129,14 @@ export default function CookScreen() {
         )}
       </View>
     </>
+  );
+}
+
+export default function CookScreen() {
+  return (
+    <ScreenErrorBoundary>
+      <CookScreenContent />
+    </ScreenErrorBoundary>
   );
 }
 

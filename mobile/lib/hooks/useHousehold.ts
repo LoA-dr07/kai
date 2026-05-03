@@ -1,23 +1,34 @@
 import { useMemo } from 'react';
-import { useQuery } from '@powersync/react';
-import { useMutation } from '@tanstack/react-query';
+import { usePowerSync } from '@powersync/react';
+import { useQuery as usePS, useMutation } from '@tanstack/react-query';
 import { api } from '../api';
 import type { Household, HouseholdSettings, User, UserPreferences } from '../types';
 
+const PS_QUERY_OPTS = { staleTime: 0, refetchInterval: 15_000 } as const;
+
 // ---------------------------------------------------------------------------
-// Read hook – PowerSync (local SQLite, reactive, offline-capable)
+// Read hook – db.getAll() via TanStack Query (avoids PowerSync watch() crash)
 // ---------------------------------------------------------------------------
 
 export function useHousehold(): { data: Household | undefined; isLoading: boolean; error: Error | undefined } {
-  const { data: householdRows, isLoading: l1, error } = useQuery(
-    'SELECT * FROM households LIMIT 1',
-  );
-  const { data: memberRows, isLoading: l2 } = useQuery(`
-    SELECT u.id, u.name, u.avatar_color, u.short_name, u.preferences,
-           hm.household_id
-    FROM household_members hm
-    JOIN users u ON u.id = hm.user_id
-  `);
+  const db = usePowerSync();
+  const { data: householdRows, isLoading: l1, error } = usePS({
+    queryKey: ['households'],
+    queryFn: () => db.getAll('SELECT * FROM households LIMIT 1'),
+    enabled: !!db,
+    ...PS_QUERY_OPTS,
+  });
+  const { data: memberRows, isLoading: l2 } = usePS({
+    queryKey: ['household_members'],
+    queryFn: () => db.getAll(`
+      SELECT u.id, u.name, u.avatar_color, u.short_name, u.preferences,
+             hm.household_id
+      FROM household_members hm
+      JOIN users u ON u.id = hm.user_id
+    `),
+    enabled: !!db,
+    ...PS_QUERY_OPTS,
+  });
 
   const data = useMemo<Household | undefined>(() => {
     const h = (householdRows ?? [])[0];

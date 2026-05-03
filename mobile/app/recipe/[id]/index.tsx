@@ -19,6 +19,7 @@ import { ErrorScreen } from '../../../components/ErrorScreen';
 import { Tooltip } from '../../../components/Tooltip';
 import { Colors } from '../../../lib/theme';
 import { AddToMealPlanModal } from '../../../components/AddToMealPlanModal';
+import { ScreenErrorBoundary } from '../../../components/ScreenErrorBoundary';
 
 // --- Konstanten ---
 
@@ -97,7 +98,7 @@ function StarRow({
 
 // --- Hauptkomponente ---
 
-export default function RecipeDetailScreen() {
+function RecipeDetailScreenContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const recipeId = Number(id);
@@ -668,3 +669,11 @@ const styles = StyleSheet.create({
   },
   deleteBtnText: { color: '#D32F2F', fontSize: 16, fontWeight: '600' },
 });
+
+export default function RecipeDetailScreen() {
+  return (
+    <ScreenErrorBoundary>
+      <RecipeDetailScreenContent />
+    </ScreenErrorBoundary>
+  );
+}

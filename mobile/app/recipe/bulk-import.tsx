@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
 import {
   ActivityIndicator,
   ScrollView,
@@ -174,7 +174,7 @@ function TagSection({
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
-export default function BulkImportScreen() {
+function BulkImportScreenContent() {
   const router = useRouter();
   const { data: allTags = [], isLoading: tagsLoading, error: tagsError } = useTags();
   const { data: users = [], isLoading: usersLoading, error: usersError } = useUsers();
@@ -381,7 +381,7 @@ export default function BulkImportScreen() {
   if (step === 'results' && results) {
     const totalFailed = results.failed.length + previewErrors.length;
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <>
         <Stack.Screen options={{ title: 'Import-Ergebnis' }} />
         <ScrollView style={styles.container} contentContainerStyle={styles.content}>
           <View style={styles.card}>
@@ -429,7 +429,7 @@ export default function BulkImportScreen() {
             <Text style={styles.secondaryBtnText}>Weiteren Import starten</Text>
           </TouchableOpacity>
         </ScrollView>
-      </GestureHandlerRootView>
+      </>
     );
   }
 
@@ -439,7 +439,7 @@ export default function BulkImportScreen() {
 
   if (step === 'configure') {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <>
         <Stack.Screen
           options={{
             title: `${configs.length} Rezept${configs.length !== 1 ? 'e' : ''} konfigurieren`,
@@ -547,27 +547,27 @@ export default function BulkImportScreen() {
             </Text>
           )}
         </ScrollView>
-      </GestureHandlerRootView>
+      </>
     );
   }
 
   if (tagsLoading || usersLoading) {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <>
         <Stack.Screen options={{ title: 'Rezepte aus URLs importieren' }} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={GREEN} />
         </View>
-      </GestureHandlerRootView>
+      </>
     );
   }
 
   if (tagsError || usersError) {
     return (
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <>
         <Stack.Screen options={{ title: 'Rezepte aus URLs importieren' }} />
         <ErrorScreen message="Daten konnten nicht geladen werden." />
-      </GestureHandlerRootView>
+      </>
     );
   }
 
@@ -576,7 +576,7 @@ export default function BulkImportScreen() {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <>
       <Stack.Screen options={{ title: 'Rezepte aus URLs importieren' }} />
       <ScrollView
         style={styles.container}
@@ -680,7 +680,7 @@ export default function BulkImportScreen() {
           )}
         </TouchableOpacity>
       </ScrollView>
-    </GestureHandlerRootView>
+    </>
   );
 }
 
@@ -887,3 +887,11 @@ const styles = StyleSheet.create({
   failedUrl: { fontSize: 12, color: '#555', marginBottom: 3 },
   failedError: { fontSize: 12, color: RED },
 });
+
+export default function BulkImportScreen() {
+  return (
+    <ScreenErrorBoundary>
+      <BulkImportScreenContent />
+    </ScreenErrorBoundary>
+  );
+}

@@ -115,9 +115,10 @@ npx expo start --web
 
 Öffnet `http://localhost:8081`. Backend läuft auf fly.io – kein lokales Backend nötig.
 
-### Mobile App (iOS/Android via Expo Go)
+### Mobile App (Android via Dev Client / EAS)
 
-Voraussetzung: PC und Handy im selben WLAN.
+Die App nutzt PowerSync (nativer Code) — **Expo Go wird nicht unterstützt**.
+Stattdessen: Dev-Client-APK über EAS bauen und auf dem Gerät installieren.
 
 `mobile/.env` muss gesetzt sein:
 ```env
@@ -126,14 +127,18 @@ EXPO_PUBLIC_POWERSYNC_URL=https://<instanz>.powersync.journeyapps.com
 ```
 
 ```powershell
-# LAN-IP des PCs ermitteln (ipconfig → IPv4-Adresse des WLAN-Adapters)
-# Expo starten
+# Schritt 1: APK bauen (einmalig oder nach nativen Änderungen)
 cd mobile
-$env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.x.x"; npx expo start --go --lan
+eas build --profile development --platform android
+# → EAS liefert einen Download-Link; APK auf Gerät installieren
+
+# Schritt 2: Dev-Server starten (für JS-Änderungen ohne Neubau)
+cd mobile
+$env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.x.x"; npx expo start --dev-client --lan
 # Alternativ: npm run mobile
 ```
 
-QR-Code mit der **Expo Go App** scannen.
+Dev-Client-App auf dem Gerät öffnen und QR-Code scannen.
 
 > **Hinweis:** Das Backend läuft auf fly.io – kein lokales Backend nötig. Offline-Reads laufen über PowerSync (lokales SQLite auf dem Gerät).
 
