@@ -364,13 +364,11 @@ export default function MealPlanScreen() {
         </View>
       )}
 
-      {__DEV__ && (
-        <View style={{ backgroundColor: '#FFF9C4', padding: 8, borderBottomWidth: 1, borderBottomColor: '#F9A825' }}>
-          <Text style={{ fontSize: 11, fontFamily: 'monospace', color: '#333' }}>
-            {`plans: ${allPlans?.length ?? 'undefined'}  currentPlan: ${currentPlan ? `id=${currentPlan.id} entries=${currentPlan.entries.length}` : 'none'}  recipes: ${recipes?.length ?? 'undefined'}`}
-          </Text>
-        </View>
-      )}
+      <View style={{ backgroundColor: '#FFF9C4', padding: 8, borderBottomWidth: 1, borderBottomColor: '#F9A825' }}>
+        <Text style={{ fontSize: 11, color: '#333' }}>
+          {`DEBUG plans:${allPlans?.length ?? '?'} cur:${currentPlan ? `${currentPlan.id}(${currentPlan.entries.length})` : '-'} rec:${recipes?.length ?? '?'}`}
+        </Text>
+      </View>
       {isLoading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={GREEN} size="large" />
       ) : error ? (
