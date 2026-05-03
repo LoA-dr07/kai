@@ -43,7 +43,14 @@ cd mobile
 $env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.178.83"; npx expo start --dev-client --lan
 # Alternativ: npm run mobile
 
-# Beim ersten Mal: Windows-Firewall muss eingehende Verbindungen auf Port 8081 (TCP) erlauben
+# Falls die LAN-IP sich geändert hat (DHCP) → IP in package.json ("mobile"-Script) und
+# mobile/.env (EXPO_PUBLIC_API_URL) aktualisieren. Aktuelle IP: ipconfig → WLAN-Adapter.
+# Wenn die App lautlos den eingebetteten Bundle nutzt statt den Dev-Server zu laden,
+# ist das ein sicheres Zeichen für eine falsche IP.
+
+# Alternative ohne IP-Problem (langsamer, aber immer zuverlässig):
+npm run mobile-tunnel
+# Öffnet einen Expo-Tunnel; QR-Code scannen → verbindet sich unabhängig vom Netzwerk
 ```
 
 ### Backend deployen (fly.io)
@@ -240,11 +247,18 @@ eas build --profile development --platform android
 
 # 2. Dev-Server starten (nach jeder JS-Änderung ausreichend):
 cd mobile
+# Option A – LAN (schnell, gleices WLAN erforderlich):
 # .env: EXPO_PUBLIC_API_URL=http://<LAN-IP-des-PCs>:8000
 # LAN-IP ermitteln: ipconfig → "IPv4-Adresse" unter dem WLAN-Adapter
 $env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.178.83"; npx expo start --dev-client --lan
 # Alternativ: npm run mobile
 # (IP in mobile/package.json → "mobile"-Script anpassen falls sie sich ändert)
+# ACHTUNG: Wenn die App den Dev-Server nicht lädt (kein "Loading…"-Bildschirm beim Start,
+# kein Shake-Menü), hat sich die LAN-IP geändert → IP aktualisieren oder Option B nutzen.
+
+# Option B – Tunnel (zuverlässig, kein IP-Problem, etwas langsamer):
+npm run mobile-tunnel
+# .env: EXPO_PUBLIC_API_URL=https://meal-planner-api-long-feather-1592.fly.dev
 
 # Beim ersten Mal: Windows-Firewall muss eingehende Verbindungen auf Port 8081 (TCP) erlauben
 # – Windows fragt automatisch nach, oder manuell:
