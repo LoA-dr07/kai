@@ -24,7 +24,7 @@ export function useMealPlans(): { data: MealPlan[]; isLoading: boolean; error: E
     enabled: !!db,
     ...PS_QUERY_OPTS,
   });
-  const { data: entryRows, isLoading: l2 } = usePS({
+  const { data: entryRows, isLoading: l2, error: entryError } = usePS({
     queryKey: ['meal_plan_entries'],
     queryFn: () => db.getAll(`
       SELECT mpe.id, mpe.meal_plan_id, mpe.day_of_week, mpe.meal_type,
@@ -47,8 +47,12 @@ export function useMealPlans(): { data: MealPlan[]; isLoading: boolean; error: E
     ...PS_QUERY_OPTS,
   });
 
-  const data = useMemo<MealPlan[]>(() =>
-    (planRows ?? []).map(plan => ({
+  const data = useMemo<MealPlan[]>(() => {
+    console.log('[useMealPlans] planRows:', JSON.stringify(planRows));
+    console.log('[useMealPlans] entryRows:', JSON.stringify(entryRows));
+    console.log('[useMealPlans] entryUserRows:', JSON.stringify(entryUserRows));
+    if (entryError) console.log('[useMealPlans] entryError:', entryError);
+    return (planRows ?? []).map(plan => ({
       id: Number(plan.id),
       name: plan.name as string,
       week_start_date: plan.week_start_date as string,
@@ -82,8 +86,8 @@ export function useMealPlans(): { data: MealPlan[]; isLoading: boolean; error: E
             .filter(eu => eu.entry_id === e.id)
             .map(eu => Number(eu.user_id)),
         })) as MealPlanEntry[],
-    })),
-  [planRows, entryRows, entryUserRows]);
+    }));
+  }, [planRows, entryRows, entryUserRows]);
 
   return { data, isLoading: l1 || l2, error };
 }
