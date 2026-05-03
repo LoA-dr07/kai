@@ -1,4 +1,5 @@
 const { getDefaultConfig } = require('expo/metro-config');
+const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
@@ -24,5 +25,27 @@ config.resolver.resolverMainFields = ['react-native', 'module', 'main'];
 // Restrict exports-field conditions to native-safe ones only.
 // Without this, Metro would still apply 'browser' condition from exports maps.
 config.resolver.unstable_conditionNames = ['require', 'default', 'react-native'];
+
+// Redirect whatwg-url to a Hermes-safe shim via resolveRequest.
+// extraNodeModules only provides fallbacks for packages NOT found in
+// node_modules — it cannot override an already-installed package.
+// resolveRequest intercepts every require() call before normal resolution.
+//
+// whatwg-url's URLStateMachine creates a TextDecoder instance at module-init
+// time with options that Hermes does not support, leaving utf8Decoder as
+// undefined and crashing on the first .decode() call (triggered by React
+// Navigation's getStateFromPath when navigating to any Stack screen).
+const originalResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === 'whatwg-url') {
+    return {
+      filePath: path.resolve(__dirname, 'shims/whatwg-url.js'),
+      type: 'sourceFile',
+    };
+  }
+  return originalResolveRequest
+    ? originalResolveRequest(context, moduleName, platform)
+    : context.resolveRequest(context, moduleName, platform);
+};
 
 module.exports = config;

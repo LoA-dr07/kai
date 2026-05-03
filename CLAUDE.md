@@ -26,14 +26,21 @@ npx expo start --web
 # Öffnet http://localhost:8081 – Backend läuft auf fly.io, kein lokales Backend nötig
 ```
 
-### Mobile App starten
+### Mobile App starten (Dev Client via EAS)
 ```powershell
-# Voraussetzung: PC und Handy im selben WLAN
+# Die App nutzt PowerSync (nativer Code) → Expo Go wird NICHT unterstützt.
+# Stattdessen: Dev-Client-APK über EAS bauen und installieren.
 
+# 1. APK bauen (einmalig oder nach nativen Änderungen):
+cd mobile
+eas build --profile development --platform android
+# → Lädt APK-Link; auf Gerät installieren
+
+# 2. Dev-Server starten (nach jeder JS-Änderung ausreichend):
 cd mobile
 # .env: EXPO_PUBLIC_API_URL=https://meal-planner-api-long-feather-1592.fly.dev
 #        EXPO_PUBLIC_POWERSYNC_URL=https://<instanz>.powersync.journeyapps.com
-$env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.178.83"; npx expo start --go --lan
+$env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.178.83"; npx expo start --dev-client --lan
 # Alternativ: npm run mobile
 
 # Beim ersten Mal: Windows-Firewall muss eingehende Verbindungen auf Port 8081 (TCP) erlauben
@@ -221,18 +228,21 @@ npx expo start --web
 # Öffnet http://localhost:8081
 ```
 
-### Mobile App starten
+### Mobile App starten (Dev Client via EAS)
 ```powershell
-# Voraussetzung: PC und Handy im selben WLAN
+# Die App nutzt PowerSync (nativer Code) → Expo Go wird NICHT unterstützt.
+# Stattdessen: Dev-Client-APK über EAS bauen und installieren.
 
-# Terminal 1: Backend (s.o.)
-# – bereits mit --host 0.0.0.0, also im LAN erreichbar
+# 1. APK bauen (einmalig oder nach nativen Änderungen):
+cd mobile
+eas build --profile development --platform android
+# → Lädt APK-Link; auf Gerät installieren
 
-# Terminal 2: Expo (LAN-Modus)
+# 2. Dev-Server starten (nach jeder JS-Änderung ausreichend):
 cd mobile
 # .env: EXPO_PUBLIC_API_URL=http://<LAN-IP-des-PCs>:8000
 # LAN-IP ermitteln: ipconfig → "IPv4-Adresse" unter dem WLAN-Adapter
-$env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.178.83"; npx expo start --go --lan
+$env:REACT_NATIVE_PACKAGER_HOSTNAME="192.168.178.83"; npx expo start --dev-client --lan
 # Alternativ: npm run mobile
 # (IP in mobile/package.json → "mobile"-Script anpassen falls sie sich ändert)
 
@@ -340,7 +350,7 @@ ANTHROPIC_API_KEY=sk-ant-...   # Pflicht für KI-Funktionen (/ai/meal-plan-sugge
 # Web / lokale Entwicklung:
 EXPO_PUBLIC_API_URL=http://localhost:8000
 
-# Mobile via LAN (Expo Go, selbes WLAN):
+# Mobile via LAN (Dev Client, selbes WLAN):
 EXPO_PUBLIC_API_URL=http://192.168.x.x:8000  # LAN-IP des PCs (ipconfig)
 ```
 
