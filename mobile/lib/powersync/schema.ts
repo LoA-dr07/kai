@@ -70,6 +70,7 @@ const meal_plan_entries = new Table({
   meal_type: column.text,
   recipe_id: column.text,        // nullable
   custom_meal: column.text,      // nullable
+  repeat_weekly: column.integer, // 0 or 1 (PostgreSQL boolean → SQLite integer)
 });
 
 const meal_plan_entry_users = new Table({
