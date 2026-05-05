@@ -25,3 +25,4 @@ public_key.pem
 # Internal development docs (not for public)
 CLAUDE.md
 DOD.md
+FEATURES.md
