@@ -1,231 +1,99 @@
 # Plan: GitHub-Veröffentlichung des Meal-Planners
 
-## Context
-
 Das Projekt soll auf GitHub veröffentlicht werden, damit andere Familien es einsetzen können.
-Aktuell ist es ein privates Entwicklungs-Repo ohne öffentliche Nutzung im Blick.
-Ziel: Sauberes, sicheres, installierbares öffentliches Repository.
+
+**Stack:** FastAPI · fly.io · Neon PostgreSQL · PowerSync · React Native / Expo + Expo Web
 
 ---
 
-## Kritischer Befund: Secrets in der Git-History
+## Legende
 
-`backends/.env` ist seit Commit `0e7fecb` (Phase 1) in der Git-History verankert:
-- `DATABASE_URL=postgresql://postgres:...@localhost:5432/meal_planner` (echtes Passwort)
-- `SECRET_KEY=...` (echter Key)
-- Wahrscheinlich auch `ANTHROPIC_API_KEY` (Phase 8)
-
-**→ Muss aus der kompletten History getilgt werden, bevor das Repo public geht.**
+- 🤖 **Claude erledigt das** – einfach beauftragen
+- 👤 **Du musst das tun** – erfordert deinen Zugang / deine Entscheidung
+- ✅ **Bereits erledigt**
 
 ---
 
-## Implementierungsschritte – Reihenfolge
+## Schritt 1 – RSA-Schlüssel aus Git-History entfernen ⚠️ KRITISCH – zuerst!
 
-### Schritt 1 – Secrets aus Git-History entfernen (KRITISCH, zuerst)
+`private_key.pem` und `public_key.pem` wurden mit echten RSA-Schlüsseln in die Git-History
+committed. Damit kann jeder, der die History liest, gültige PowerSync-JWTs ausstellen.
 
-1. `git filter-repo` verwenden (empfohlen, ersetzt das veraltete `filter-branch`):
-   ```bash
-   pip install git-filter-repo   # einmalig
-   git filter-repo --path backends/.env --invert-paths --force
-   ```
-   Löscht `backends/.env` aus **allen** Commits rückwirkend.
-
-2. `git rm --cached backends/.env` sicherstellen (Datei bleibt lokal, aber untracked).
-
-3. **Alle Secrets rotieren** (lokal neue Werte vergeben):
-   - Neues DB-Passwort in PostgreSQL setzen + `.env` aktualisieren
-   - Neuen `SECRET_KEY` generieren:
-     ```bash
-     python -c "import secrets; print(secrets.token_hex(32))"
-     ```
-   - Neuen `ANTHROPIC_API_KEY` im Anthropic-Dashboard generieren (alten invalidieren)
-
-4. Force-Push des bereinigten Branches:
-   ```bash
-   git push --force origin <branch>
-   ```
+| # | Aufgabe | Wer |
+|---|---------|-----|
+| 1.1 | `git filter-repo` installieren: `pip install git-filter-repo` | 👤 |
+| 1.2 | PEM-Dateien aus der gesamten History tilgen:<br>`git filter-repo --path private_key.pem --invert-paths --force`<br>`git filter-repo --path public_key.pem --invert-paths --force`<br>`git filter-repo --path backends/.env --invert-paths --force` | 👤 |
+| 1.3 | Force-Push des bereinigten Repos: `git push --force origin main` | 👤 |
+| 1.4 | Neues RSA-Schlüsselpaar generieren (alte Keys sind kompromittiert):<br>`$rsa = [System.Security.Cryptography.RSA]::Create(2048)`<br>`$rsa.ExportRSAPrivateKeyPem() \| Out-File private_key.pem -Encoding ascii`<br>`$rsa.ExportSubjectPublicKeyInfoPem() \| Out-File public_key.pem -Encoding ascii` | 👤 |
+| 1.5 | Neue Schlüssel einzeilig für `.env` formatieren:<br>`(Get-Content private_key.pem -Raw) -replace "\`r\`n","\n" -replace "\`n","\n"`<br>`(Get-Content public_key.pem -Raw) -replace "\`r\`n","\n" -replace "\`n","\n"` | 👤 |
+| 1.6 | `backends/.env` mit neuen Schlüsseln aktualisieren | 👤 |
+| 1.7 | fly.io Secrets mit neuen Schlüsseln aktualisieren:<br>`fly secrets set POWERSYNC_PRIVATE_KEY="..." -a <deine-app>`<br>`fly secrets set POWERSYNC_PUBLIC_KEY="..." -a <deine-app>` | 👤 |
+| 1.8 | Sync Rules im PowerSync-Dashboard neu deployen und JWKS URI prüfen | 👤 |
 
 ---
 
-### Schritt 2 – Env-Vorlagen anlegen
+## Schritt 2 – .gitignore bereinigen ✅
 
-Neue Datei **`backends/.env.example`** (wird committet):
-```
-DATABASE_URL=postgresql://BENUTZER:PASSWORT@localhost:5432/meal_planner
-SECRET_KEY=HIER_ZUFAELLIGEN_32_BYTE_HEX_STRING_EINTRAGEN
-ANTHROPIC_API_KEY=sk-ant-...  # Optional, nur für KI-Wochenplanung (Phase 8)
-```
-
-`mobile/.env.example` existiert bereits – passt.
+Bereits erledigt. Folgende Dateien werden nicht mehr getrackt:
+`private_key.pem` · `public_key.pem` · `CLAUDE.md` · `DOD.md` · `FEATURES.md` · `ROADMAP.md` · `.idea/` · `.vscode/`
 
 ---
 
-### Schritt 3 – Hardcoded IP entfernen
+## Schritt 3 – Hardcoded LAN-IP entfernen
 
-`mobile/package.json` Zeile 7:
-```json
-// Vorher:
-"mobile": "SET REACT_NATIVE_PACKAGER_HOSTNAME=192.168.178.83 && expo start --go --lan"
+`mobile/package.json` enthält noch die private IP `192.168.178.83` im `mobile`-Script.
 
-// Nachher:
-"mobile": "expo start --go --lan"
-```
-Die IP-Konfiguration erfolgt über README-Dokumentation (Nutzer setzt die Variable manuell).
+| # | Aufgabe | Wer |
+|---|---------|-----|
+| 3.1 | IP aus `mobile/package.json` entfernen – Script auf `expo start --dev-client --lan` kürzen | 🤖 |
 
 ---
 
-### Schritt 4 – .gitignore bereinigen
+## Schritt 4 – README für öffentliche Nutzung anpassen
 
-Ergänzen in `.gitignore`:
-```
-# IDE
-.idea/
-*.iml
-.vscode/
+Das README beschreibt den Stack korrekt, enthält aber noch persönliche Werte.
 
-# Backend env
-backends/.env.local
-```
-
-`.idea/` enthält IntelliJ-Konfiguration mit lokalem Pfadwissen – nicht öffentlich.
+| # | Aufgabe | Wer |
+|---|---------|-----|
+| 4.1 | Persönlichen fly.io App-Namen `meal-planner-api-long-feather-1592` durch `<deine-app>` ersetzen (4 Stellen) | 🤖 |
+| 4.2 | `CLAUDE.md`-Eintrag aus der Dokumentationstabelle am Ende des README entfernen | 🤖 |
+| 4.3 | Entscheiden, ob ein Screenshot der Web-App hinzugefügt werden soll (Nice-to-have) | 👤 |
+| 4.4 | Screenshot erstellen und ins README einbinden, falls gewünscht | 🤖 |
 
 ---
 
-### Schritt 5 – LICENSE-Datei hinzufügen
+## Schritt 5 – LICENSE-Datei anlegen
 
-Neue Datei **`LICENSE`** (MIT empfohlen für ein offenes Familienprojekt):
-```
-MIT License
+Das Repo hat noch keine Lizenz. Ohne Lizenz darf niemand den Code rechtlich nutzen.
 
-Copyright (c) 2026 [Name / GitHub-Username]
-...
-```
-
----
-
-### Schritt 6 – README.md komplett neu schreiben
-
-Das aktuelle README ist unvollständig und enthält private IP-Adressen (`192.168.178.83`).
-
-Neue Struktur für andere Familien:
-```
-# Meal-Planner
-Kurzbeschreibung + Screenshot
-
-## Features
-## Voraussetzungen (Node 18+, Python 3.10+, PostgreSQL)
-## Schnellstart – Option A: Manuell (Backend + Web)
-## Schnellstart – Option B: Docker (empfohlen)
-## Konfiguration (.env-Dateien)
-## Mobile App (Expo Go + LAN-IP)
-## KI-Wochenplanung (ANTHROPIC_API_KEY optional)
-## Erstes Setup (Datenbank-Seed für 3 User)
-## Projektstruktur
-## Tech-Stack
-```
-
-Kritisch: Private IP `192.168.178.83` aus README.md Zeile 113 durch Beispiel-IP ersetzen.
+| # | Aufgabe | Wer |
+|---|---------|-----|
+| 5.1 | Lizenztyp bestätigen – MIT empfohlen | 👤 |
+| 5.2 | `LICENSE`-Datei mit MIT-Text und deinem GitHub-Nutzernamen anlegen | 🤖 |
 
 ---
 
-### Schritt 7 – Docker-Setup (empfohlen für andere Familien)
+## Schritt 6 – Docker-Setup für lokale Entwicklung
 
-Ohne Docker müssen andere Familien Python-venv + PostgreSQL selbst installieren –
-das ist eine hohe Einstiegshürde. Mit Docker reicht `docker compose up`.
+Das aktuelle Setup erfordert externe Cloud-Dienste (Neon, fly.io, PowerSync).
+Ein `docker-compose.yml` ermöglicht anderen Familien, das Projekt lokal auszuprobieren,
+ohne sofort alle Cloud-Dienste einrichten zu müssen.
 
-Neue Dateien:
-
-**`docker-compose.yml`** (Root):
-```yaml
-services:
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: meal_planner
-      POSTGRES_USER: meal_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  backend:
-    build: ./backends
-    ports: ["8000:8000"]
-    environment:
-      DATABASE_URL: postgresql://meal_user:${POSTGRES_PASSWORD}@db:5432/meal_planner
-      SECRET_KEY: ${SECRET_KEY}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    depends_on: [db]
-
-volumes:
-  pgdata:
-```
-
-**`backends/Dockerfile`**:
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-CMD ["sh", "-c", "alembic upgrade head && python -m app.db.seed && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
-```
-
-**`.env.example`** (Root, für docker-compose):
-```
-POSTGRES_PASSWORD=sicheres_passwort_hier
-SECRET_KEY=zufaelliger_32_byte_hex
-ANTHROPIC_API_KEY=sk-ant-...
-```
+| # | Aufgabe | Wer |
+|---|---------|-----|
+| 6.1 | `docker-compose.yml` im Projektstamm anlegen (PostgreSQL + Backend) | 🤖 |
+| 6.2 | README um Abschnitt "Lokale Entwicklung mit Docker" ergänzen | 🤖 |
+| 6.3 | Docker-Setup lokal testen: `docker compose up` → `http://localhost:8000/docs` erreichbar | 👤 |
 
 ---
 
-### Schritt 8 – Dokumentation nachziehen
+## Schritt 7 – Abschluss & Veröffentlichung
 
-- `ROADMAP.md`: Neue Phase "GitHub-Veröffentlichung" als abgeschlossen markieren
-- `CLAUDE.md`: Docker als zusätzliche Startoption ergänzen
-- `docs/architecture.md`: Docker-Deployment-Abschnitt
-
----
-
-## Kritische Dateien – Zusammenfassung
-
-| Datei | Aktion |
-|-------|--------|
-| `backends/.env` | Aus git history entfernen (git filter-repo) |
-| `backends/.env.example` | Neu anlegen |
-| `.gitignore` | `.idea/` ergänzen |
-| `mobile/package.json:7` | Hardcoded IP entfernen |
-| `README.md` | Komplett neu schreiben |
-| `LICENSE` | Neu anlegen (MIT) |
-| `docker-compose.yml` | Neu anlegen |
-| `backends/Dockerfile` | Neu anlegen |
-| `.env.example` (Root) | Neu anlegen |
-
----
-
-## Reihenfolge (Abhängigkeiten)
-
-```
-Schritt 1 (History bereinigen)
-    ↓
-Schritt 2 (.env.example) + Schritt 3 (IP) + Schritt 4 (.gitignore) + Schritt 5 (LICENSE)
-    [alle parallel möglich]
-    ↓
-Schritt 6 (README – setzt Klarheit über Docker aus Schritt 7 voraus)
-    ↓
-Schritt 7 (Docker)
-    ↓
-Schritt 8 (Doku aktualisieren)
-    ↓
-Commit + Push + Repo public schalten
-```
-
----
-
-## Verifikation
-
-1. `git ls-files | grep ".env"` → darf nur `.env.example`-Dateien zeigen
-2. `git log --all -- backends/.env` → darf keine Einträge mehr zeigen (nach filter-repo)
-3. `docker compose up` → Backend erreichbar auf `http://localhost:8000/docs`
-4. README-Anleitung auf frischem System durchführen (frische Installation simulieren)
-5. Repo auf GitHub public schalten, Clone testen
+| # | Aufgabe | Wer |
+|---|---------|-----|
+| 7.1 | Verifikation: `git ls-files \| grep -E "\.(pem\|key)"` → kein Treffer | 👤 |
+| 7.2 | Verifikation: `git log --all -- private_key.pem public_key.pem backends/.env` → keine Commits | 👤 |
+| 7.3 | Verifikation: `grep -r "192.168.178" .` → kein Treffer | 👤 |
+| 7.4 | Web-App auf frischem Clone testen: `cd mobile && npx expo start --web` | 👤 |
+| 7.5 | Repo auf GitHub auf "Public" umstellen | 👤 |
+| 7.6 | Clone von einem anderen Account testen | 👤 |

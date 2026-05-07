@@ -15,3 +15,15 @@ mobile/.env
 *.log
 # Database backups
 backups/
+# IDE
+.idea/
+*.iml
+.vscode/
+# RSA keys (PowerSync JWT signing – never commit real keys)
+private_key.pem
+public_key.pem
+# Internal development docs (not for public)
+CLAUDE.md
+DOD.md
+FEATURES.md
+ROADMAP.md
