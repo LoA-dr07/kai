@@ -1,6 +1,6 @@
-# Meal-Planner
+# Kai
 
-Familien-Mahlzeitenplaner für gemeinsame Nutzung im Haushalt (3 Mitglieder).
+Familien-App für gemeinsame Nutzung im Haushalt (3 Mitglieder).
 Features: Rezeptverwaltung, Wochenplanung, KI-Unterstützung, Import/Export, Tags, Sternebewertungen.
 
 **Stack:** FastAPI · Neon PostgreSQL · fly.io (Backend) · React Native / Expo + Expo Web (Frontend) · PowerSync (Offline-Sync, nur Native)

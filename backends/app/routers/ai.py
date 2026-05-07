@@ -35,7 +35,7 @@ router = APIRouter(prefix="/ai", tags=["ai"])
 def _build_system_message(meal_types: list[MealType]) -> str:
     meal_type_str = ", ".join(meal_types)
     total_entries = len(meal_types) * 7
-    return f"""Du bist ein Meal-Planner-Assistent. Generiere einen Wochenplan für einen Familienhaushalt.
+    return f"""Du bist ein Kai-Assistent. Generiere einen Wochenplan für einen Familienhaushalt.
 Antworte AUSSCHLIESSLICH mit einem JSON-Objekt ohne Markdown-Codeblock, das exakt diesem Schema entspricht:
 {{
   "week_start_date": "YYYY-MM-DD",
@@ -161,7 +161,7 @@ def _build_chat_system_message(
     week_after_monday = this_monday + timedelta(days=14)
 
     lines = []
-    lines.append(f"Du bist ein Meal-Planner-Assistent für den Haushalt '{household.name}'.")
+    lines.append(f"Du bist ein Kai-Assistent für den Haushalt '{household.name}'.")
     lines.append("Beantworte Fragen zu Rezepten, Ernährung, Wochenplan und Einkaufsliste auf Deutsch.")
     lines.append(f"HEUTE: {today.isoformat()} ({DAY_NAMES[today.weekday()]})")
     lines.append(f"DIESE WOCHE: {this_monday.isoformat()} – {(this_monday + timedelta(days=6)).isoformat()}  (week_start_date={this_monday.isoformat()})")

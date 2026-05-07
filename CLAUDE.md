@@ -1,4 +1,4 @@
-# Meal-Planner – Claude Code Konfiguration
+# Kai – Claude Code Konfiguration
 
 ## Definition of Done
 

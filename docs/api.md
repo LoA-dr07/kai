@@ -1,4 +1,4 @@
-# API-Referenz – Meal-Planner
+# API-Referenz – Kai
 
 **Base URL (Produktion):** `https://meal-planner-api-long-feather-1592.fly.dev`
 **Base URL (lokal):** `http://localhost:8000`

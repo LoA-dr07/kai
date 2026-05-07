@@ -1,4 +1,4 @@
-# Architektur – Meal-Planner
+# Architektur – Kai
 
 ## Systemüberblick
 
