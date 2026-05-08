@@ -49,7 +49,7 @@ POWERSYNC_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----
 
 **`mobile/.env`** anlegen (Vorlage: `mobile/.env.example`):
 ```env
-EXPO_PUBLIC_API_URL=https://meal-planner-api-long-feather-1592.fly.dev
+EXPO_PUBLIC_API_URL=https://<deine-app>.fly.dev
 EXPO_PUBLIC_POWERSYNC_URL=https://<instanz>.powersync.journeyapps.com
 ```
 
@@ -58,13 +58,14 @@ EXPO_PUBLIC_POWERSYNC_URL=https://<instanz>.powersync.journeyapps.com
 
 ### 3. RSA-Schlüssel für PowerSync generieren (einmalig)
 
-```powershell
-# In PowerShell (kein openssl nötig):
-$rsa = [System.Security.Cryptography.RSA]::Create(2048)
-$rsa.ExportRSAPrivateKeyPem() | Out-File -FilePath private_key.pem -Encoding ascii
-$rsa.ExportSubjectPublicKeyInfoPem() | Out-File -FilePath public_key.pem -Encoding ascii
+```bash
+# In Git Bash (openssl ist Teil von Git for Windows):
+openssl genrsa -out private_key.pem 2048
+openssl rsa -in private_key.pem -pubout -out public_key.pem
+```
 
-# Einzeilig für .env (\ als Zeilenumbruch-Ersatz):
+Schlüssel einzeilig für `.env` formatieren (PowerShell):
+```powershell
 (Get-Content private_key.pem -Raw) -replace "`r`n","\n" -replace "`n","\n"
 (Get-Content public_key.pem -Raw) -replace "`r`n","\n" -replace "`n","\n"
 ```
@@ -82,17 +83,17 @@ python -m app.db.seed         # Haushalt + 3 User anlegen
 
 ```powershell
 cd backends
-fly secrets set DATABASE_URL="postgresql://..." -a meal-planner-api
-fly secrets set ANTHROPIC_API_KEY="sk-ant-..." -a meal-planner-api
-fly secrets set POWERSYNC_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..." -a meal-planner-api
-fly secrets set POWERSYNC_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n..." -a meal-planner-api
+fly secrets set DATABASE_URL="postgresql://..." -a <deine-app>
+fly secrets set ANTHROPIC_API_KEY="sk-ant-..." -a <deine-app>
+fly secrets set POWERSYNC_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..." -a <deine-app>
+fly secrets set POWERSYNC_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n..." -a <deine-app>
 ```
 
 ### 6. PowerSync konfigurieren
 
 1. PowerSync Dashboard → **Development-Instanz** → DB verbinden (Neon Direct URL)
 2. Sync Rules definieren & deployen (Vorlage: `docs/sync-rules.yaml`)
-3. Auth → JWKS URI: `https://meal-planner-api-long-feather-1592.fly.dev/auth/jwks.json`
+3. Auth → JWKS URI: `https://<deine-app>.fly.dev/auth/jwks.json`
 4. Gleiche Schritte für **Production-Instanz** wiederholen
 
 ### 7. Backend deployen
@@ -122,7 +123,7 @@ Stattdessen: Dev-Client-APK über EAS bauen und auf dem Gerät installieren.
 
 `mobile/.env` muss gesetzt sein:
 ```env
-EXPO_PUBLIC_API_URL=https://meal-planner-api-long-feather-1592.fly.dev
+EXPO_PUBLIC_API_URL=https://<deine-app>.fly.dev
 EXPO_PUBLIC_POWERSYNC_URL=https://<instanz>.powersync.journeyapps.com
 ```
 
@@ -162,4 +163,3 @@ pytest
 | `docs/api.md` | Vollständige API-Referenz (alle Endpunkte) |
 | `docs/frontend.md` | Screens, Hooks, Komponenten, PowerSync-Integration |
 | `ROADMAP.md` | Feature-Tracker und Entwicklungsphasen |
-| `CLAUDE.md` | Entwicklungskonventionen und Claude-Code-Konfiguration |
