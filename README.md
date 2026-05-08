@@ -49,7 +49,7 @@ POWERSYNC_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----
 
 **`mobile/.env`** anlegen (Vorlage: `mobile/.env.example`):
 ```env
-EXPO_PUBLIC_API_URL=https://meal-planner-api-long-feather-1592.fly.dev
+EXPO_PUBLIC_API_URL=https://kai-api-long-feather-1592.fly.dev
 EXPO_PUBLIC_POWERSYNC_URL=https://<instanz>.powersync.journeyapps.com
 ```
 
@@ -82,17 +82,17 @@ python -m app.db.seed         # Haushalt + 3 User anlegen
 
 ```powershell
 cd backends
-fly secrets set DATABASE_URL="postgresql://..." -a meal-planner-api
-fly secrets set ANTHROPIC_API_KEY="sk-ant-..." -a meal-planner-api
-fly secrets set POWERSYNC_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..." -a meal-planner-api
-fly secrets set POWERSYNC_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n..." -a meal-planner-api
+fly secrets set DATABASE_URL="postgresql://..." -a kai-api-long-feather-1592
+fly secrets set ANTHROPIC_API_KEY="sk-ant-..." -a kai-api-long-feather-1592
+fly secrets set POWERSYNC_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n..." -a kai-api-long-feather-1592
+fly secrets set POWERSYNC_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n..." -a kai-api-long-feather-1592
 ```
 
 ### 6. PowerSync konfigurieren
 
 1. PowerSync Dashboard → **Development-Instanz** → DB verbinden (Neon Direct URL)
 2. Sync Rules definieren & deployen (Vorlage: `docs/sync-rules.yaml`)
-3. Auth → JWKS URI: `https://meal-planner-api-long-feather-1592.fly.dev/auth/jwks.json`
+3. Auth → JWKS URI: `https://kai-api-long-feather-1592.fly.dev/auth/jwks.json`
 4. Gleiche Schritte für **Production-Instanz** wiederholen
 
 ### 7. Backend deployen
@@ -122,7 +122,7 @@ Stattdessen: Dev-Client-APK über EAS bauen und auf dem Gerät installieren.
 
 `mobile/.env` muss gesetzt sein:
 ```env
-EXPO_PUBLIC_API_URL=https://meal-planner-api-long-feather-1592.fly.dev
+EXPO_PUBLIC_API_URL=https://kai-api-long-feather-1592.fly.dev
 EXPO_PUBLIC_POWERSYNC_URL=https://<instanz>.powersync.journeyapps.com
 ```
 

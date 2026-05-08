@@ -1,8 +1,8 @@
-# Fly.io deployment config for meal-planner-api
+# Fly.io deployment config for kai-api-long-feather-1592
 # Deploy: flyctl deploy (from backends/ directory)
 # First-time setup: flyctl launch --no-deploy, then set secrets with flyctl secrets set KEY=VALUE
 
-app = "meal-planner-api-long-feather-1592"
+app = "kai-api-long-feather-1592"
 primary_region = "fra"
 
 [http_service]

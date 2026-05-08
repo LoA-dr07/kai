@@ -55,7 +55,7 @@ Das README beschreibt den Stack korrekt, enthält aber noch persönliche Werte.
 
 | # | Aufgabe | Wer |
 |---|---------|-----|
-| 4.1 | Persönlichen fly.io App-Namen `meal-planner-api-long-feather-1592` durch `<deine-app>` ersetzen (4 Stellen) | 🤖 |
+| 4.1 | Persönlichen fly.io App-Namen `kai-api-long-feather-1592` durch `<deine-app>` ersetzen (4 Stellen) | 🤖 |
 | 4.2 | `CLAUDE.md`-Eintrag aus der Dokumentationstabelle am Ende des README entfernen | 🤖 |
 | 4.3 | Entscheiden, ob ein Screenshot der Web-App hinzugefügt werden soll (Nice-to-have) | 👤 |
 | 4.4 | Screenshot erstellen und ins README einbinden, falls gewünscht | 🤖 |
