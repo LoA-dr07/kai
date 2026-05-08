@@ -226,7 +226,7 @@ def _build_chat_system_message(
             meal_label = MEAL_LABELS.get(mt, mt)
             user_ids = ", ".join(
                 next((u.name for u in all_users if u.id == uid), str(uid))
-                for e in entries for uid in e.assigned_user_ids
+                for e in entries for uid in e.assigned_users
             )
             meals = "; ".join(e.recipe.name if e.recipe else (e.custom_meal or "?") for e in entries)
             lines.append(f"  {day_name} {meal_label}: {meals}" + (f" ({user_ids})" if user_ids else ""))
