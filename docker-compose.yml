@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: meal_planner
+      POSTGRES_USER: meal_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local_dev_password}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meal_user -d meal_planner"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backends
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://meal_user:${POSTGRES_PASSWORD:-local_dev_password}@db:5432/meal_planner
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      POWERSYNC_PRIVATE_KEY: ${POWERSYNC_PRIVATE_KEY:-}
+      POWERSYNC_PUBLIC_KEY: ${POWERSYNC_PUBLIC_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head &&
+             python -m app.db.seed &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+volumes:
+  pgdata:

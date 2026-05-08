@@ -105,6 +105,34 @@ fly deploy
 
 ---
 
+## Lokale Entwicklung mit Docker
+
+Als Alternative zum Cloud-Setup (Neon + fly.io) kann das Backend lokal mit Docker gestartet werden. Dabei wird eine lokale PostgreSQL-Datenbank verwendet – PowerSync (Offline-Sync) steht in dieser Variante nicht zur Verfügung.
+
+**Voraussetzung:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) installiert
+
+```bash
+# Backend + Datenbank starten (Migrationen und Seed laufen automatisch)
+docker compose up
+
+# API erreichbar unter:
+# http://localhost:8000
+# http://localhost:8000/docs  (Swagger UI)
+```
+
+`mobile/.env` für lokale Entwicklung anpassen:
+```env
+EXPO_PUBLIC_API_URL=http://localhost:8000
+```
+
+Dann Web-App starten:
+```powershell
+cd mobile
+npx expo start --web
+```
+
+---
+
 ## App starten
 
 ### Web-App (Browser)
