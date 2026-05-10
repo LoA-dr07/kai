@@ -43,13 +43,9 @@ Bereits erledigt. Folgende Dateien werden nicht mehr getrackt:
 
 ---
 
-## Schritt 3 – Hardcoded LAN-IP entfernen
+## Schritt 3 – Hardcoded LAN-IP entfernen ✅
 
-`mobile/package.json` enthält noch die private IP `192.168.178.83` im `mobile`-Script.
-
-| # | Aufgabe | Wer |
-|---|---------|-----|
-| 3.1 | IP aus `mobile/package.json` entfernen – Script auf `expo start --dev-client --lan` kürzen | 🤖 |
+Bereits erledigt. Private IP aus `mobile/package.json` entfernt.
 
 ---
 
