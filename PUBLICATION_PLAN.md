@@ -37,6 +37,10 @@ committed. Damit kann jeder, der die History liest, gültige PowerSync-JWTs auss
 Bereits erledigt. Folgende Dateien werden nicht mehr getrackt:
 `private_key.pem` · `public_key.pem` · `CLAUDE.md` · `DOD.md` · `FEATURES.md` · `ROADMAP.md` · `.idea/` · `.vscode/`
 
+> **Hinweis:** `.gitignore` verhindert nur das Tracken neuer Dateien. Bereits getrackte Dateien
+> müssen zusätzlich mit `git rm --cached <datei>` aus dem Index entfernt werden – das wurde
+> für die PEM-Dateien erledigt.
+
 ---
 
 ## Schritt 3 – Hardcoded LAN-IP entfernen
@@ -91,9 +95,9 @@ ohne sofort alle Cloud-Dienste einrichten zu müssen.
 
 | # | Aufgabe | Wer |
 |---|---------|-----|
-| 7.1 | Verifikation: `git ls-files \| grep -E "\.(pem\|key)"` → kein Treffer | 👤 |
-| 7.2 | Verifikation: `git log --all -- private_key.pem public_key.pem backends/.env` → keine Commits | 👤 |
-| 7.3 | Verifikation: `grep -r "192.168.178" .` → kein Treffer | 👤 |
+| 7.1 | Verifikation PEM-Dateien nicht mehr getrackt (PowerShell):<br>`git ls-files \| Select-String -Pattern "\.(pem\|key)"`<br>→ keine Ausgabe | 👤 |
+| 7.2 | Verifikation History bereinigt:<br>`git log --all -- private_key.pem public_key.pem backends/.env`<br>→ keine Commits | 👤 |
+| 7.3 | Verifikation keine private IP mehr im Code (PowerShell):<br>`git ls-files \| ForEach-Object { Select-String -Path $_ -Pattern "192\.168\.178" } `<br>→ keine Ausgabe | 👤 |
 | 7.4 | Web-App auf frischem Clone testen: `cd mobile && npx expo start --web` | 👤 |
 | 7.5 | Repo auf GitHub auf "Public" umstellen | 👤 |
 | 7.6 | Clone von einem anderen Account testen | 👤 |
