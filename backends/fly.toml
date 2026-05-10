@@ -2,7 +2,7 @@
 # Deploy: flyctl deploy (from backends/ directory)
 # First-time setup: flyctl launch --no-deploy, then set secrets with flyctl secrets set KEY=VALUE
 
-app = "meal-planner-api-long-feather-1592"
+app = "<deine-app>"
 primary_region = "fra"
 
 [http_service]
