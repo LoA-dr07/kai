@@ -9,6 +9,7 @@ backends/**/*.pyc
 mobile/node_modules/
 mobile/.expo/
 mobile/dist/
+mobile/dist-test/
 mobile/.env
 # Allgemein
 .DS_Store
