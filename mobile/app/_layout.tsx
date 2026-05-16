@@ -7,6 +7,7 @@ import { PowerSyncContext } from '@powersync/react';
 
 import { db, connector } from '../lib/powersync/database';
 import { ErrorScreen } from '../components/ErrorScreen';
+import { SyncStatusBanner } from '../components/SyncStatusBanner';
 import { Colors } from '../lib/theme';
 
 // ─── Global unhandled-error overlay ─────────────────────────────────────────
@@ -177,7 +178,10 @@ export default function RootLayout() {
       <ErrorBoundary>
         {db ? (
           <PowerSyncContext.Provider value={db}>
-            {screens}
+            <View style={{ flex: 1 }}>
+              <SyncStatusBanner />
+              {screens}
+            </View>
           </PowerSyncContext.Provider>
         ) : screens}
       </ErrorBoundary>
