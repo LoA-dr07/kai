@@ -1,4 +1,4 @@
-# Frontend-Dokumentation – Meal-Planner
+# Frontend-Dokumentation – KAI
 
 **Framework:** React Native / Expo · TypeScript · Expo Router
 **Plattformen:** iOS · Android (via Expo Go) · Web (Expo Web)
