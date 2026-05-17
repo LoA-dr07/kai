@@ -744,6 +744,10 @@ export default function SettingsScreen() {
         <Text selectable style={diagStyles.url}>
           {process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000  ← FALLBACK, URL fehlt!'}
         </Text>
+        <Text style={styles.fieldLabel}>PowerSync-URL (im Build eingebaut)</Text>
+        <Text selectable style={diagStyles.url}>
+          {process.env.EXPO_PUBLIC_POWERSYNC_URL ?? '← nicht gesetzt!'}
+        </Text>
       </View>
     </ScrollView>
   );
