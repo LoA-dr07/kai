@@ -220,11 +220,10 @@ export default function MealPlanScreen() {
       closeModal();
     } catch (err: unknown) {
       const axErr = err as any;
-      const detail = axErr?.response
-        ? `HTTP ${axErr.response.status}`
-        : axErr?.request || axErr?.code === 'ECONNABORTED'
-        ? 'Netzwerkfehler – Server nicht erreichbar'
-        : err instanceof Error ? err.message : String(err);
+      const status = axErr?.response?.status;
+      const msg: string = axErr?.message ?? (err instanceof Error ? err.message : String(err));
+      const code: string = axErr?.code ?? '';
+      const detail = status ? `HTTP ${status}\n${msg}` : `${msg}${code ? ` (${code})` : ''}`;
       showAlert('Fehler', `Eintrag konnte nicht gespeichert werden.\n\n${detail}`);
     }
   };
