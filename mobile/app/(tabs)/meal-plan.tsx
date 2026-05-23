@@ -218,8 +218,13 @@ export default function MealPlanScreen() {
         await addEntry.mutateAsync({ planId, day_of_week: dayIndex, meal_type: mealType, recipe_id: recipeId, custom_meal: customMeal, assigned_user_ids: selectedUserIds });
       }
       closeModal();
-    } catch {
-      showAlert('Fehler', 'Eintrag konnte nicht gespeichert werden.');
+    } catch (err: unknown) {
+      const axErr = err as any;
+      const status = axErr?.response?.status;
+      const msg: string = axErr?.message ?? (err instanceof Error ? err.message : String(err));
+      const code: string = axErr?.code ?? '';
+      const detail = status ? `HTTP ${status}\n${msg}` : `${msg}${code ? ` (${code})` : ''}`;
+      showAlert('Fehler', `Eintrag konnte nicht gespeichert werden.\n\n${detail}`);
     }
   };
 

@@ -1,4 +1,4 @@
-# API-Referenz – Meal-Planner
+# API-Referenz – KAI
 
 **Base URL (Produktion):** `https://<deine-app>.fly.dev`
 **Base URL (lokal):** `http://localhost:8000`

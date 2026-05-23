@@ -738,11 +738,37 @@ export default function SettingsScreen() {
           {membersList}
         </>
       )}
+      <View style={[styles.card, { marginTop: 8 }]}>
+        <Text style={[styles.sectionTitle, { fontSize: 14 }]}>Verbindung</Text>
+        {(() => {
+          const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? '';
+          const isHttps = apiUrl.startsWith('https://');
+          const isEmpty = !apiUrl;
+          return (
+            <>
+              <Text style={styles.fieldLabel}>API-URL (im Build eingebaut)</Text>
+              <Text selectable style={[diagStyles.url, (!isHttps || isEmpty) && diagStyles.urlError]}>
+                {isEmpty ? '← nicht gesetzt! Fallback: http://localhost:8000' : apiUrl}
+                {!isEmpty && !isHttps ? '  ← kein https:// !' : ''}
+              </Text>
+            </>
+          );
+        })()}
+        <Text style={styles.fieldLabel}>PowerSync-URL (im Build eingebaut)</Text>
+        <Text selectable style={diagStyles.url}>
+          {process.env.EXPO_PUBLIC_POWERSYNC_URL ?? '← nicht gesetzt!'}
+        </Text>
+      </View>
     </ScrollView>
   );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
+
+const diagStyles = StyleSheet.create({
+  url: { fontSize: 12, color: '#444', fontFamily: 'monospace', marginTop: 4 },
+  urlError: { color: '#C62828', fontWeight: '700' },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: BG },

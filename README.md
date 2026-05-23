@@ -1,4 +1,4 @@
-# Meal-Planner
+# KAI
 
 Familien-Mahlzeitenplaner für gemeinsame Nutzung im Haushalt (3 Mitglieder).
 Features: Rezeptverwaltung, Wochenplanung, KI-Unterstützung, Import/Export, Tags, Sternebewertungen.
@@ -24,7 +24,7 @@ Features: Rezeptverwaltung, Wochenplanung, KI-Unterstützung, Import/Export, Tag
 
 ```powershell
 git clone <repo-url>
-cd meal-planner
+cd kai
 
 # Backend
 cd backends
