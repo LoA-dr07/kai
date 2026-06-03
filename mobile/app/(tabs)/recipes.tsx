@@ -6,6 +6,7 @@ import * as Sharing from 'expo-sharing';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, useWindowDimensions } from 'react-native';
+import { useOrientation } from '../../lib/hooks/useOrientation';
 import {
   ActivityIndicator,
   Alert,
@@ -36,6 +37,7 @@ export default function RecipesScreen() {
   const router = useRouter();
   const { filter_ids } = useLocalSearchParams<{ filter_ids?: string }>();
   const { width } = useWindowDimensions();
+  const { isLandscape } = useOrientation();
   const isUltraWide = width >= 2560;
   const numColumns = isUltraWide ? 6 : width >= 1400 ? 4 : width >= 1024 ? 3 : width >= 768 ? 2 : 1;
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
@@ -243,11 +245,11 @@ export default function RecipesScreen() {
         keyExtractor={item => String(item.id)}
         numColumns={numColumns}
         columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
-        contentContainerStyle={[styles.list, numColumns > 1 && styles.listWide, isUltraWide && styles.listUltraWide]}
+        contentContainerStyle={[styles.list, numColumns > 1 && styles.listWide, isUltraWide && styles.listUltraWide, isLandscape && styles.listLandscape]}
         onRefresh={refetch}
         refreshing={isRefetching}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
+          <View style={[styles.emptyContainer, isLandscape && styles.emptyContainerLandscape]}>
             {selectedTagIds.length > 0 || activeFilterIds ? (
               <>
                 <Text style={styles.emptyTitle}>Keine Rezepte gefunden</Text>
@@ -393,8 +395,10 @@ const styles = StyleSheet.create({
   list: { padding: 16, paddingBottom: 120 },
   listWide: { maxWidth: 1600, alignSelf: 'center', width: '100%' },
   listUltraWide: { maxWidth: 2600 },
+  listLandscape: { paddingBottom: 72 },
   columnWrapper: { gap: 12 },
   emptyContainer: { alignItems: 'center', marginTop: 80 },
+  emptyContainerLandscape: { marginTop: 32 },
   emptyTitle: { fontSize: 18, fontWeight: '600', color: '#444', marginBottom: 8 },
   emptySubtitle: { fontSize: 15, color: '#888' },
   fabGroup: {

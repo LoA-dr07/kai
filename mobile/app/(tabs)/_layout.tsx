@@ -1,7 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { useOrientation } from '../../lib/hooks/useOrientation';
 
 export default function TabsLayout() {
+  const { isLandscape, isTablet } = useOrientation();
+  // On tablets in landscape: side tab bar. Otherwise: bottom tab bar.
+  const tabBarPosition = isTablet && isLandscape ? 'left' : 'bottom';
+
   return (
     <Tabs
       screenOptions={{
@@ -9,6 +14,7 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: '#2E7D32' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: '600' },
+        tabBarPosition,
       }}
     >
       <Tabs.Screen

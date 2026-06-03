@@ -16,7 +16,7 @@
            ▼                      ▼
 ┌──────────────────────────────────────────────────────┐
 │            Backend (FastAPI · Python)                │
-│            fly.io · https://<deine-app>.fly.dev                        │
+│            fly.io · https://kai-api-long-feather-1592.fly.dev                        │
 │            Swagger UI: /docs                         │
 │            CORS: allow_origins=["*"]                 │
 └──────────────────────┬───────────────────────────────┘

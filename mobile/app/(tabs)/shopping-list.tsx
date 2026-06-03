@@ -125,7 +125,7 @@ type Preset = 'this_week' | 'next_week' | 'today' | 'tomorrow' | 'custom';
 
 // --- Main screen ---
 export default function ShoppingListScreen() {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const isWide = width >= 768;
   const isUltraWide = width >= 2560;
 
@@ -311,9 +311,9 @@ export default function ShoppingListScreen() {
           refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
         >
           {/* Unchecked items */}
-          <View style={isUltraWide ? styles.itemsGrid : undefined}>
+          <View style={isWide ? styles.itemsGrid : undefined}>
             {uncheckedItems.map(item => (
-              <View key={item.id} style={isUltraWide ? styles.itemGridCell : undefined}>
+              <View key={item.id} style={isWide ? styles.itemGridCell : undefined}>
                 <ItemRow item={item} onToggle={() => handleToggle(item)} onDelete={() => handleDelete(item)} />
               </View>
             ))}
@@ -328,9 +328,9 @@ export default function ShoppingListScreen() {
                   <Text style={styles.clearDoneBtn}>Alle löschen</Text>
                 </TouchableOpacity>
               </View>
-              <View style={isUltraWide ? styles.itemsGrid : undefined}>
+              <View style={isWide ? styles.itemsGrid : undefined}>
                 {checkedItems.map(item => (
-                  <View key={item.id} style={isUltraWide ? styles.itemGridCell : undefined}>
+                  <View key={item.id} style={isWide ? styles.itemGridCell : undefined}>
                     <ItemRow item={item} onToggle={() => handleToggle(item)} onDelete={() => handleDelete(item)} />
                   </View>
                 ))}
@@ -348,7 +348,7 @@ export default function ShoppingListScreen() {
         onRequestClose={() => setDatePickerVisible(false)}
       >
         <View style={styles.overlay}>
-          <View style={[styles.pickerCard, isWide && styles.pickerCardWide]}>
+          <View style={[styles.pickerCard, isWide && styles.pickerCardWide, { maxHeight: height * 0.88 }]}>
             <Text style={styles.pickerTitle}>Zeitraum wählen</Text>
 
             {/* Preset chips */}

@@ -657,7 +657,7 @@ const styles = StyleSheet.create({
   addedConfirmText: { fontSize: 13, color: GREEN, fontWeight: '600', paddingVertical: 7 },
   pickerBlock: { marginTop: 10, padding: 10, backgroundColor: Colors.bg, borderRadius: 8, gap: 4 },
   pickerLabel: { fontSize: 12, fontWeight: '700', color: '#888', textTransform: 'uppercase', letterSpacing: 0.4 },
-  pickerChipRow: { flexDirection: 'row', gap: 6, paddingVertical: 4 },
+  pickerChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingVertical: 4 },
   pickerChip: { borderWidth: 1.5, borderColor: BORDER, borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: '#fff' },
   pickerChipSelected: { borderColor: GREEN, backgroundColor: GREEN_LIGHT },
   pickerChipText: { fontSize: 13, color: '#555', fontWeight: '500' },
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
   sendBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   sendBtnHint: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '500', marginTop: 1 },
 
-  convModal: { flex: 1, backgroundColor: '#fff' },
+  convModal: { flex: 1, backgroundColor: '#fff', maxHeight: '90%' },
   convModalWide: { maxWidth: 480, alignSelf: 'center', width: '100%' },
   convModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: BORDER },
   convModalTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
