@@ -243,6 +243,14 @@ Alle Meal-Plan-Mutations invalidieren `['meal-plans']`.
 | `useClearDoneItems()` | Mutation | Alle abgehakten Einträge löschen (`DELETE /shopping-list/done`), invalidiert `['shopping-list']` |
 | `useDeleteShoppingList()` | Mutation | Gesamte Liste löschen (`DELETE /shopping-list`), invalidiert `['shopping-list']` |
 
+### Orientierungs-Hook (`useOrientation.ts`)
+
+| Hook | Rückgabe | Beschreibung |
+|------|----------|--------------|
+| `useOrientation()` | `{ isLandscape, isPortrait, isTablet }` | Erkennt Geräteausrichtung und Tablet-Formfaktor via `useWindowDimensions`. Tablet = längste Seite ≥ 768px. |
+
+Wird u.a. in `app/(tabs)/_layout.tsx` verwendet, um die Tab-Leiste im Querformat auf Tablets seitlich (`left`) statt unten (`bottom`) anzuzeigen.
+
 ### Konversations-Hooks (`useConversations.ts`)
 
 | Hook | Typ | Beschreibung |

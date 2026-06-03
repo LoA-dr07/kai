@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useOrientation } from '../../lib/hooks/useOrientation';
 import { ErrorScreen } from '../../components/ErrorScreen';
 import {
   View,
@@ -85,6 +86,7 @@ function AvatarBadges({ entry, users }: { entry: MealPlanEntry; users: User[] })
 // --- Main component ---
 export default function MealPlanScreen() {
   const { width } = useWindowDimensions();
+  const { isLandscape, height } = useOrientation();
   const isWide = width >= 768;
   const isDesktop = width >= 1024;
   const isUltraWide = width >= 2560;
@@ -504,7 +506,7 @@ export default function MealPlanScreen() {
 
       {/* Recipe picker modal */}
       <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeModal}>
-        <View style={[styles.modalContainer, isWide && styles.modalContainerWide]}>
+        <View style={[styles.modalContainer, isWide && styles.modalContainerWide, isLandscape && { maxHeight: height * 0.92 }]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
               {selectedSlot ? `${DAYS_SHORT[selectedSlot.dayIndex]} – ${selectedMealLabel}` : 'Mahlzeit'}
