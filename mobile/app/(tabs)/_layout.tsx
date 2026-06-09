@@ -4,13 +4,19 @@ import { useOrientation } from '../../lib/hooks/useOrientation';
 
 export default function TabsLayout() {
   const { isLandscape, isTablet } = useOrientation();
-  // On tablets in landscape: side tab bar. Otherwise: bottom tab bar.
-  const tabBarPosition = isTablet && isLandscape ? 'left' : 'bottom';
+  // On tablets in landscape: compact icon-only side tab bar.
+  const isSideBar = isTablet && isLandscape;
+  const tabBarPosition = isSideBar ? 'left' : 'bottom';
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#2E7D32',
+        tabBarInactiveTintColor: '#888',
+        tabBarActiveBackgroundColor: '#E8F5E9',
+        tabBarIndicatorStyle: { backgroundColor: '#2E7D32', width: 3 },
+        tabBarShowLabel: !isSideBar,
+        tabBarStyle: isSideBar ? { width: 64 } : undefined,
         headerStyle: { backgroundColor: '#2E7D32' },
         headerTintColor: '#fff',
         headerTitleStyle: { fontWeight: '600' },
