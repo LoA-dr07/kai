@@ -8,6 +8,14 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Added
+
+- Wochenplan: Tap auf einen Eintrag mit Rezept öffnet die Rezeptdetailansicht als Modal (statt direkt die Rezeptauswahl); über einen "Austauschen"-Button im Modal-Header kann das Rezept im Slot weiterhin direkt ersetzt werden, wahlweise durch ein anderes Rezept oder per Freitext
+
+### Changed
+
+- Rezeptdetail-Logik in `RecipeDetailContent` extrahiert, damit sie sowohl im Vollbild-Screen (`recipe/[id]/index.tsx`) als auch im neuen Wochenplan-Modal genutzt werden kann
+
 ---
 
 ## [1.0.0] – 2026-05-10

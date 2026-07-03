@@ -29,6 +29,9 @@ mobile/
 ├── components/             # Wiederverwendbare UI-Komponenten
 │   ├── AddToMealPlanModal.tsx # Rezept zum Essensplan hinzufügen (Woche, Tag, Mahlzeit, User)
 │   ├── AiSuggestionModal.tsx  # KI-Wochenplan-Modal (Mahlzeitstyp-Filter, Eingabe → Laden → Vorschau → Übernehmen)
+│   ├── RecipeDetailContent.tsx # Reine Rezept-Detaildarstellung (Zutaten, Bewertungen, Tags, Aktionen) – von Screen & Modal genutzt
+│   ├── RecipeDetailModal.tsx  # Rezeptdetail als Modal über dem Wochenplan, inkl. "Austauschen"-Flow
+│   ├── RecipeSearchPanel.tsx  # Rezeptsuche mit Tag-/Bewertungsfilter + "Zuletzt verwendet" (Essensplan-Rezeptauswahl & Austausch)
 │   ├── RecipeForm.tsx         # Rezeptformular (Neu + Bearbeiten)
 │   └── Tooltip.tsx            # Hover-Tooltip für icon-only Buttons (Web) + accessibilityLabel (Mobile)
 ├── lib/
@@ -86,7 +89,10 @@ mobile/
 - **Zuletzt verwendete Rezepte:** Schnellzugriff auf kürzlich eingetragene Rezepte beim Hinzufügen eines Eintrags
 - **Web Drag & Drop:** Einträge können per Drag & Drop zwischen Zellen verschoben werden (nur Web)
 - **`repeat_weekly`-Indikator:** Wiederholende Einträge werden visuell gekennzeichnet
-- Zelle antippen → Bearbeitungsmodal (Rezept auswählen oder Freitext eingeben, User zuweisen)
+- Eintrag antippen:
+  - Hat der Eintrag ein Rezept (`recipe_id` gesetzt) → öffnet `RecipeDetailModal` (Rezeptdetailansicht direkt über dem Wochenplan, kein Screen-Wechsel). Im Modal-Header kann über den "Austauschen"-Icon-Button (Tooltip) auf eine Rezeptsuche (`RecipeSearchPanel`) umgeschaltet werden, um das Rezept im Slot direkt zu ersetzen
+  - Freitext-Einträge (`custom_meal`, kein Rezept) → weiterhin das Bearbeitungsmodal (Rezept auswählen oder Freitext eingeben, User zuweisen)
+- Leere Zelle antippen → Bearbeitungsmodal zum Neuanlegen
 - Responsiv: Tablet-Layout ab 768px Breite
 
 ### `(tabs)/shopping-list.tsx` – Einkaufsliste
@@ -128,9 +134,10 @@ Dreistufiger Flow:
 - Gruppierung erfolgt über `tag.category`: `meal_type` → Mahlzeiten-Typ, `family` → Familienmitglieder, `null` → Eigene Tags
 
 ### `recipe/[id]/index.tsx` – Rezeptdetail
+- Dünner Wrapper: setzt den Stack-Screen-Titel und delegiert die Darstellung an `RecipeDetailContent` (siehe Komponenten-Abschnitt), verdrahtet mit `router.push`/`router.back`
 - Vollständige Rezeptinfos: Zutaten, Tags, Sternebewertungen pro User
 - Bewertung pro Haushaltsmitglied (1–5 Sterne, 0 = nicht bewertet)
-- Buttons: Bearbeiten (→ `recipe/[id]/edit`) · Löschen
+- Buttons: Kochen · Zum Essensplan · Bearbeiten (→ `recipe/[id]/edit`) · Löschen
 
 ### `recipe/[id]/edit.tsx` – Rezept bearbeiten
 - Verwendet `RecipeForm`-Komponente mit vorausgefüllten Daten
@@ -437,6 +444,49 @@ const [visible, setVisible] = useState(false);
 **Einstiegspunkte:**
 - `(tabs)/recipes.tsx`: Kalender-Icon-Button auf jeder Rezeptkarte (oben rechts)
 - `recipe/[id]/index.tsx`: "Zum Essensplan"-Button in der Aktionsleiste
+
+---
+
+## Komponenten: RecipeDetailContent, RecipeDetailModal, RecipeSearchPanel
+
+Drei zusammenhängende Komponenten, mit denen die Rezeptdetailansicht sowohl als Vollbild-Screen (Rezepte-Tab) als auch als Modal über dem Wochenplan (mit Austausch-Funktion) dargestellt werden kann, ohne Logik zu duplizieren.
+
+### `RecipeDetailContent` (`mobile/components/RecipeDetailContent.tsx`)
+Reine Darstellungskomponente mit der vollständigen Rezeptdetail-Logik (Beschreibung, Quelle, Meta, Tags, Bewertungen, Zutaten-Inline-Editing, Aktionsleiste Kochen/Zum Essensplan/Bearbeiten/Löschen). Kennt keine Navigation direkt, sondern bekommt sie über Props gereicht – dadurch kann sie sowohl in einem Stack-Screen als auch in einem Modal verwendet werden.
+
+| Prop | Typ | Beschreibung |
+|------|-----|--------------|
+| `recipeId` | `number` | ID des anzuzeigenden Rezepts |
+| `onNavigate` | `(path: string) => void` | Aufgerufen bei Kochen-/Bearbeiten-Button (Ziel-Pfad als String) |
+| `onDeleted` | `() => void` | Aufgerufen nach erfolgreichem Löschen |
+
+Wird von `recipe/[id]/index.tsx` (mit `router.push`/`router.back`) und von `RecipeDetailModal` (mit `onClose` vor der Navigation) verwendet.
+
+### `RecipeDetailModal` (`mobile/components/RecipeDetailModal.tsx`)
+Zeigt `RecipeDetailContent` als `pageSheet`-Modal an. Enthält zusätzlich einen "Austauschen"-Icon-Button im Header (nur wenn `onSwap` übergeben wird), der intern auf einen Austausch-Bereich mit zwei Tabs umschaltet: **Rezept** (`RecipeSearchPanel`) oder **Freitext** (Textfeld, analog zum Freitext-Tab im Essensplan-Modal).
+
+| Prop | Typ | Beschreibung |
+|------|-----|--------------|
+| `recipeId` | `number \| null` | ID des Rezepts; `null` → Modal rendert nichts |
+| `visible` | `boolean` | Steuert die Sichtbarkeit |
+| `onClose` | `() => void` | Schließen-Button, nach Löschen, nach Navigation |
+| `onSwap` | `(recipeId: number \| null, customMeal: string \| null) => void` (optional) | Wird bei Auswahl eines neuen Rezepts (`customMeal: null`) oder beim Speichern des Freitexts (`recipeId: null`) aufgerufen; ohne diese Prop wird kein Austauschen-Button angezeigt |
+
+**Einstiegspunkt:** `(tabs)/meal-plan.tsx` – Tap auf einen Plan-Eintrag mit Rezept; `onSwap` ruft dort `useUpdateEntry` auf (mit `recipe_id` oder `custom_meal`, je nach gewähltem Tab) und schließt danach das Modal.
+
+### `RecipeSearchPanel` (`mobile/components/RecipeSearchPanel.tsx`)
+In sich geschlossene Rezeptsuche: Suchfeld, Tag-Filter, Mindestbewertungs-Filter pro Haushaltsmitglied, „Zuletzt verwendet"-Liste (optional) und Ergebnisliste. Verwaltet Such-/Filterzustand intern.
+
+| Prop | Typ | Beschreibung |
+|------|-----|--------------|
+| `recipes` | `Recipe[]` | Zu durchsuchende Rezepte |
+| `tags` | `Tag[]` | Für den Tag-Filter |
+| `users` | `User[]` | Für den Mindestbewertungs-Filter |
+| `recentRecipes` | `Recipe[]` | Zeigt einen „Zuletzt verwendet"-Block, sofern nicht leer und kein Filter aktiv |
+| `initialTagIds` | `number[]` (optional) | Vorausgewählte Tag-Filter beim ersten Rendern (z.B. passend zur Mahlzeit) |
+| `onSelect` | `(recipeId: number) => void` | Aufgerufen bei Auswahl eines Rezepts |
+
+Verwendet im Rezept-Auswahl-Tab des Essensplan-Modals (`(tabs)/meal-plan.tsx`, mit `key`-Prop zum gezielten Zurücksetzen beim erneuten Öffnen) und im Austausch-Modus von `RecipeDetailModal`.
 
 ---
 
