@@ -40,6 +40,17 @@ const AVATAR_COLORS = [
   '#37474F',
 ];
 
+const AVATAR_COLOR_NAMES: Record<string, string> = {
+  '#1565C0': 'Blau',
+  '#6A1B9A': 'Lila',
+  '#E65100': 'Orange',
+  '#2E7D32': 'Grün',
+  '#C62828': 'Rot',
+  '#00838F': 'Türkis',
+  '#4E342E': 'Braun',
+  '#37474F': 'Anthrazit',
+};
+
 // ─── Default values ───────────────────────────────────────────────────────────
 
 const DEFAULT_HOUSEHOLD_SETTINGS: HouseholdSettings = {
@@ -274,11 +285,12 @@ function ColorPicker({
   return (
     <View style={styles.colorRow}>
       {AVATAR_COLORS.map(c => (
-        <TouchableOpacity
-          key={c}
-          style={[styles.colorDot, { backgroundColor: c }, value === c && styles.colorDotActive]}
-          onPress={() => onChange(c)}
-        />
+        <Tooltip key={c} label={AVATAR_COLOR_NAMES[c] ?? 'Farbe'}>
+          <TouchableOpacity
+            style={[styles.colorDot, { backgroundColor: c }, value === c && styles.colorDotActive]}
+            onPress={() => onChange(c)}
+          />
+        </Tooltip>
       ))}
     </View>
   );

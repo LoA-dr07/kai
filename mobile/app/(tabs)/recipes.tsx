@@ -9,7 +9,6 @@ import { Platform, useWindowDimensions } from 'react-native';
 import { useOrientation } from '../../lib/hooks/useOrientation';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   ScrollView,
   StyleSheet,
@@ -17,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { showAlert } from '../../lib/alert';
 import { api } from '../../lib/api';
 import { useImportRecipes, useRecipes, useTags } from '../../lib/hooks/useRecipes';
 import type { Recipe, RecipeExportItem } from '../../lib/types';
@@ -96,12 +96,12 @@ export default function RecipesScreen() {
       } else {
         const isAvailable = await Sharing.isAvailableAsync();
         if (!isAvailable) {
-          Alert.alert('Nicht unterstützt', 'Teilen wird auf diesem Gerät nicht unterstützt.');
+          showAlert('Nicht unterstützt', 'Teilen wird auf diesem Gerät nicht unterstützt.');
           return;
         }
         const cacheDir = FileSystem.cacheDirectory;
         if (!cacheDir) {
-          Alert.alert('Fehler', 'Kein Cache-Verzeichnis verfügbar.');
+          showAlert('Fehler', 'Kein Cache-Verzeichnis verfügbar.');
           return;
         }
         const path = cacheDir + 'rezepte.json';
@@ -109,7 +109,7 @@ export default function RecipesScreen() {
         await Sharing.shareAsync(path, { mimeType: 'application/json', dialogTitle: 'Rezepte exportieren' });
       }
     } catch (e) {
-      Alert.alert('Export fehlgeschlagen', e instanceof Error ? e.message : String(e));
+      showAlert('Export fehlgeschlagen', e instanceof Error ? e.message : String(e));
     } finally {
       setIsExporting(false);
     }
@@ -136,10 +136,10 @@ export default function RecipesScreen() {
       if (created === 1) {
         router.push(`/recipe/${created_ids[0]}`);
       } else {
-        Alert.alert('Import abgeschlossen', `${created} Rezept(e) importiert, ${skipped} übersprungen.`);
+        showAlert('Import abgeschlossen', `${created} Rezept(e) importiert, ${skipped} übersprungen.`);
       }
     } catch (e) {
-      Alert.alert('Import fehlgeschlagen', e instanceof Error ? e.message : String(e));
+      showAlert('Import fehlgeschlagen', e instanceof Error ? e.message : String(e));
     } finally {
       setIsImporting(false);
     }
@@ -157,10 +157,10 @@ export default function RecipesScreen() {
       if (created === 1) {
         router.push(`/recipe/${created_ids[0]}`);
       } else {
-        alert(`Import abgeschlossen: ${created} Rezept(e) importiert, ${skipped} übersprungen.`);
+        showAlert('Import abgeschlossen', `${created} Rezept(e) importiert, ${skipped} übersprungen.`);
       }
     } catch (e) {
-      alert(`Import fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`);
+      showAlert('Import fehlgeschlagen', e instanceof Error ? e.message : String(e));
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

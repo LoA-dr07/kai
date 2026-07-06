@@ -14,6 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { showAlert, showConfirm } from '../../lib/alert';
+import { Tooltip } from '../../components/Tooltip';
 import {
   useShoppingList,
   useGenerateShoppingList,
@@ -114,9 +115,11 @@ function ItemRow({
         </View>
         {qty ? <Text style={rowStyles.qty}>{qty}</Text> : null}
       </View>
-      <TouchableOpacity onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <Text style={rowStyles.deleteBtn}>✕</Text>
-      </TouchableOpacity>
+      <Tooltip label="Artikel löschen" position="left">
+        <TouchableOpacity onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Text style={rowStyles.deleteBtn}>✕</Text>
+        </TouchableOpacity>
+      </Tooltip>
     </View>
   );
 }
@@ -287,9 +290,11 @@ export default function ShoppingListScreen() {
           </TouchableOpacity>
         </View>
         {list && (
-          <TouchableOpacity onPress={handleDeleteList} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Text style={styles.deleteListBtn}>🗑</Text>
-          </TouchableOpacity>
+          <Tooltip label="Liste löschen" position="left">
+            <TouchableOpacity onPress={handleDeleteList} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={styles.deleteListBtn}>🗑</Text>
+            </TouchableOpacity>
+          </Tooltip>
         )}
       </View>
 

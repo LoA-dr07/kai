@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,12 +9,14 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { showAlert } from '../lib/alert';
-import { getMondayOf, getISOWeek, isoDate } from '../lib/dateUtils';
-import { useAddEntry, useCreateMealPlan, useMealPlans } from '../lib/hooks/useMealPlan';
+import { useAddEntry, useCreateMealPlan, useMealPlans, ensurePlanForWeek } from '../lib/hooks/useMealPlan';
+import { useWeekNavigation } from '../lib/hooks/useWeekNavigation';
 import { useUsers } from '../lib/hooks/useUsers';
-import { DAYS_DE, MEAL_TYPES } from '../lib/constants';
+import { DAYS_SHORT, MEAL_TYPES } from '../lib/constants';
 import { Colors } from '../lib/theme';
+import { BaseModal } from './BaseModal';
 import { Tooltip } from './Tooltip';
+import { UserChipRow } from './UserChipRow';
 import type { MealType } from '../lib/types';
 
 interface AddToMealPlanModalProps {
@@ -35,13 +36,11 @@ const GREEN = Colors.green;
 const GREEN_LIGHT = Colors.greenLight;
 const BORDER = Colors.border;
 
-const DAYS_SHORT = DAYS_DE.map(d => d.slice(0, 2));
-
 export function AddToMealPlanModal({ recipeId, recipeName, visible, onClose }: AddToMealPlanModalProps) {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
 
-  const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(new Date()));
+  const { weekStartIso, weekNum, year, navigateWeek, resetToToday } = useWeekNavigation();
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(todayDayIndex);
   const [selectedMealType, setSelectedMealType] = useState<MealType>('dinner');
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
@@ -55,24 +54,12 @@ export function AddToMealPlanModal({ recipeId, recipeName, visible, onClose }: A
   // Reset state when modal opens
   useEffect(() => {
     if (visible) {
-      setWeekStart(getMondayOf(new Date()));
+      resetToToday();
       setSelectedDayIndex(todayDayIndex());
       setSelectedMealType('dinner');
       setSelectedUserIds([]);
     }
   }, [visible]);
-
-  const weekStartIso = isoDate(weekStart);
-  const weekNum = getISOWeek(weekStart);
-  const year = weekStart.getFullYear();
-
-  const navigateWeek = (delta: number) => {
-    setWeekStart(prev => {
-      const d = new Date(prev);
-      d.setDate(d.getDate() + delta * 7);
-      return d;
-    });
-  };
 
   const toggleUser = (userId: number) => {
     setSelectedUserIds(prev =>
@@ -83,14 +70,7 @@ export function AddToMealPlanModal({ recipeId, recipeName, visible, onClose }: A
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      let planId = allPlans?.find(p => p.week_start_date === weekStartIso)?.id;
-      if (!planId) {
-        const newPlan = await createPlan.mutateAsync({
-          name: `KW ${weekNum} ${year}`,
-          week_start_date: weekStartIso,
-        });
-        planId = newPlan.id;
-      }
+      const planId = await ensurePlanForWeek(allPlans, weekStartIso, `KW ${weekNum} ${year}`, createPlan);
       await addEntry.mutateAsync({
         planId,
         day_of_week: selectedDayIndex,
@@ -107,21 +87,8 @@ export function AddToMealPlanModal({ recipeId, recipeName, visible, onClose }: A
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <View style={[styles.container, isWide && styles.containerWide]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Zum Essensplan hinzufügen</Text>
-          <TouchableOpacity onPress={onClose}>
-            <Text style={styles.headerClose}>Schließen</Text>
-          </TouchableOpacity>
-        </View>
-
+    <BaseModal visible={visible} onClose={onClose} headerLeft="Zum Essensplan hinzufügen" isWide={isWide}>
+      <View style={styles.body}>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
           {/* Recipe name */}
           <View style={styles.recipeNameSection}>
@@ -192,25 +159,7 @@ export function AddToMealPlanModal({ recipeId, recipeName, visible, onClose }: A
           {users.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Für wen?</Text>
-              <View style={styles.chipRow}>
-                {users.map(user => {
-                  const selected = selectedUserIds.includes(user.id);
-                  return (
-                    <TouchableOpacity
-                      key={user.id}
-                      style={[
-                        styles.chip,
-                        selected && { backgroundColor: user.avatar_color, borderColor: user.avatar_color },
-                      ]}
-                      onPress={() => toggleUser(user.id)}
-                    >
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                        {user.short_name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+              <UserChipRow users={users} selectedIds={selectedUserIds} onToggle={toggleUser} />
             </View>
           )}
         </ScrollView>
@@ -228,25 +177,12 @@ export function AddToMealPlanModal({ recipeId, recipeName, visible, onClose }: A
           </TouchableOpacity>
         </View>
       </View>
-    </Modal>
+    </BaseModal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  containerWide: { maxWidth: 680, width: '100%', alignSelf: 'center' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-  },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
-  headerClose: { fontSize: 16, color: GREEN, fontWeight: '600' },
+  body: { flex: 1 },
 
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 16 },

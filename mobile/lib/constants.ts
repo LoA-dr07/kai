@@ -10,6 +10,11 @@ export const DAYS_DE = [
   'Sonntag',
 ];
 
+export const DAYS_SHORT = DAYS_DE.map(d => d.slice(0, 2));
+
+// Kept in sync by hand with the backend: backends/app/enums.py (MealType enum)
+// and lib/types.ts (MealType union). Update all three when adding/removing/
+// renaming a meal type.
 export const MEAL_TYPES: { key: MealType; label: string; icon: string }[] = [
   { key: 'breakfast', label: 'Frühstück', icon: '🍳' },
   { key: 'lunch', label: 'Mittagessen', icon: '🥗' },

@@ -29,14 +29,17 @@ mobile/
 ├── components/             # Wiederverwendbare UI-Komponenten
 │   ├── AddToMealPlanModal.tsx # Rezept zum Essensplan hinzufügen (Woche, Tag, Mahlzeit, User)
 │   ├── AiSuggestionModal.tsx  # KI-Wochenplan-Modal (Mahlzeitstyp-Filter, Eingabe → Laden → Vorschau → Übernehmen)
+│   ├── BaseModal.tsx          # Gemeinsame Modal-Hülle (Header + Schließen-Button) für alle pageSheet-Modals
 │   ├── RecipeDetailContent.tsx # Reine Rezept-Detaildarstellung (Zutaten, Bewertungen, Tags, Aktionen) – von Screen & Modal genutzt
 │   ├── RecipeDetailModal.tsx  # Rezeptdetail als Modal über dem Wochenplan, inkl. "Austauschen"-Flow
 │   ├── RecipeSearchPanel.tsx  # Rezeptsuche mit Tag-/Bewertungsfilter + "Zuletzt verwendet" (Essensplan-Rezeptauswahl & Austausch)
 │   ├── RecipeForm.tsx         # Rezeptformular (Neu + Bearbeiten)
-│   └── Tooltip.tsx            # Hover-Tooltip für icon-only Buttons (Web) + accessibilityLabel (Mobile)
+│   ├── Tooltip.tsx            # Hover-Tooltip für icon-only Buttons (Web) + accessibilityLabel (Mobile)
+│   └── UserChipRow.tsx        # Zeile mit Personen-Auswahl-Chips (Avatarfarbe bei Auswahl)
 ├── lib/
 │   ├── api.ts              # Axios-Client
 │   ├── types.ts            # TypeScript-Interfaces
+│   ├── constants.ts        # DAYS_DE/DAYS_SHORT, MEAL_TYPES
 │   ├── alert.ts            # Cross-platform Alert-Utility
 │   ├── dateUtils.ts        # Datums-Hilfsfunktionen (getMondayOf, isoDate, getISOWeek)
 │   ├── powersync/          # PowerSync-Konfiguration
@@ -47,8 +50,10 @@ mobile/
 │   └── hooks/              # React Query / PowerSync Custom Hooks
 │       ├── useRecipes.ts              # Native: PowerSync SQLite
 │       ├── useRecipes.web.ts          # Web: REST API Fallback
-│       ├── useMealPlan.ts             # Native: PowerSync SQLite
+│       ├── useMealPlan.ts             # Native: PowerSync SQLite; exportiert außerdem ensurePlanForWeek()
 │       ├── useMealPlan.web.ts         # Web: REST API Fallback
+│       ├── useWeekNavigation.ts       # Wochenauswahl-State (weekStart, prev/next) für Woche-Picker
+│       ├── useRecentRecipes.ts        # Letzte N eindeutige Rezepte aus einem Wochenplan
 │       ├── useUsers.ts                # Native: PowerSync SQLite
 │       ├── useUsers.web.ts            # Web: REST API Fallback
 │       ├── useHousehold.ts            # Native: PowerSync SQLite
@@ -213,6 +218,20 @@ Alle Hooks befinden sich in `mobile/lib/hooks/`. Sie wrappen Axios-Calls und ver
 | `useDeleteEntry()` | Mutation | Eintrag entfernen |
 
 Alle Meal-Plan-Mutations invalidieren `['meal-plans']`.
+
+`useMealPlan.ts` exportiert zusätzlich `ensurePlanForWeek(allPlans, weekStartIso, planName, createPlan)`: sucht den Plan für die gegebene Woche in `allPlans` oder legt ihn per `createPlan` neu an. Gemeinsam genutzt von `AddToMealPlanModal` und `(tabs)/meal-plan.tsx`, die beide "Plan für diese Woche sicherstellen" vor dem Eintragen brauchen.
+
+### Wochenauswahl-Hook (`useWeekNavigation.ts`)
+
+| Hook | Rückgabe | Beschreibung |
+|------|----------|--------------|
+| `useWeekNavigation(initial?)` | `{ weekStart, setWeekStart, weekStartIso, weekNum, year, navigateWeek, resetToToday }` | Verwaltet den "Montag der gewählten Woche"-State inkl. Vor/Zurück-Navigation. Genutzt von `AddToMealPlanModal` und `(tabs)/meal-plan.tsx`. |
+
+### Zuletzt-verwendet-Hook (`useRecentRecipes.ts`)
+
+| Hook | Rückgabe | Beschreibung |
+|------|----------|--------------|
+| `useRecentRecipes(plan, recipes, limit=5)` | `Recipe[]` | Letzte `limit` eindeutige Rezepte, die im übergebenen Wochenplan verwendet wurden (neueste zuerst). Genutzt von `(tabs)/meal-plan.tsx` für den "Zuletzt verwendet"-Block in `RecipeSearchPanel`. |
 
 ### User-Hooks (`useUsers.ts`)
 
@@ -520,6 +539,44 @@ import { Tooltip } from '../components/Tooltip';
 ```
 
 **Konvention:** Jeder Button ohne sichtbaren Textlabel muss mit `<Tooltip>` gewrappt werden (siehe CLAUDE.md → Plattform-Kompatibilität).
+
+---
+
+## Komponente: BaseModal (`mobile/components/BaseModal.tsx`)
+
+Gemeinsame Hülle für alle `pageSheet`-Modals: `Modal` + Header-Zeile (links: Titel oder Zurück-Button, rechts: optionale Extra-Buttons + „Schließen") + Content-Bereich. Ersetzt die zuvor in `AddToMealPlanModal`, `RecipeDetailModal`, `AiSuggestionModal` und dem Rezept-Picker-Modal in `(tabs)/meal-plan.tsx` jeweils separat implementierte Kombination aus `Modal`+Header.
+
+| Prop | Typ | Default | Beschreibung |
+|------|-----|---------|--------------|
+| `visible` | `boolean` | — | Sichtbarkeit |
+| `onClose` | `() => void` | — | Schließen-Callback (Header-Button + `onRequestClose`) |
+| `headerLeft` | `ReactNode` | — | Titel-String oder eigenes Element (z.B. Zurück-Button) |
+| `headerRight` | `ReactNode` | — | Zusätzliche Header-Buttons vor „Schließen" |
+| `closable` | `boolean` | `true` | Blendet den „Schließen"-Button aus (z.B. während eines laufenden Speichervorgangs) |
+| `isWide` | `boolean` | — | Zentriert den Inhalt mit `maxWidth` auf breiten Bildschirmen |
+| `maxWidth` | `number` | `680` | Maximale Breite im Wide-Modus |
+| `containerStyle` | `StyleProp<ViewStyle>` | — | Zusätzlicher Style für den äußeren Container (z.B. `maxHeight` im Querformat) |
+
+**Verwendung (Beispiel):**
+```tsx
+<BaseModal visible={visible} onClose={onClose} headerLeft="Zum Essensplan hinzufügen" isWide={isWide}>
+  {/* Inhalt */}
+</BaseModal>
+```
+
+---
+
+## Komponente: UserChipRow (`mobile/components/UserChipRow.tsx`)
+
+Zeile mit einer anklickbaren Chip-Auswahl pro Haushaltsmitglied (Kürzel als Text, Avatarfarbe als Hintergrund bei Auswahl). Ersetzt die zuvor in `(tabs)/meal-plan.tsx` und `AddToMealPlanModal` separat implementierte, identische Chip-Logik für die "Für wen?"-Auswahl.
+
+| Prop | Typ | Beschreibung |
+|------|-----|--------------|
+| `users` | `User[]` | Anzuzeigende Haushaltsmitglieder |
+| `selectedIds` | `number[]` | Aktuell ausgewählte User-IDs |
+| `onToggle` | `(userId: number) => void` | Aufgerufen bei Klick auf einen Chip |
+
+Der umgebende Abschnitts-Titel ("Für wen?") und dessen Styling bleiben Sache des jeweiligen Aufrufers, da sich das Layout drumherum je nach Kontext unterscheidet.
 
 ---
 
