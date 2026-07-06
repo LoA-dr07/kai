@@ -5,11 +5,11 @@ import type { Conversation, ConversationMessage } from '../types';
 const CONV_KEY = ['conversations'];
 
 export function useConversations() {
-  const { data = [], isLoading, error } = useQuery<Conversation[], Error>({
+  const { data = [], isLoading, error, refetch } = useQuery<Conversation[], Error>({
     queryKey: CONV_KEY,
     queryFn: () => api.get('/ai/conversations').then(r => r.data),
   });
-  return { data, isLoading, error: error ?? undefined };
+  return { data, isLoading, error: error ?? undefined, refetch };
 }
 
 export function useConversationMessages(conversationId: number | null) {

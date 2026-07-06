@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Modal, View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useRecipe, useRecipes, useTags } from '../lib/hooks/useRecipes';
 import { useUsers } from '../lib/hooks/useUsers';
+import { BaseModal } from './BaseModal';
 import { RecipeDetailContent } from './RecipeDetailContent';
 import { RecipeSearchPanel } from './RecipeSearchPanel';
 import { Tooltip } from './Tooltip';
@@ -41,31 +42,25 @@ export function RecipeDetailModal({ recipeId, visible, onClose, onSwap }: Recipe
 
   if (recipeId == null) return null;
 
-  return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          {mode === 'search' ? (
-            <TouchableOpacity onPress={() => setMode('detail')}>
-              <Text style={styles.headerBack}>‹ Zurück</Text>
-            </TouchableOpacity>
-          ) : (
-            <Text style={styles.headerTitle} numberOfLines={1}>{recipe?.name ?? 'Rezept'}</Text>
-          )}
-          <View style={styles.headerRight}>
-            {mode === 'detail' && onSwap && (
-              <Tooltip label="Rezept austauschen" position="left">
-                <TouchableOpacity style={styles.headerIconBtn} onPress={openSwap}>
-                  <Text style={styles.headerIconText}>⇄</Text>
-                </TouchableOpacity>
-              </Tooltip>
-            )}
-            <TouchableOpacity onPress={onClose}>
-              <Text style={styles.headerClose}>Schließen</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+  const headerLeft = mode === 'search' ? (
+    <TouchableOpacity onPress={() => setMode('detail')}>
+      <Text style={styles.headerBack}>‹ Zurück</Text>
+    </TouchableOpacity>
+  ) : (
+    <Text style={styles.headerTitle} numberOfLines={1}>{recipe?.name ?? 'Rezept'}</Text>
+  );
 
+  const headerRight = mode === 'detail' && onSwap && (
+    <Tooltip label="Rezept austauschen" position="left">
+      <TouchableOpacity style={styles.headerIconBtn} onPress={openSwap}>
+        <Text style={styles.headerIconText}>⇄</Text>
+      </TouchableOpacity>
+    </Tooltip>
+  );
+
+  return (
+    <BaseModal visible={visible} onClose={onClose} headerLeft={headerLeft} headerRight={headerRight}>
+      <View style={styles.container}>
         {mode === 'detail' ? (
           <RecipeDetailContent
             recipeId={recipeId}
@@ -114,29 +109,16 @@ export function RecipeDetailModal({ recipeId, visible, onClose, onSwap }: Recipe
           </>
         )}
       </View>
-    </Modal>
+    </BaseModal>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-    gap: 8,
-  },
   headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
   headerBack: { fontSize: 16, color: GREEN, fontWeight: '600' },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   headerIconBtn: { padding: 4 },
   headerIconText: { fontSize: 20, color: GREEN },
-  headerClose: { fontSize: 16, color: GREEN, fontWeight: '600' },
   searchModeTitle: {
     fontSize: 12,
     fontWeight: '700',

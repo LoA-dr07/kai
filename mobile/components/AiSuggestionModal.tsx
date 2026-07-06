@@ -5,12 +5,12 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Modal,
   TextInput,
   ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
 import { showAlert } from '../lib/alert';
+import { BaseModal } from './BaseModal';
 import { useAiMealPlanSuggestion } from '../lib/hooks/useAiMealPlanSuggestion';
 import type { User, Recipe, AiMealPlanSuggestionEntry, MealType } from '../lib/types';
 import { DAYS_DE, MEAL_TYPES } from '../lib/constants';
@@ -121,23 +121,14 @@ export default function AiSuggestionModal({
   };
 
   return (
-    <Modal
+    <BaseModal
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={handleClose}
+      onClose={handleClose}
+      headerLeft="KI-Wochenplan"
+      closable={phase !== 'loading' && phase !== 'applying'}
+      isWide={isWide}
     >
-      <View style={[styles.container, isWide && styles.containerWide]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>KI-Wochenplan</Text>
-          {phase !== 'loading' && phase !== 'applying' && (
-            <TouchableOpacity onPress={handleClose}>
-              <Text style={styles.headerClose}>Schließen</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
+      <View style={styles.container}>
         {/* Phase: Eingabe */}
         {phase === 'input' && (
           <ScrollView contentContainerStyle={styles.inputContent}>
@@ -294,7 +285,7 @@ export default function AiSuggestionModal({
           </View>
         )}
       </View>
-    </Modal>
+    </BaseModal>
   );
 }
 
@@ -302,20 +293,6 @@ export default function AiSuggestionModal({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  containerWide: { maxWidth: 680, width: '100%', alignSelf: 'center' },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-  },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
-  headerClose: { fontSize: 16, color: GREEN, fontWeight: '600' },
 
   // Input phase
   inputContent: { padding: 16, gap: 8 },

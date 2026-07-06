@@ -20,19 +20,23 @@ import {
   useAddEntry,
   useUpdateEntry,
   useDeleteEntry,
+  ensurePlanForWeek,
 } from '../../lib/hooks/useMealPlan';
+import { useWeekNavigation } from '../../lib/hooks/useWeekNavigation';
+import { useRecentRecipes } from '../../lib/hooks/useRecentRecipes';
 import { useRecipes, useTags } from '../../lib/hooks/useRecipes';
 import { useUsers } from '../../lib/hooks/useUsers';
 import AiSuggestionModal from '../../components/AiSuggestionModal';
-import type { MealPlanEntry, MealType, User, AiMealPlanSuggestionEntry, Recipe } from '../../lib/types';
+import type { MealPlanEntry, MealType, User, AiMealPlanSuggestionEntry } from '../../lib/types';
+import { BaseModal } from '../../components/BaseModal';
 import { Tooltip } from '../../components/Tooltip';
+import { UserChipRow } from '../../components/UserChipRow';
 import { RecipeSearchPanel } from '../../components/RecipeSearchPanel';
 import { RecipeDetailModal } from '../../components/RecipeDetailModal';
-import { DAYS_DE, MEAL_TYPES } from '../../lib/constants';
+import { DAYS_DE, DAYS_SHORT, MEAL_TYPES } from '../../lib/constants';
 import { Colors } from '../../lib/theme';
-import { getMondayOf, isoDate, getISOWeek } from '../../lib/dateUtils';
+import { getMondayOf, isoDate } from '../../lib/dateUtils';
 
-const DAYS_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 const GREEN = Colors.green;
 const GREEN_LIGHT = Colors.greenLight;
 const BORDER = Colors.border;
@@ -44,30 +48,6 @@ const MEAL_TYPE_TAG_NAMES: Record<MealType, string> = {
   dinner: 'Abendessen',
   dessert: 'Dessert',
 };
-
-// --- UserChips ---
-function UserChips({ users, selectedIds, onToggle }: { users: User[]; selectedIds: number[]; onToggle: (id: number) => void }) {
-  if (users.length === 0) return null;
-  return (
-    <View style={chipStyles.container}>
-      <Text style={chipStyles.label}>Für wen?</Text>
-      <View style={chipStyles.row}>
-        {users.map(user => {
-          const selected = selectedIds.includes(user.id);
-          return (
-            <TouchableOpacity
-              key={user.id}
-              style={[chipStyles.chip, selected && { backgroundColor: user.avatar_color, borderColor: user.avatar_color }]}
-              onPress={() => onToggle(user.id)}
-            >
-              <Text style={[chipStyles.chipText, selected && chipStyles.chipTextSelected]}>{user.short_name}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
 
 // --- AvatarBadges ---
 function AvatarBadges({ entry, users }: { entry: MealPlanEntry; users: User[] }) {
@@ -99,7 +79,7 @@ export default function MealPlanScreen() {
   const containerWidth = Math.min(width, containerMaxWidth + CONTENT_PADDING * 2) - CONTENT_PADDING * 2;
   const dayCardWidth = isWide ? (containerWidth - CARD_GAP * (numDayCols - 1)) / numDayCols : undefined;
 
-  const [weekStart, setWeekStart] = useState<Date>(() => getMondayOf(new Date()));
+  const { weekStart, weekStartIso, weekNum, year, navigateWeek: navigateWeekBase, resetToToday } = useWeekNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [aiModalVisible, setAiModalVisible] = useState(false);
 
@@ -125,10 +105,6 @@ export default function MealPlanScreen() {
   // Drag state (web only)
   const dragEntryRef = useRef<{ entry: MealPlanEntry; dayIndex: number; mealType: MealType } | null>(null);
 
-  const weekStartIso = isoDate(weekStart);
-  const weekNum = getISOWeek(weekStart);
-  const year = weekStart.getFullYear();
-
   const { data: allPlans, isLoading, error } = useMealPlans();
   const { data: recipes } = useRecipes();
   const { data: users = [] } = useUsers();
@@ -139,26 +115,10 @@ export default function MealPlanScreen() {
   const deleteEntry = useDeleteEntry();
 
   const currentPlan = allPlans?.find(p => p.week_start_date === weekStartIso);
-
-  // Recently used recipes (last 5 unique used in current plan)
-  const recentRecipes = React.useMemo<Recipe[]>(() => {
-    if (!currentPlan || !recipes) return [];
-    const seen = new Set<number>();
-    const result: Recipe[] = [];
-    const entries = [...(currentPlan.entries ?? [])].reverse();
-    for (const entry of entries) {
-      if (entry.recipe_id && !seen.has(entry.recipe_id)) {
-        seen.add(entry.recipe_id);
-        const recipe = recipes.find(r => r.id === entry.recipe_id);
-        if (recipe) result.push(recipe);
-      }
-      if (result.length >= 5) break;
-    }
-    return result;
-  }, [currentPlan, recipes]);
+  const recentRecipes = useRecentRecipes(currentPlan, recipes);
 
   const navigateWeek = (delta: number) => {
-    setWeekStart(prev => { const d = new Date(prev); d.setDate(d.getDate() + delta * 7); return d; });
+    navigateWeekBase(delta);
     setMoveMode(null);
   };
 
@@ -207,11 +167,8 @@ export default function MealPlanScreen() {
   const closeModal = () => { setModalVisible(false); setSelectedSlot(null); };
   const toggleUser = (id: number) => setSelectedUserIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
-  const ensurePlan = async (): Promise<number> => {
-    if (currentPlan?.id) return currentPlan.id;
-    const newPlan = await createPlan.mutateAsync({ name: `KW ${weekNum} ${year}`, week_start_date: weekStartIso });
-    return newPlan.id;
-  };
+  const ensurePlan = (): Promise<number> =>
+    ensurePlanForWeek(allPlans, weekStartIso, `KW ${weekNum} ${year}`, createPlan);
 
   const handleSave = async (recipeId: number | null, customMeal: string | null) => {
     if (!selectedSlot) return;
@@ -333,7 +290,7 @@ export default function MealPlanScreen() {
             </TouchableOpacity>
           )}
           {weekStartIso !== isoDate(getMondayOf(new Date())) && (
-            <TouchableOpacity onPress={() => { setWeekStart(getMondayOf(new Date())); setMoveMode(null); }} style={styles.todayBtn}>
+            <TouchableOpacity onPress={() => { resetToToday(); setMoveMode(null); }} style={styles.todayBtn}>
               <Text style={styles.todayBtnText}>Heute</Text>
             </TouchableOpacity>
           )}
@@ -490,18 +447,20 @@ export default function MealPlanScreen() {
       )}
 
       {/* Recipe picker modal */}
-      <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeModal}>
-        <View style={[styles.modalContainer, isWide && styles.modalContainerWide, isLandscape && { maxHeight: height * 0.92 }]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {selectedSlot ? `${DAYS_SHORT[selectedSlot.dayIndex]} – ${selectedMealLabel}` : 'Mahlzeit'}
-            </Text>
-            <TouchableOpacity onPress={closeModal}>
-              <Text style={styles.modalClose}>Schließen</Text>
-            </TouchableOpacity>
-          </View>
-
-          <UserChips users={users} selectedIds={selectedUserIds} onToggle={toggleUser} />
+      <BaseModal
+        visible={modalVisible}
+        onClose={closeModal}
+        headerLeft={selectedSlot ? `${DAYS_SHORT[selectedSlot.dayIndex]} – ${selectedMealLabel}` : 'Mahlzeit'}
+        isWide={isWide}
+        maxWidth={800}
+        containerStyle={isLandscape ? { maxHeight: height * 0.92 } : undefined}
+      >
+          {users.length > 0 && (
+            <View style={chipStyles.container}>
+              <Text style={chipStyles.label}>Für wen?</Text>
+              <UserChipRow users={users} selectedIds={selectedUserIds} onToggle={toggleUser} />
+            </View>
+          )}
 
           {!isEditing && (
             <View style={styles.tabRow}>
@@ -543,8 +502,7 @@ export default function MealPlanScreen() {
               </TouchableOpacity>
             </View>
           )}
-        </View>
-      </Modal>
+      </BaseModal>
 
       {/* Long-press bottom sheet */}
       <Modal visible={!!bottomSheet} animationType="slide" transparent onRequestClose={() => setBottomSheet(null)}>
@@ -673,11 +631,6 @@ const styles = StyleSheet.create({
   addRow: { paddingHorizontal: 12, paddingVertical: 7, marginHorizontal: 8, marginBottom: 4 },
   addRowText: { fontSize: 13, color: '#AAA' },
 
-  modalContainer: { flex: 1, backgroundColor: '#fff' },
-  modalContainerWide: { maxWidth: 800, width: '100%', alignSelf: 'center' },
-  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: BORDER },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
-  modalClose: { fontSize: 16, color: GREEN, fontWeight: '600' },
 
   tabRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: BORDER },
   tabBtn: { flex: 1, paddingVertical: 12, alignItems: 'center' },
@@ -694,10 +647,6 @@ const styles = StyleSheet.create({
 const chipStyles = StyleSheet.create({
   container: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: BORDER, backgroundColor: '#fff' },
   label: { fontSize: 13, color: '#555', marginBottom: 8, fontWeight: '600' },
-  row: { flexDirection: 'row', gap: 8 },
-  chip: { borderWidth: 1.5, borderColor: BORDER, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: '#fff' },
-  chipText: { fontSize: 14, color: '#555', fontWeight: '600' },
-  chipTextSelected: { color: '#fff' },
 });
 
 const badgeStyles = StyleSheet.create({

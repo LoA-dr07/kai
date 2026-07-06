@@ -13,13 +13,14 @@ import {
   Modal,
 } from 'react-native';
 import { showAlert } from '../../lib/alert';
+import { Tooltip } from '../../components/Tooltip';
 import { useAiChat } from '../../lib/hooks/useAiChat';
 import { useConversations, useConversationMessages, useCreateConversation, useDeleteConversation } from '../../lib/hooks/useConversations';
 import { useMealPlans, useCreateMealPlan, useAddEntry, useDeleteEntry } from '../../lib/hooks/useMealPlan';
 import { useUsers } from '../../lib/hooks/useUsers';
 import { useGenerateShoppingList, useAddShoppingItem } from '../../lib/hooks/useShoppingList';
 import type { ChatMessage, RecipeSuggestion, MealType, PendingAction, Conversation } from '../../lib/types';
-import { MEAL_TYPES } from '../../lib/constants';
+import { DAYS_SHORT, MEAL_TYPES } from '../../lib/constants';
 import { Colors } from '../../lib/theme';
 import { getMondayOf, isoDate, getISOWeek } from '../../lib/dateUtils';
 import axios from 'axios';
@@ -27,7 +28,6 @@ import axios from 'axios';
 const GREEN = Colors.green;
 const GREEN_LIGHT = Colors.greenLight;
 const BORDER = Colors.border;
-const DAYS_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
 const WELCOME_MESSAGE: ChatMessage = {
   role: 'assistant',
@@ -367,9 +367,11 @@ export default function AiChatScreen() {
                 </Text>
                 <Text style={styles.convMeta}>{conv.message_count} Nachrichten · {new Date(conv.updated_at).toLocaleDateString('de-DE')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleDeleteConversation(conv.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Text style={styles.convDelete}>🗑</Text>
-              </TouchableOpacity>
+              <Tooltip label="Konversation löschen" position="left">
+                <TouchableOpacity onPress={() => handleDeleteConversation(conv.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Text style={styles.convDelete}>🗑</Text>
+                </TouchableOpacity>
+              </Tooltip>
             </View>
           ))
         )}
@@ -421,12 +423,14 @@ export default function AiChatScreen() {
                     <Text style={[styles.bubbleText, isUser && styles.bubbleTextUser]}>{dm.message.content}</Text>
                   </View>
                   {!isUser && Platform.OS !== 'web' && (
-                    <TouchableOpacity
-                      style={styles.speakBtn}
-                      onPress={() => isSpeaking ? stopSpeaking() : speakText(dm.message.content)}
-                    >
-                      <Text style={styles.speakBtnText}>{isSpeaking ? '⏹' : '🔊'}</Text>
-                    </TouchableOpacity>
+                    <Tooltip label={isSpeaking ? 'Vorlesen stoppen' : 'Vorlesen'} position="left">
+                      <TouchableOpacity
+                        style={styles.speakBtn}
+                        onPress={() => isSpeaking ? stopSpeaking() : speakText(dm.message.content)}
+                      >
+                        <Text style={styles.speakBtnText}>{isSpeaking ? '⏹' : '🔊'}</Text>
+                      </TouchableOpacity>
+                    </Tooltip>
                   )}
                 </View>
 

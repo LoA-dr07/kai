@@ -153,6 +153,9 @@ export interface Household {
 
 // --- Meal Plan ---
 
+// Kept in sync by hand with the backend: backends/app/enums.py (MealType enum)
+// and lib/constants.ts (MEAL_TYPES display labels/icons). Update all three
+// when adding/removing/renaming a meal type.
 export type MealType = 'breakfast' | 'lunch' | 'snack' | 'dinner' | 'dessert';
 
 export interface MealPlanEntry {

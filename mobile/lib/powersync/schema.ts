@@ -1,6 +1,11 @@
 import { column, Schema, Table } from '@powersync/common';
 
-// Mirrors the server-side SQLAlchemy models.
+// Mirrors the server-side SQLAlchemy models (backends/app/models/*.py) BY HAND —
+// there is no codegen or automated check keeping the two in sync. When you add,
+// remove, or rename a column/table in a SQLAlchemy model (and its Alembic
+// migration), update the matching Table definition here too, otherwise native
+// clients will silently miss the new field. See docs/architecture.md
+// ("PowerSync-Integration") for the broader sync-path context.
 // PowerSync stores all `id` columns as TEXT automatically.
 // Foreign key columns are also TEXT (PowerSync converts integers to strings).
 
