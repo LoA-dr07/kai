@@ -133,6 +133,10 @@ Im PowerSync Dashboard wird die JWKS URI hinterlegt:
 
 Metro wählt `.web.ts`-Dateien automatisch für Web-Builds.
 
+### Schema-Duplikation (bekannte Einschränkung)
+
+`mobile/lib/powersync/schema.ts` bildet die SQLAlchemy-Modelle aus `backends/app/models/*.py` **manuell** nach – es gibt keinen Codegen und keinen automatisierten Abgleich. Bei jeder Modell-/Migrationsänderung muss `schema.ts` von Hand mitgepflegt werden, sonst fehlen native Clients neue Felder stillschweigend.
+
 ---
 
 ## Datenbankschema

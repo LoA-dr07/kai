@@ -9,6 +9,9 @@ router = APIRouter(prefix="/household", tags=["household"])
 
 
 def _get_household_or_404(db: Session) -> Household:
+    """Local variant of app.utils.household.get_household_or_404() that eager-loads
+    members, needed for _household_to_out() below. Other routers that only need the
+    household row itself use the shared helper instead."""
     household = (
         db.query(Household)
         .options(joinedload(Household.members).joinedload(HouseholdMember.user))

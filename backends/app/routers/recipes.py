@@ -22,6 +22,8 @@ from app.utils.recipe_scraper import (
     parse_iso_duration as _parse_iso_duration,
     parse_ingredients as _parse_ingredients,
 )
+from app.utils.db import apply_update
+from app.utils.tags import get_or_create_tag
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
 
@@ -30,6 +32,16 @@ def _get_or_create_ingredient(db: Session, ingredient_id: int) -> Ingredient:
     ingredient = db.get(Ingredient, ingredient_id)
     if not ingredient:
         raise HTTPException(status_code=404, detail=f"Ingredient {ingredient_id} not found")
+    return ingredient
+
+
+def _get_or_create_ingredient_by_name(db: Session, name: str) -> Ingredient:
+    """Find an ingredient by exact name or create it (used by import flows)."""
+    ingredient = db.query(Ingredient).filter(Ingredient.name == name).first()
+    if not ingredient:
+        ingredient = Ingredient(name=name)
+        db.add(ingredient)
+        db.flush()
     return ingredient
 
 
@@ -74,7 +86,7 @@ def create_ingredient(payload: IngredientCreate, db: Session = Depends(get_db)):
 def update_ingredient(ingredient_id: int, payload: IngredientUpdate, db: Session = Depends(get_db)):
     ingredient = db.get(Ingredient, ingredient_id)
     if not ingredient:
-        raise HTTPException(status_code=404, detail="Ingredient not found")
+        raise HTTPException(status_code=404, detail=f"Ingredient {ingredient_id} not found")
     duplicate = db.query(Ingredient).filter(
         Ingredient.name == payload.name,
         Ingredient.id != ingredient_id,
@@ -99,10 +111,10 @@ def update_recipe_ingredient(
         RecipeIngredient.recipe_id == recipe_id,
     ).first()
     if not ri:
-        raise HTTPException(status_code=404, detail="RecipeIngredient not found")
+        raise HTTPException(status_code=404, detail=f"RecipeIngredient {recipe_ingredient_id} not found")
     if payload.ingredient_id is not None:
         if not db.get(Ingredient, payload.ingredient_id):
-            raise HTTPException(status_code=404, detail="Ingredient not found")
+            raise HTTPException(status_code=404, detail=f"Ingredient {payload.ingredient_id} not found")
         ri.ingredient_id = payload.ingredient_id
     if payload.amount is not None:
         ri.amount = payload.amount
@@ -122,11 +134,7 @@ def list_tags(db: Session = Depends(get_db)):
 
 @router.post("/tags", response_model=TagOut, status_code=status.HTTP_201_CREATED)
 def create_tag(payload: TagCreate, db: Session = Depends(get_db)):
-    existing = db.query(Tag).filter(func.lower(Tag.name) == payload.name.strip().lower()).first()
-    if existing:
-        return existing
-    tag = Tag(name=payload.name.strip(), is_predefined=False)
-    db.add(tag)
+    tag = get_or_create_tag(db, payload.name.strip(), case_sensitive=False)
     db.commit()
     db.refresh(tag)
     return tag
@@ -289,11 +297,7 @@ def import_recipes(recipes: list[RecipeExportItem], db: Session = Depends(get_db
         db.flush()
         seen_ingredient_ids: set[int] = set()
         for ing in item.ingredients:
-            ingredient = db.query(Ingredient).filter(Ingredient.name == ing.ingredient_name).first()
-            if not ingredient:
-                ingredient = Ingredient(name=ing.ingredient_name)
-                db.add(ingredient)
-                db.flush()
+            ingredient = _get_or_create_ingredient_by_name(db, ing.ingredient_name)
             if ingredient.id in seen_ingredient_ids:
                 continue  # skip duplicate ingredient within the same recipe
             seen_ingredient_ids.add(ingredient.id)
@@ -315,11 +319,7 @@ def import_recipes(recipes: list[RecipeExportItem], db: Session = Depends(get_db
             normalized = tag_name.strip()
             if not normalized:
                 continue
-            tag = db.query(Tag).filter(func.lower(Tag.name) == normalized.lower()).first()
-            if not tag:
-                tag = Tag(name=normalized)
-                db.add(tag)
-                db.flush()
+            tag = get_or_create_tag(db, normalized, case_sensitive=False)
             if tag not in recipe.tags:
                 recipe.tags.append(tag)
         created_ids.append(recipe.id)
@@ -408,7 +408,14 @@ def bulk_preview_from_url(payload: RecipeBulkUrlImport):
 
 @router.post("/import/url/bulk", response_model=BulkUrlImportResult)
 def bulk_import_from_url(payload: RecipeBulkUrlImport, db: Session = Depends(get_db)):
-    """Import recipes from URLs with per-recipe tags and ratings."""
+    """Import recipes from URLs with per-recipe tags and ratings.
+
+    Each item gets its own savepoint (db.begin_nested()) because scraping a
+    URL is an independent network call that can fail per-item; a savepoint
+    lets one failed URL roll back without discarding recipes already created
+    earlier in the same request. generate_shopping_list() below has no such
+    per-item external dependency, so a single transaction is sufficient there.
+    """
     created_ids: list[int] = []
     failed: list[BulkUrlImportFailure] = []
 
@@ -428,11 +435,7 @@ def bulk_import_from_url(payload: RecipeBulkUrlImport, db: Session = Depends(get
 
             seen: set[int] = set()
             for ing in preview.ingredients:
-                ingredient = db.query(Ingredient).filter(Ingredient.name == ing.ingredient_name).first()
-                if not ingredient:
-                    ingredient = Ingredient(name=ing.ingredient_name)
-                    db.add(ingredient)
-                    db.flush()
+                ingredient = _get_or_create_ingredient_by_name(db, ing.ingredient_name)
                 if ingredient.id in seen:
                     continue
                 seen.add(ingredient.id)
@@ -470,7 +473,7 @@ def bulk_import_from_url(payload: RecipeBulkUrlImport, db: Session = Depends(get
 def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
     recipe = db.get(Recipe, recipe_id)
     if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+        raise HTTPException(status_code=404, detail=f"Recipe {recipe_id} not found")
     return recipe
 
 
@@ -478,10 +481,9 @@ def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
 def update_recipe(recipe_id: int, payload: RecipeUpdate, db: Session = Depends(get_db)):
     recipe = db.get(Recipe, recipe_id)
     if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+        raise HTTPException(status_code=404, detail=f"Recipe {recipe_id} not found")
 
-    for field, value in payload.model_dump(exclude_unset=True, exclude={"ingredients", "tag_ids"}).items():
-        setattr(recipe, field, value)
+    apply_update(recipe, payload, exclude={"ingredients", "tag_ids"})
 
     if payload.ingredients is not None:
         _set_recipe_ingredients(db, recipe.id, payload.ingredients)
@@ -498,7 +500,7 @@ def update_recipe(recipe_id: int, payload: RecipeUpdate, db: Session = Depends(g
 def delete_recipe(recipe_id: int, db: Session = Depends(get_db)):
     recipe = db.get(Recipe, recipe_id)
     if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+        raise HTTPException(status_code=404, detail=f"Recipe {recipe_id} not found")
     db.delete(recipe)
     db.commit()
 
@@ -507,7 +509,7 @@ def delete_recipe(recipe_id: int, db: Session = Depends(get_db)):
 def upsert_rating(recipe_id: int, payload: RecipeRatingUpsert, db: Session = Depends(get_db)):
     recipe = db.get(Recipe, recipe_id)
     if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+        raise HTTPException(status_code=404, detail=f"Recipe {recipe_id} not found")
 
     rating = db.query(RecipeRating).filter(
         RecipeRating.recipe_id == recipe_id,

@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session, joinedload
 from app.db.session import get_db
 from app.models.shopping_list import ShoppingList, ShoppingListItem
 from app.models.meal_plan import MealPlan, MealPlanEntry
-from app.models.household import Household
 from app.schemas.shopping_list import (
     ShoppingListOut,
     ShoppingListItemOut,
@@ -12,15 +11,10 @@ from app.schemas.shopping_list import (
     ShoppingListItemUpdate,
     GenerateShoppingListRequest,
 )
+from app.utils.db import apply_update
+from app.utils.household import get_household_or_404
 
 router = APIRouter(prefix="/shopping-list", tags=["shopping-list"])
-
-
-def _get_household(db: Session) -> Household:
-    household = db.query(Household).first()
-    if not household:
-        raise HTTPException(status_code=404, detail="No household found")
-    return household
 
 
 def _get_active_list(db: Session, household_id: int) -> ShoppingList | None:
@@ -34,7 +28,7 @@ def _get_active_list(db: Session, household_id: int) -> ShoppingList | None:
 
 @router.get("", response_model=ShoppingListOut | None)
 def get_active_shopping_list(db: Session = Depends(get_db)):
-    household = _get_household(db)
+    household = get_household_or_404(db)
     shopping_list = _get_active_list(db, household.id)
     return shopping_list
 
@@ -44,7 +38,10 @@ def generate_shopping_list(
     payload: GenerateShoppingListRequest,
     db: Session = Depends(get_db),
 ):
-    household = _get_household(db)
+    # Single transaction (no per-item begin_nested()) is fine here: unlike
+    # bulk_import_from_url() in recipes.py, every step below is a local DB
+    # aggregation with no independent external call that can fail per-item.
+    household = get_household_or_404(db)
     existing = _get_active_list(db, household.id)
 
     # Gather all meal plan entries within the date range.
@@ -165,7 +162,7 @@ def generate_shopping_list(
 
 @router.post("/items", response_model=ShoppingListItemOut, status_code=status.HTTP_201_CREATED)
 def add_item(payload: ShoppingListItemCreate, db: Session = Depends(get_db)):
-    household = _get_household(db)
+    household = get_household_or_404(db)
     shopping_list = _get_active_list(db, household.id)
     if not shopping_list:
         # Create a new empty list
@@ -193,9 +190,8 @@ def add_item(payload: ShoppingListItemCreate, db: Session = Depends(get_db)):
 def update_item(item_id: int, payload: ShoppingListItemUpdate, db: Session = Depends(get_db)):
     item = db.get(ShoppingListItem, item_id)
     if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(item, field, value)
+        raise HTTPException(status_code=404, detail=f"Item {item_id} not found")
+    apply_update(item, payload)
     db.commit()
     db.refresh(item)
     return item
@@ -205,14 +201,14 @@ def update_item(item_id: int, payload: ShoppingListItemUpdate, db: Session = Dep
 def delete_item(item_id: int, db: Session = Depends(get_db)):
     item = db.get(ShoppingListItem, item_id)
     if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
+        raise HTTPException(status_code=404, detail=f"Item {item_id} not found")
     db.delete(item)
     db.commit()
 
 
 @router.delete("/done", status_code=status.HTTP_204_NO_CONTENT)
 def clear_done_items(db: Session = Depends(get_db)):
-    household = _get_household(db)
+    household = get_household_or_404(db)
     shopping_list = _get_active_list(db, household.id)
     if not shopping_list:
         return
@@ -224,7 +220,7 @@ def clear_done_items(db: Session = Depends(get_db)):
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
 def delete_shopping_list(db: Session = Depends(get_db)):
-    household = _get_household(db)
+    household = get_household_or_404(db)
     shopping_list = _get_active_list(db, household.id)
     if shopping_list:
         db.delete(shopping_list)

@@ -4,11 +4,12 @@ from app.db.session import get_db
 from app.models.meal_plan import MealPlan, MealPlanEntry
 from app.models.recipe import Recipe
 from app.models.user import User
-from app.models.household import Household
 from app.schemas.meal_plan import (
     MealPlanCreate, MealPlanUpdate, MealPlanOut,
     MealPlanEntryCreate, MealPlanEntryUpdate, MealPlanEntryOut,
 )
+from app.utils.db import apply_update
+from app.utils.household import get_household
 
 router = APIRouter(prefix="/meal-plans", tags=["meal-plans"])
 
@@ -16,7 +17,7 @@ router = APIRouter(prefix="/meal-plans", tags=["meal-plans"])
 def _get_plan_or_404(db: Session, plan_id: int) -> MealPlan:
     plan = db.get(MealPlan, plan_id)
     if not plan:
-        raise HTTPException(status_code=404, detail="Meal plan not found")
+        raise HTTPException(status_code=404, detail=f"Meal plan {plan_id} not found")
     return plan
 
 
@@ -29,10 +30,29 @@ def _assign_users(db: Session, entry: MealPlanEntry, user_ids: list[int]):
     if user_ids:
         users = db.query(User).filter(User.id.in_(user_ids)).all()
         if len(users) != len(user_ids):
-            raise HTTPException(status_code=404, detail="One or more users not found")
+            missing = sorted(set(user_ids) - {u.id for u in users})
+            raise HTTPException(status_code=404, detail=f"User(s) not found: {missing}")
         entry.assigned_users = users
     else:
         entry.assigned_users = []
+
+
+def _create_meal_plan_entry(db: Session, meal_plan_id: int, entry_data: MealPlanEntryCreate) -> MealPlanEntry:
+    """Validate and persist a single meal plan entry, used both for bulk creation
+    (create_meal_plan) and single-entry creation (add_entry)."""
+    _validate_recipe(db, entry_data.recipe_id)
+    entry = MealPlanEntry(
+        meal_plan_id=meal_plan_id,
+        day_of_week=entry_data.day_of_week,
+        meal_type=entry_data.meal_type,
+        recipe_id=entry_data.recipe_id,
+        custom_meal=entry_data.custom_meal,
+        repeat_weekly=entry_data.repeat_weekly,
+    )
+    db.add(entry)
+    db.flush()
+    _assign_users(db, entry, entry_data.assigned_user_ids)
+    return entry
 
 
 # --- Meal Plans ---
@@ -44,7 +64,7 @@ def list_meal_plans(db: Session = Depends(get_db)):
 
 @router.post("", response_model=MealPlanOut, status_code=status.HTTP_201_CREATED)
 def create_meal_plan(payload: MealPlanCreate, db: Session = Depends(get_db)):
-    household = db.query(Household).first()
+    household = get_household(db)
     plan = MealPlan(
         name=payload.name,
         week_start_date=payload.week_start_date,
@@ -54,18 +74,7 @@ def create_meal_plan(payload: MealPlanCreate, db: Session = Depends(get_db)):
     db.flush()
 
     for entry_data in payload.entries:
-        _validate_recipe(db, entry_data.recipe_id)
-        entry = MealPlanEntry(
-            meal_plan_id=plan.id,
-            day_of_week=entry_data.day_of_week,
-            meal_type=entry_data.meal_type,
-            recipe_id=entry_data.recipe_id,
-            custom_meal=entry_data.custom_meal,
-            repeat_weekly=entry_data.repeat_weekly,
-        )
-        db.add(entry)
-        db.flush()
-        _assign_users(db, entry, entry_data.assigned_user_ids)
+        _create_meal_plan_entry(db, plan.id, entry_data)
 
     db.commit()
     db.refresh(plan)
@@ -80,8 +89,7 @@ def get_meal_plan(plan_id: int, db: Session = Depends(get_db)):
 @router.patch("/{plan_id}", response_model=MealPlanOut)
 def update_meal_plan(plan_id: int, payload: MealPlanUpdate, db: Session = Depends(get_db)):
     plan = _get_plan_or_404(db, plan_id)
-    for field, value in payload.model_dump(exclude_unset=True).items():
-        setattr(plan, field, value)
+    apply_update(plan, payload)
     db.commit()
     db.refresh(plan)
     return plan
@@ -99,18 +107,7 @@ def delete_meal_plan(plan_id: int, db: Session = Depends(get_db)):
 @router.post("/{plan_id}/entries", response_model=MealPlanEntryOut, status_code=status.HTTP_201_CREATED)
 def add_entry(plan_id: int, payload: MealPlanEntryCreate, db: Session = Depends(get_db)):
     _get_plan_or_404(db, plan_id)
-    _validate_recipe(db, payload.recipe_id)
-    entry = MealPlanEntry(
-        meal_plan_id=plan_id,
-        day_of_week=payload.day_of_week,
-        meal_type=payload.meal_type,
-        recipe_id=payload.recipe_id,
-        custom_meal=payload.custom_meal,
-        repeat_weekly=payload.repeat_weekly,
-    )
-    db.add(entry)
-    db.flush()
-    _assign_users(db, entry, payload.assigned_user_ids)
+    entry = _create_meal_plan_entry(db, plan_id, payload)
     db.commit()
     db.refresh(entry)
     return MealPlanEntryOut.model_validate(entry)
@@ -121,17 +118,12 @@ def update_entry(plan_id: int, entry_id: int, payload: MealPlanEntryUpdate, db: 
     _get_plan_or_404(db, plan_id)
     entry = db.get(MealPlanEntry, entry_id)
     if not entry or entry.meal_plan_id != plan_id:
-        raise HTTPException(status_code=404, detail="Entry not found")
+        raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
     _validate_recipe(db, payload.recipe_id)
 
-    update_data = payload.model_dump(exclude_unset=True)
-    user_ids = update_data.pop("assigned_user_ids", None)
-
-    for field, value in update_data.items():
-        setattr(entry, field, value)
-
-    if user_ids is not None:
-        _assign_users(db, entry, user_ids)
+    apply_update(entry, payload, exclude={"assigned_user_ids"})
+    if payload.assigned_user_ids is not None:
+        _assign_users(db, entry, payload.assigned_user_ids)
 
     db.commit()
     db.refresh(entry)
@@ -143,6 +135,6 @@ def delete_entry(plan_id: int, entry_id: int, db: Session = Depends(get_db)):
     _get_plan_or_404(db, plan_id)
     entry = db.get(MealPlanEntry, entry_id)
     if not entry or entry.meal_plan_id != plan_id:
-        raise HTTPException(status_code=404, detail="Entry not found")
+        raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
     db.delete(entry)
     db.commit()

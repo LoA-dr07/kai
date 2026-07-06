@@ -3,7 +3,7 @@ Test fixtures: SQLite in-memory database + FastAPI TestClient.
 """
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -31,13 +31,30 @@ def engine():
 
 @pytest.fixture
 def db(engine):
-    TestingSession = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+    """Give each test its own connection wrapped in an outer transaction that is
+    always rolled back at teardown. Endpoint code calling db.commit() only commits
+    a SAVEPOINT nested inside that outer transaction (restarted after each commit),
+    so committed data never leaks into the next test even though `engine` and its
+    StaticPool connection are shared across the whole test session."""
+    connection = engine.connect()
+    outer_transaction = connection.begin()
+    TestingSession = sessionmaker(bind=connection, autocommit=False, autoflush=False)
     session = TestingSession()
+
+    nested = connection.begin_nested()
+
+    @event.listens_for(session, "after_transaction_end")
+    def _restart_savepoint(sess, trans):
+        nonlocal nested
+        if not nested.is_active:
+            nested = connection.begin_nested()
+
     try:
         yield session
     finally:
-        session.rollback()
         session.close()
+        outer_transaction.rollback()
+        connection.close()
 
 
 @pytest.fixture

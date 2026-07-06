@@ -77,12 +77,11 @@ Alle Rezepte abrufen (alphabetisch sortiert).
   "servings": 4,
   "prep_time_minutes": 45,
   "source_url": null,
-  "household_id": 1,
   "ingredients": [
-    { "id": 1, "ingredient_id": 2, "ingredient_name": "Hackfleisch", "amount": 500, "unit": "g" }
+    { "id": 1, "ingredient_id": 2, "amount": 500, "unit": "g", "ingredient": { "id": 2, "name": "Hackfleisch" } }
   ],
   "tags": [{ "id": 1, "name": "Mittagessen", "is_predefined": true, "category": "meal_type" }],
-  "ratings": [{ "id": 1, "recipe_id": 1, "user_id": 1, "stars": 4 }]
+  "ratings": [{ "user_id": 1, "stars": 4 }]
 }]
 ```
 
@@ -165,7 +164,7 @@ Rezepte aus JSON-Array importieren. Duplikate (gleicher Name) werden übersprung
 
 **Response 200:**
 ```json
-{ "created": 3, "skipped": 1 }
+{ "created": 3, "skipped": 1, "created_ids": [12, 13, 14] }
 ```
 
 ### `POST /recipes/import/url`
@@ -314,16 +313,16 @@ Alle Wochenpläne abrufen (neueste zuerst).
   "id": 1,
   "name": "KW 12",
   "week_start_date": "2026-03-16",
-  "household_id": null,
   "entries": [
     {
       "id": 1,
-      "meal_plan_id": 1,
       "day_of_week": 0,
       "meal_type": "lunch",
       "recipe_id": 1,
       "custom_meal": null,
-      "assigned_users": [{ "id": 1, "name": "Mama", "avatar_color": "#2E7D32", "short_name": "MA" }]
+      "recipe": { "id": 1, "name": "Spaghetti Bolognese", "servings": 4, "prep_time_minutes": 45, "source_url": null, "ingredients": [], "tags": [], "ratings": [] },
+      "assigned_user_ids": [1],
+      "repeat_weekly": false
     }
   ]
 }]
@@ -744,8 +743,8 @@ Aktive Einkaufsliste abrufen (oder `null` wenn keine vorhanden).
   "household_id": 1,
   "created_at": "2026-04-20T10:00:00",
   "items": [
-    { "id": 1, "shopping_list_id": 1, "name": "Hackfleisch", "amount": 500, "unit": "g", "is_checked": false },
-    { "id": 2, "shopping_list_id": 1, "name": "Nudeln", "amount": 400, "unit": "g", "is_checked": true }
+    { "id": 1, "name": "Hackfleisch", "amount": 500, "unit": "g", "is_checked": false, "is_manual": false, "sort_order": 0, "custom_meal_ref": null },
+    { "id": 2, "name": "Nudeln", "amount": 400, "unit": "g", "is_checked": true, "is_manual": false, "sort_order": 1, "custom_meal_ref": null }
   ]
 }
 ```
