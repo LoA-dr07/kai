@@ -51,7 +51,7 @@ mobile/
 │       ├── useRecipes.ts              # Native: PowerSync SQLite
 │       ├── useRecipes.web.ts          # Web: REST API Fallback
 │       ├── useMealPlan.ts             # Native: PowerSync SQLite; exportiert außerdem ensurePlanForWeek()
-│       ├── useMealPlan.web.ts         # Web: REST API Fallback
+│       ├── useMealPlan.web.ts         # Web: REST API Fallback; exportiert ebenfalls ensurePlanForWeek()
 │       ├── useWeekNavigation.ts       # Wochenauswahl-State (weekStart, prev/next) für Woche-Picker
 │       ├── useRecentRecipes.ts        # Letzte N eindeutige Rezepte aus einem Wochenplan
 │       ├── useUsers.ts                # Native: PowerSync SQLite
@@ -219,7 +219,7 @@ Alle Hooks befinden sich in `mobile/lib/hooks/`. Sie wrappen Axios-Calls und ver
 
 Alle Meal-Plan-Mutations invalidieren `['meal-plans']`.
 
-`useMealPlan.ts` exportiert zusätzlich `ensurePlanForWeek(allPlans, weekStartIso, planName, createPlan)`: sucht den Plan für die gegebene Woche in `allPlans` oder legt ihn per `createPlan` neu an. Gemeinsam genutzt von `AddToMealPlanModal` und `(tabs)/meal-plan.tsx`, die beide "Plan für diese Woche sicherstellen" vor dem Eintragen brauchen.
+`useMealPlan.ts` und `useMealPlan.web.ts` exportieren zusätzlich `ensurePlanForWeek(allPlans, weekStartIso, planName, createPlan)`: sucht den Plan für die gegebene Woche in `allPlans` oder legt ihn per `createPlan` neu an. Gemeinsam genutzt von `AddToMealPlanModal` und `(tabs)/meal-plan.tsx`, die beide "Plan für diese Woche sicherstellen" vor dem Eintragen brauchen. Muss in beiden Plattform-Varianten der Datei gepflegt werden.
 
 ### Wochenauswahl-Hook (`useWeekNavigation.ts`)
 
