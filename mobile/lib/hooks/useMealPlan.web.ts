@@ -65,3 +65,18 @@ export function useDeleteEntry() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['meal-plans'] }),
   });
 }
+
+/** Find the meal plan for `weekStartIso` in `allPlans`, or create one on demand.
+ * Shared by the meal-plan screen's own picker and AddToMealPlanModal, which
+ * both need "ensure a plan exists for this week" before adding an entry. */
+export async function ensurePlanForWeek(
+  allPlans: MealPlan[] | undefined,
+  weekStartIso: string,
+  planName: string,
+  createPlan: ReturnType<typeof useCreateMealPlan>
+): Promise<number> {
+  const existingId = allPlans?.find(p => p.week_start_date === weekStartIso)?.id;
+  if (existingId) return existingId;
+  const newPlan = await createPlan.mutateAsync({ name: planName, week_start_date: weekStartIso });
+  return newPlan.id;
+}
