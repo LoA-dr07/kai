@@ -11,10 +11,15 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 ### Added
 
 - Wochenplan: Tap auf einen Eintrag mit Rezept öffnet die Rezeptdetailansicht als Modal (statt direkt die Rezeptauswahl); über einen "Austauschen"-Button im Modal-Header kann das Rezept im Slot weiterhin direkt ersetzt werden, wahlweise durch ein anderes Rezept oder per Freitext
+- Einkaufsliste: Zutatenmengen werden bei der Generierung jetzt anhand der Anzahl zugewiesener Personen relativ zu den Rezept-Portionen skaliert (z.B. Rezept für 2 Portionen, 3 zugewiesene Personen → Menge × 1,5); ohne Personen-Zuweisung bleibt die volle Rezeptmenge unverändert
 
 ### Changed
 
 - Rezeptdetail-Logik in `RecipeDetailContent` extrahiert, damit sie sowohl im Vollbild-Screen (`recipe/[id]/index.tsx`) als auch im neuen Wochenplan-Modal genutzt werden kann
+
+### Fixed
+
+- Einkaufsliste: Zutaten konnten doppelt übernommen werden, wenn ein Rezept für dieselbe Woche eingeplant wurde – Ursache war eine Race Condition, durch die für eine Woche mehrere Wochenpläne statt einem einzigen angelegt werden konnten. `POST /meal-plans` ist jetzt idempotent bezüglich `week_start_date`; bereits bestehende Duplikat-Wochenpläne wurden per Migration bereinigt
 
 ---
 
