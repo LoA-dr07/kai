@@ -4,6 +4,7 @@ from app.models.household import Household
 from app.models.recipe import Ingredient, Recipe, RecipeIngredient
 from app.models.meal_plan import MealPlan, MealPlanEntry
 from app.models.shopping_list import ShoppingList, ShoppingListItem
+from app.models.user import User
 
 
 def _seed_household(db) -> Household:
@@ -11,6 +12,19 @@ def _seed_household(db) -> Household:
     db.add(household)
     db.flush()
     return household
+
+
+def _seed_household_with_users(db):
+    household = _seed_household(db)
+    users = [
+        User(name="Mama", short_name="MA", avatar_color="#1565C0"),
+        User(name="Papa", short_name="PA", avatar_color="#6A1B9A"),
+        User(name="Kind", short_name="KI", avatar_color="#E65100"),
+    ]
+    for u in users:
+        db.add(u)
+    db.flush()
+    return household, users
 
 
 class TestGetActiveShoppingList:
@@ -89,6 +103,86 @@ class TestGenerateShoppingList:
             "date_from": "2026-03-16", "date_to": "2026-03-22", "merge": True,
         })
         assert any(i["name"] == "Milch" for i in third.json()["items"])
+
+    def test_generate_not_doubled_after_duplicate_ensure_calls(self, client, db):
+        """Regression test: ensurePlanForWeek()-style duplicate plan creation for
+        the same week must no longer cause ingredients to be summed twice."""
+        household = _seed_household(db)
+        ingredient = Ingredient(name="Hackfleisch")
+        db.add(ingredient)
+        db.flush()
+        recipe = Recipe(name="Bolognese", servings=4)
+        db.add(recipe)
+        db.flush()
+        db.add(RecipeIngredient(recipe_id=recipe.id, ingredient_id=ingredient.id, amount=500, unit="g"))
+        db.flush()
+
+        first = client.post("/meal-plans", json={"name": "KW A", "week_start_date": "2026-03-16"})
+        assert first.status_code == 201
+        dup = client.post("/meal-plans", json={"name": "KW A (dup)", "week_start_date": "2026-03-16"})
+        # Idempotent create: reuses the same plan instead of creating a duplicate.
+        assert dup.json()["id"] == first.json()["id"]
+        plan_id = first.json()["id"]
+
+        client.post(f"/meal-plans/{plan_id}/entries", json={
+            "day_of_week": 0, "meal_type": "dinner", "recipe_id": recipe.id,
+        })
+
+        resp = client.post("/shopping-list/generate", json={
+            "date_from": "2026-03-16", "date_to": "2026-03-22", "merge": False,
+        })
+        items = resp.json()["items"]
+        assert len(items) == 1
+        assert items[0]["amount"] == 500
+
+    def test_generate_scales_amount_by_assigned_user_count(self, client, db):
+        household, users = _seed_household_with_users(db)
+        ingredient = Ingredient(name="Reis")
+        db.add(ingredient)
+        db.flush()
+        recipe = Recipe(name="Curry", servings=2)
+        db.add(recipe)
+        db.flush()
+        db.add(RecipeIngredient(recipe_id=recipe.id, ingredient_id=ingredient.id, amount=500, unit="g"))
+        db.flush()
+
+        plan = MealPlan(name="KW Test", week_start_date=date(2026, 3, 16), household_id=household.id)
+        db.add(plan)
+        db.flush()
+        entry = MealPlanEntry(meal_plan_id=plan.id, day_of_week=0, meal_type="dinner", recipe_id=recipe.id)
+        entry.assigned_users = users  # 3 people, recipe serves 2 -> scale by 1.5
+        db.add(entry)
+        db.flush()
+
+        resp = client.post("/shopping-list/generate", json={
+            "date_from": "2026-03-16", "date_to": "2026-03-22", "merge": False,
+        })
+        items = resp.json()["items"]
+        assert len(items) == 1
+        assert items[0]["amount"] == 750
+
+    def test_generate_without_assigned_users_uses_full_recipe_amount(self, client, db):
+        household = _seed_household(db)
+        ingredient = Ingredient(name="Nudeln")
+        db.add(ingredient)
+        db.flush()
+        recipe = Recipe(name="Auflauf", servings=2)
+        db.add(recipe)
+        db.flush()
+        db.add(RecipeIngredient(recipe_id=recipe.id, ingredient_id=ingredient.id, amount=500, unit="g"))
+        db.flush()
+
+        plan = MealPlan(name="KW Test", week_start_date=date(2026, 3, 16), household_id=household.id)
+        db.add(plan)
+        db.flush()
+        db.add(MealPlanEntry(meal_plan_id=plan.id, day_of_week=0, meal_type="dinner", recipe_id=recipe.id))
+        db.flush()
+
+        resp = client.post("/shopping-list/generate", json={
+            "date_from": "2026-03-16", "date_to": "2026-03-22", "merge": False,
+        })
+        items = resp.json()["items"]
+        assert items[0]["amount"] == 500
 
 
 class TestShoppingListItems:

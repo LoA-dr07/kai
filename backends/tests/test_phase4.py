@@ -2,6 +2,7 @@
 Unit-Tests Phase 4: User/Household-Endpunkte und MealPlanEntry-Zuweisung.
 """
 import pytest
+from datetime import date
 from app.models.user import User
 from app.models.household import Household, HouseholdMember
 from app.models.meal_plan import MealPlan, MealPlanEntry
@@ -178,3 +179,32 @@ class TestMealPlanEntryUserAssignment:
         }
         resp = client.post(f"/meal-plans/{plan_id}/entries", json=payload)
         assert resp.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# POST /meal-plans – idempotent bzgl. week_start_date (verhindert Duplikat-
+# Pläne, die zuvor dazu führten, dass Einkaufslisten-Zutaten doppelt gezählt
+# wurden, siehe test_shopping_list.py::TestGenerateShoppingList)
+# ---------------------------------------------------------------------------
+
+class TestCreateMealPlanIdempotent:
+    def test_duplicate_week_start_date_reuses_existing_plan(self, client, db):
+        first = client.post("/meal-plans", json={"name": "KW A", "week_start_date": "2026-07-20"})
+        assert first.status_code == 201
+        second = client.post("/meal-plans", json={"name": "KW A (dup)", "week_start_date": "2026-07-20"})
+        assert second.status_code == 201
+        assert second.json()["id"] == first.json()["id"]
+        assert db.query(MealPlan).filter(MealPlan.week_start_date == date(2026, 7, 20)).count() == 1
+
+    def test_duplicate_week_start_date_appends_entries_to_existing_plan(self, client, db):
+        first = client.post("/meal-plans", json={
+            "name": "KW A", "week_start_date": "2026-07-20",
+            "entries": [{"day_of_week": 0, "meal_type": "dinner", "custom_meal": "Erste Mahlzeit"}],
+        })
+        plan_id = first.json()["id"]
+        client.post("/meal-plans", json={
+            "name": "KW A (dup)", "week_start_date": "2026-07-20",
+            "entries": [{"day_of_week": 1, "meal_type": "lunch", "custom_meal": "Zweite Mahlzeit"}],
+        })
+        entries = client.get(f"/meal-plans/{plan_id}").json()["entries"]
+        assert len(entries) == 2

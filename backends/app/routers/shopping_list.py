@@ -72,16 +72,22 @@ def generate_shopping_list(
     for entry in entries_in_range:
         if entry.recipe_id and entry.recipe:
             recipe = entry.recipe
+            # Scale the recipe's ingredient amounts to the number of people
+            # actually assigned to this entry. If nobody is assigned (assigned
+            # users are optional), keep the recipe's own amounts unscaled.
+            num_people = len(entry.assigned_users)
+            scale = (num_people / recipe.servings) if num_people > 0 else 1.0
             for ri in recipe.ingredients:
                 if ri.ingredient:
                     ing_name = ri.ingredient.name
                     unit = (ri.unit or "").strip()
                     key = (ing_name.lower(), unit.lower())
+                    scaled_amount = (ri.amount or 0) * scale
                     if key in ingredient_map:
                         n, u, amt = ingredient_map[key]
-                        ingredient_map[key] = (n, u, amt + (ri.amount or 0))
+                        ingredient_map[key] = (n, u, amt + scaled_amount)
                     else:
-                        ingredient_map[key] = (ing_name, unit, ri.amount or 0)
+                        ingredient_map[key] = (ing_name, unit, scaled_amount)
         elif entry.custom_meal:
             if entry.custom_meal not in custom_meals:
                 custom_meals.append(entry.custom_meal)
@@ -91,7 +97,7 @@ def generate_shopping_list(
     for (_, _), (name, unit, amount) in ingredient_map.items():
         new_items.append({
             "name": name,
-            "amount": amount if amount > 0 else None,
+            "amount": round(amount, 2) if amount > 0 else None,
             "unit": unit if unit else None,
             "is_manual": False,
         })

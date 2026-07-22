@@ -20,16 +20,23 @@ if (-not $databaseUrl) {
     exit 1
 }
 
-# Parse postgresql://user:password@host:port/dbname
-if ($databaseUrl -match '^postgresql://([^:]+):([^@]+)@([^:/]+)(?::(\d+))?/(.+)$') {
+# Parse postgresql://user:password@host:port/dbname?query
+if ($databaseUrl -match '^postgresql://([^:]+):([^@]+)@([^:/]+)(?::(\d+))?/([^?]+)(?:\?(.*))?$') {
     $dbUser     = $Matches[1]
     $dbPassword = $Matches[2]
     $dbHost     = $Matches[3]
     $dbPort     = if ($Matches[4]) { $Matches[4] } else { "5432" }
     $dbName     = $Matches[5]
+    $dbQuery    = $Matches[6]
 } else {
     Write-Error "Could not parse DATABASE_URL: $databaseUrl"
     exit 1
+}
+
+# Neon requires SSL; carry sslmode from the URL's query string (default: require)
+$sslMode = "require"
+if ($dbQuery -match '(?:^|&)sslmode=([^&]+)') {
+    $sslMode = $Matches[1]
 }
 
 # Ensure backups directory exists
@@ -46,6 +53,7 @@ Write-Host "Creating backup of '$dbName' → $dumpFile"
 
 # Run pg_dump (custom format)
 $env:PGPASSWORD = $dbPassword
+$env:PGSSLMODE = $sslMode
 try {
     pg_dump -U $dbUser -h $dbHost -p $dbPort -F c -f $dumpFile $dbName
     if ($LASTEXITCODE -ne 0) {
@@ -55,4 +63,5 @@ try {
     Write-Host "Backup successful: $dumpFile"
 } finally {
     Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
+    Remove-Item Env:\PGSSLMODE -ErrorAction SilentlyContinue
 }

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.meal_plan import MealPlan, MealPlanEntry
@@ -64,21 +65,39 @@ def list_meal_plans(db: Session = Depends(get_db)):
 
 @router.post("", response_model=MealPlanOut, status_code=status.HTTP_201_CREATED)
 def create_meal_plan(payload: MealPlanCreate, db: Session = Depends(get_db)):
+    """Idempotent per week_start_date: there is only ever one plan per week
+    (household-wide). If one already exists, it is reused (and any entries in
+    the payload are appended to it) instead of creating a duplicate — this is
+    what makes the client's "ensure a plan exists for this week" pattern safe
+    even when its cached plan list is stale."""
     household = get_household(db)
-    plan = MealPlan(
-        name=payload.name,
-        week_start_date=payload.week_start_date,
-        household_id=household.id if household else None,
-    )
-    db.add(plan)
-    db.flush()
+
+    existing = db.query(MealPlan).filter(MealPlan.week_start_date == payload.week_start_date).first()
+    if existing is None:
+        plan = MealPlan(
+            name=payload.name,
+            week_start_date=payload.week_start_date,
+            household_id=household.id if household else None,
+        )
+        db.add(plan)
+        try:
+            db.flush()
+        except IntegrityError:
+            # Genuine race: another request created the plan between our
+            # check and our insert. Recover the transaction and use that one.
+            db.rollback()
+            existing = db.query(MealPlan).filter(MealPlan.week_start_date == payload.week_start_date).first()
+            if existing is None:
+                raise
+        else:
+            existing = plan
 
     for entry_data in payload.entries:
-        _create_meal_plan_entry(db, plan.id, entry_data)
+        _create_meal_plan_entry(db, existing.id, entry_data)
 
     db.commit()
-    db.refresh(plan)
-    return plan
+    db.refresh(existing)
+    return existing
 
 
 @router.get("/{plan_id}", response_model=MealPlanOut)
