@@ -51,6 +51,40 @@ Gibt den öffentlichen RSA-Schlüssel als JWKS zurück. Diese URL wird im PowerS
 
 ---
 
+## PowerSync Admin (`/admin/powersync`)
+
+**Zweck:** PowerSync Cloud gezielt stoppen/starten, damit die dauerhaft offene Replikationsverbindung zu Neon nicht das Auto-Suspend verhindert (siehe `docs/frontend.md` → PowerSync-Integration → Stop/Start).
+
+**Voraussetzung:** `PS_ADMIN_TOKEN` und `POWERSYNC_ADMIN_SECRET` konfiguriert, PowerSync-CLI per `powersync link cloud` verknüpft (siehe `backends/powersync/README.md`).
+
+**Auth:** Header `X-Admin-Secret: <POWERSYNC_ADMIN_SECRET>` – ohne oder mit falschem Wert: `403`.
+
+### `POST /admin/powersync/stop`
+Deprovisioniert die PowerSync-Cloud-Instanz (`powersync stop --confirm=yes`).
+
+**Response 200:**
+```json
+{ "status": "stopped", "output": "..." }
+```
+
+### `POST /admin/powersync/start`
+Fährt die PowerSync-Cloud-Instanz wieder hoch (`powersync deploy`).
+
+**Response 200:**
+```json
+{ "status": "started", "output": "..." }
+```
+
+**Fehlerfälle (beide Endpunkte):**
+| Status | Ursache |
+|--------|---------|
+| 403 | `X-Admin-Secret` fehlt oder falsch |
+| 503 | `PS_ADMIN_TOKEN` nicht gesetzt oder `backends/powersync/cli.yaml` fehlt |
+| 502 | `powersync`-CLI-Befehl fehlgeschlagen (Details in `detail`) |
+| 504 | `powersync`-CLI-Befehl hat Timeout (90s) überschritten |
+
+---
+
 ## Health
 
 ### `GET /health`
@@ -329,7 +363,12 @@ Alle Wochenpläne abrufen (neueste zuerst).
 ```
 
 ### `POST /meal-plans`
-Neuen Wochenplan erstellen (optional mit initialen Einträgen).
+Neuen Wochenplan erstellen (optional mit initialen Einträgen). **Idempotent bzgl.
+`week_start_date`:** existiert bereits ein Plan für diese Woche (haushaltsweit, genau ein Plan
+pro Woche), wird dieser zurückgegeben statt ein Duplikat anzulegen; im Request Body enthaltene
+`entries` werden in diesem Fall an den bestehenden Plan angehängt. Damit ist der Endpunkt sicher
+für ein "Plan für diese Woche sicherstellen, sonst anlegen"-Muster, auch wenn der aufrufende
+Client eine veraltete Sicht auf die vorhandenen Pläne hat.
 
 **Request Body:**
 ```json
@@ -753,6 +792,11 @@ Aktive Einkaufsliste abrufen (oder `null` wenn keine vorhanden).
 
 ### `POST /shopping-list/generate`
 Einkaufsliste aus dem Mahlzeitenplan generieren. Bereits vorhandene Listen werden zusammengeführt oder ersetzt (je nach `merge`-Parameter). Zutaten aus allen Rezepten im angegebenen Zeitraum werden aggregiert.
+
+**Portionen-Skalierung:** Für jeden Mahlzeitenplan-Eintrag mit Rezept wird die Zutatenmenge mit
+`Anzahl(assigned_user_ids) / recipe.servings` skaliert (z.B. Rezept für 2 Portionen, aber 3
+zugewiesene Personen → Menge × 1,5). Ist einem Eintrag niemand zugewiesen, bleibt die volle
+Rezeptmenge unskaliert (Faktor 1).
 
 **Request Body:**
 ```json

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey, Enum, Table, Boolean
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, Enum, Table, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.db.session import Base
 from app.enums import MealType  # noqa: F401 – re-exported for backwards-compat
@@ -15,10 +15,11 @@ meal_plan_entry_users = Table(
 
 class MealPlan(Base):
     __tablename__ = "meal_plans"
+    __table_args__ = (UniqueConstraint("week_start_date", name="uq_meal_plans_week_start_date"),)
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
-    week_start_date = Column(Date, nullable=False)  # always a Monday
+    week_start_date = Column(Date, nullable=False)  # always a Monday; one plan per week (household-wide)
     household_id = Column(Integer, ForeignKey("households.id", ondelete="SET NULL"), nullable=True)
 
     entries = relationship("MealPlanEntry", back_populates="meal_plan", cascade="all, delete-orphan")

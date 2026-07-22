@@ -222,7 +222,7 @@ Metro wählt `.web.ts`-Dateien automatisch für Web-Builds.
 |--------|-----|--------------|
 | id | INTEGER PK | |
 | name | VARCHAR(255) | Plan-Name |
-| week_start_date | DATE | Montag der Woche |
+| week_start_date | DATE UNIQUE | Montag der Woche – genau ein Plan pro Woche (haushaltsweit); `POST /meal-plans` ist idempotent bzgl. dieses Felds |
 | household_id | INTEGER FK → households.id | |
 
 #### `meal_plan_entries`
@@ -312,6 +312,8 @@ Household ──< HouseholdMember >── User
 | `0006_add_tag_category_family_members.py` | Neue Spalte `tags.category`; Familienmitglieder-Tags (Mama, Papa, Kind) |
 | `0007_add_recipe_source_url.py` | Neue Spalte `recipes.source_url` (VARCHAR 2048, nullable) |
 | `0008_shopping_list_conversations.py` | Neue Tabellen: `shopping_lists`, `shopping_list_items`, `conversations`, `conversation_messages`; neue Spalte `meal_plan_entries.repeat_weekly` (BOOLEAN) |
+| `0009_dedupe_meal_plans_unique_week.py` | Datenbereinigung: führt vorhandene Duplikat-Pläne pro Woche zusammen (Einträge umgehängt, zugewiesene Nutzer vereinigt, exakte Duplikat-Einträge entfernt); danach Unique Constraint `uq_meal_plans_week_start_date` auf `meal_plans.week_start_date` |
+| `0010_dedupe_identical_meal_plan_entries.py` | Datenbereinigung: entfernt verbleibende exakte Duplikat-Einträge *innerhalb* eines Plans (gleicher Tag/Mahlzeittyp/Rezept **und** identische zugewiesene Nutzer) |
 
 Migration ausführen: `alembic upgrade head`
 
