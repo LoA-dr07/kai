@@ -9,6 +9,7 @@ import { db, connector } from '../lib/powersync/database';
 import { ErrorScreen } from '../components/ErrorScreen';
 import { SyncStatusBanner } from '../components/SyncStatusBanner';
 import { Colors } from '../lib/theme';
+import { startPowerSyncOnLaunch } from '../lib/hooks/usePowerSyncAdmin';
 
 // ─── Global unhandled-error overlay ─────────────────────────────────────────
 
@@ -139,6 +140,14 @@ export default function RootLayout() {
     return () => {
       db.disconnect().catch(console.error);
     };
+  }, []);
+
+  useEffect(() => {
+    // Native only: PowerSync may have been stopped to save DB compute hours
+    // (see mobile/app/(tabs)/settings.tsx) – redeploy it on every app launch.
+    if (Platform.OS !== 'web') {
+      startPowerSyncOnLaunch();
+    }
   }, []);
 
   const screens = (

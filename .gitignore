@@ -23,6 +23,8 @@ backups/
 # RSA keys (PowerSync JWT signing – never commit real keys)
 private_key.pem
 public_key.pem
+# PowerSync CLI link (instance-specific, not shareable)
+backends/powersync/powersync/
 # Internal development docs (not for public)
 CLAUDE.md
 DOD.md

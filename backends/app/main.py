@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.db.session import get_db
-from app.routers import recipes, meal_plans, users, household, ai, powersync, shopping_list
+from app.routers import recipes, meal_plans, users, household, ai, powersync, powersync_admin, shopping_list
 
 app = FastAPI(title="Meal Planner API")
 
@@ -21,6 +21,7 @@ app.include_router(household.router)
 app.include_router(ai.router)
 app.include_router(shopping_list.router)
 app.include_router(powersync.router, prefix="/auth")
+app.include_router(powersync_admin.router)
 
 
 @app.get("/health")

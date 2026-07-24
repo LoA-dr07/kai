@@ -9,6 +9,7 @@ import {
   TextInput,
   ActivityIndicator,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { useHousehold, useUpdateHouseholdSettings } from '../../lib/hooks/useHousehold';
 import {
@@ -18,6 +19,7 @@ import {
   useDeleteUser,
   useCreateUser,
 } from '../../lib/hooks/useUsers';
+import { useStopPowerSync } from '../../lib/hooks/usePowerSyncAdmin';
 import { showAlert, showConfirm } from '../../lib/alert';
 import type { HouseholdSettings, UserPreferences, User } from '../../lib/types';
 import { Tooltip } from '../../components/Tooltip';
@@ -680,6 +682,47 @@ function AddMemberForm({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ─── PowerSync Stop ───────────────────────────────────────────────────────────
+
+function PowerSyncStopCard() {
+  const { mutate: stopPowerSync, isPending } = useStopPowerSync();
+
+  const handleStop = () => {
+    showConfirm(
+      'PowerSync stoppen',
+      'Die Synchronisation wird pausiert, um Datenbank-Nutzungszeit zu sparen. Beim nächsten App-Start läuft sie automatisch wieder an (Biometrie-Bestätigung nötig).',
+      () => {
+        stopPowerSync(undefined, {
+          onSuccess: () => showAlert('PowerSync gestoppt', 'Die Synchronisation ist pausiert.'),
+          onError: () =>
+            showAlert('Fehler', 'PowerSync konnte nicht gestoppt werden. Bitte Backend-Logs prüfen.'),
+        });
+      }
+    );
+  };
+
+  return (
+    <View style={[styles.card, { marginTop: 8 }]}>
+      <Text style={[styles.sectionTitle, { fontSize: 14 }]}>PowerSync</Text>
+      <Text style={styles.fieldLabel}>
+        Stoppt die Synchronisation, damit die Datenbank sich schlafen legen kann. Startet beim
+        nächsten App-Öffnen automatisch wieder.
+      </Text>
+      <TouchableOpacity
+        style={[styles.saveBtn, styles.stopBtn, isPending && styles.saveBtnDisabled]}
+        onPress={handleStop}
+        disabled={isPending}
+      >
+        {isPending ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <Text style={styles.saveBtnText}>PowerSync stoppen</Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function SettingsScreen() {
@@ -771,6 +814,7 @@ export default function SettingsScreen() {
           {process.env.EXPO_PUBLIC_POWERSYNC_URL ?? '← nicht gesetzt!'}
         </Text>
       </View>
+      {Platform.OS !== 'web' && <PowerSyncStopCard />}
     </ScrollView>
   );
 }
@@ -936,6 +980,7 @@ const styles = StyleSheet.create({
   saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   saveBtnFlex: { flex: 1 },
   cancelBtn: { backgroundColor: '#9E9E9E', marginLeft: 8 },
+  stopBtn: { backgroundColor: '#E65100', marginTop: 12 },
 
   // Member header
   memberHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
