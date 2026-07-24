@@ -313,6 +313,20 @@ Neue Zutat erstellen.
 **Response 201:** `{ "id": 2, "name": "Mehl" }`
 **Response 409:** Zutat existiert bereits
 
+### `PATCH /recipes/ingredients/{ingredient_id}`
+Namen einer Zutat global umbenennen (wirkt sich auf alle Rezepte aus, die sie verwenden).
+
+**Request Body:** `{ "name": "Weizenmehl" }`
+**Response 200:** `{ "id": 2, "name": "Weizenmehl" }`
+**Fehler:** 404 wenn `ingredient_id` unbekannt, 409 wenn der neue Name bereits von einer anderen Zutat verwendet wird
+
+### `PATCH /recipes/{recipe_id}/ingredients/{recipe_ingredient_id}`
+Menge, Einheit oder verknüpfte Zutat einer einzelnen Rezept-Zutat-Zeile ändern (alle Felder optional, nur gesetzte werden aktualisiert).
+
+**Request Body:** `{ "amount": 250, "unit": "g", "ingredient_id": 2 }`
+**Response 200:** `RecipeIngredientOut` (inkl. verschachteltem `ingredient`-Objekt)
+**Fehler:** 404 wenn die Rezept-Zutat-Zeile oder die referenzierte `ingredient_id` nicht existiert
+
 ---
 
 ## Tags (`/recipes/tags`)
@@ -333,6 +347,11 @@ Neuen benutzerdefinierten Tag erstellen (idempotent – gibt bestehenden zurück
 
 **Request Body:** `{ "name": "Vegan" }`
 **Response 201:** `{ "id": 9, "name": "Vegan", "is_predefined": false, "category": null }`
+
+### `POST /recipes/tags/repair`
+Einmalig auszuführende Reparatur für Tag-Daten aus Importen von vor einer Mitglieder-Umbenennung: legt fehlende vordefinierte Familien-Tags an, führt doppelte (case-insensitive gleiche) Tags zusammen und entfernt verwaiste Familien-Tags, deren Name zu keinem aktuellen Mitglied mehr passt (verlinkte Rezepte werden vorher nach Möglichkeit auf den passenden Tag umgehängt).
+
+**Response 200:** `{ "merged_tags": 2, "affected_recipes": 5, "orphaned_tags_removed": 1 }`
 
 ---
 
@@ -487,7 +506,8 @@ Neues Haushaltsmitglied anlegen. Erstellt gleichzeitig einen `category='family'`
 ```
 
 **Response 201:** `UserOut`
-**Fehler:** 409 wenn der Name bereits als family-Tag vergeben ist und nicht zugeordnet werden kann.
+
+Der family-Tag wird per `get_or_create_tag` angelegt (case-sensitive exakter Namensabgleich); existiert bereits ein Tag mit diesem Namen und dieser Kategorie, wird er wiederverwendet statt dupliziert – kein Fehlerfall.
 
 ---
 
@@ -695,7 +715,7 @@ Freier KI-Chat für Rezeptvorschläge und Ernährungsberatung (via Claude API).
 `recipe_id`: Gesetzt wenn das Rezept in der Haushaltsdatenbank existiert, sonst `null`.
 `is_new_recipe`: `true` wenn das Rezept nicht in der Datenbank ist.
 `recipe_suggestions`: Leer wenn keine Rezeptvorschläge gemacht werden.
-`pending_actions`: Liste von Aktionen, die der Nutzer vor der Ausführung bestätigen muss. Mögliche `type`-Werte: `add_meal_plan_entry`, `delete_meal_plan_entry`, `generate_shopping_list`, `add_shopping_item`. Jede Aktion enthält `type`, `description` (menschenlesbare Erklärung) und `data` (aktionsspezifische Nutzlast).
+`pending_actions`: Liste von Aktionen, die der Nutzer vor der Ausführung bestätigen muss. Mögliche `type`-Werte: `add_meal_plan_entry`, `delete_meal_plan_entry`, `generate_shopping_list`, `add_shopping_item`, `create_recipe`. Jede Aktion enthält `type`, `description` (menschenlesbare Erklärung) und `data` (aktionsspezifische Nutzlast).
 `conversation_id`: ID der Konversation, mit der diese Nachricht verknüpft ist (falls `conversation_id` im Request angegeben).
 
 **Response 503:** `ANTHROPIC_API_KEY` nicht konfiguriert

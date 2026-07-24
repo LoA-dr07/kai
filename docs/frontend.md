@@ -42,6 +42,7 @@ mobile/
 │   ├── constants.ts        # DAYS_DE/DAYS_SHORT, MEAL_TYPES
 │   ├── alert.ts            # Cross-platform Alert-Utility
 │   ├── dateUtils.ts        # Datums-Hilfsfunktionen (getMondayOf, isoDate, getISOWeek)
+│   ├── biometricAuth.ts    # Face ID/Fingerabdruck-Bestätigung (expo-local-authentication)
 │   ├── powersync/          # PowerSync-Konfiguration
 │   │   ├── schema.ts          # SQLite-Schema (spiegelt Server-Modelle)
 │   │   ├── connector.ts       # BackendConnector (JWT-Fetch, uploadData no-op)
@@ -61,7 +62,8 @@ mobile/
 │       ├── useAiMealPlanSuggestion.ts # KI-Wochenplan-Hook (beide Plattformen)
 │       ├── useAiChat.ts               # KI-Chat-Hook (beide Plattformen)
 │       ├── useShoppingList.ts         # Einkaufslisten-Hooks (beide Plattformen)
-│       └── useConversations.ts        # KI-Konversations-Hooks (beide Plattformen)
+│       ├── useConversations.ts        # KI-Konversations-Hooks (beide Plattformen)
+│       └── usePowerSyncAdmin.ts       # Stop/Start-Aufrufe gegen /admin/powersync (nur Native)
 └── assets/                 # Bilder, Icons
 ```
 
@@ -159,6 +161,7 @@ Dreistufiger Flow:
   - Präferenz-Felder: Ernährungsweise, Allergien, ungemochte Zutaten (Freitext-Tag-Input), bevorzugte Küchen, Schärfeverträglichkeit, Portionsgröße → `useUpdateUserPreferences`
 - **„+ Mitglied hinzufügen"**-Button im Sektions-Header öffnet `AddMemberForm`-Karte: Name, Kürzel (auto-generiert), Farbauswahl → `useCreateUser`; erstellt gleichzeitig family-Tag
 - Feedback via `showAlert` / `showConfirm` aus `mobile/lib/alert.ts`
+- **Sektion PowerSync** (nur Native, `Platform.OS !== 'web'`): „PowerSync stoppen"-Button → `useStopPowerSync()`. Nach Bestätigung (`showConfirm`) fragt Face ID/Fingerabdruck ab (`confirmWithBiometrics`), erst danach geht `POST /admin/powersync/stop` raus. Start passiert nicht über einen Button, sondern automatisch bei jedem App-Start (`startPowerSyncOnLaunch()` in `_layout.tsx`) – ebenfalls mit Biometrie-Bestätigung.
 
 ---
 
@@ -176,6 +179,21 @@ PowerSync ermöglicht Offline-Unterstützung auf Native (iOS/Android). Auf Web i
 - `database.ts` exportiert `db = null` → PowerSync wird nicht initialisiert
 - Metro wählt automatisch `.web.ts`-Hooks → REST API via React Query
 - `_layout.tsx` rendert `PowerSyncContext.Provider` nur wenn `db !== null`
+
+### Stop/Start (Kosten sparen)
+
+Damit die PowerSync-Instanz nicht dauerhaft eine Replikationsverbindung zu Neon
+offenhält (verhindert Neons Auto-Suspend), lässt sich PowerSync gezielt stoppen:
+
+- **Stop:** manueller Button in `(tabs)/settings.tsx` (nur Native) →
+  `useStopPowerSync()` → Bestätigungsdialog → Face-ID/Fingerabdruck
+  (`confirmWithBiometrics` in `lib/biometricAuth.ts`) → `POST /admin/powersync/stop`
+- **Start:** automatisch bei jedem App-Start via `startPowerSyncOnLaunch()`
+  (`_layout.tsx`, nur Native) → Biometrie-Bestätigung → `POST /admin/powersync/start`
+- Beide Requests senden den Header `X-Admin-Secret`
+  (`EXPO_PUBLIC_POWERSYNC_ADMIN_SECRET`); die Biometrie läuft rein lokal auf dem
+  Gerät und ersetzt keine Server-Prüfung, sondern gated nur den API-Aufruf
+- Backend-seitig: `backends/app/routers/powersync_admin.py` (siehe `docs/api.md`)
 
 ### Platform-Resolution
 Metro wählt automatisch nach Priorität:

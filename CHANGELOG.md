@@ -11,6 +11,7 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 ### Added
 
 - Wochenplan: Tap auf einen Eintrag mit Rezept öffnet die Rezeptdetailansicht als Modal (statt direkt die Rezeptauswahl); über einen "Austauschen"-Button im Modal-Header kann das Rezept im Slot weiterhin direkt ersetzt werden, wahlweise durch ein anderes Rezept oder per Freitext
+- PowerSync Stop/Start: neuer "PowerSync stoppen"-Button in den Einstellungen (nur Native), abgesichert per Face-ID/Fingerabdruck, stoppt die PowerSync-Cloud-Instanz, damit Neon zwischen Nutzungsphasen auto-suspenden kann; Start läuft automatisch (mit Biometrie-Bestätigung) bei jedem App-Öffnen
 - Einkaufsliste: Zutatenmengen werden bei der Generierung jetzt anhand der Anzahl zugewiesener Personen relativ zu den Rezept-Portionen skaliert (z.B. Rezept für 2 Portionen, 3 zugewiesene Personen → Menge × 1,5); ohne Personen-Zuweisung bleibt die volle Rezeptmenge unverändert
 
 ### Changed
