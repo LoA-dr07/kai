@@ -41,7 +41,7 @@ def _run_cli(args: list[str]) -> str:
             cwd=CLI_DIR,
             capture_output=True,
             text=True,
-            timeout=90,
+            timeout=300,
         )
     except FileNotFoundError as exc:
         raise HTTPException(

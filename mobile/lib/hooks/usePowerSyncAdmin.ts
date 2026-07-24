@@ -14,7 +14,7 @@ async function callPowerSyncAdmin(action: 'stop' | 'start'): Promise<void> {
   await api.post(
     `/admin/powersync/${action}`,
     {},
-    { headers: { 'X-Admin-Secret': ADMIN_SECRET } }
+    { headers: { 'X-Admin-Secret': ADMIN_SECRET }, timeout: 310_000 }
   );
 }
 

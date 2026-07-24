@@ -1,0 +1,9 @@
+# Never bake local secrets into the image - these are injected via `flyctl secrets` at runtime
+.env
+
+# Not needed in the image, just bloat
+venv/
+.pytest_cache/
+**/__pycache__/
+*.pyc
+tests/
