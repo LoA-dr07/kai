@@ -20,6 +20,7 @@ backups/
 .idea/
 *.iml
 .vscode/
+.claude/
 # RSA keys (PowerSync JWT signing – never commit real keys)
 private_key.pem
 public_key.pem

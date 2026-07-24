@@ -149,6 +149,17 @@ npx expo start --web
 Die App nutzt PowerSync (nativer Code) — **Expo Go wird nicht unterstützt**.
 Stattdessen: Dev-Client-APK über EAS bauen und auf dem Gerät installieren.
 
+**Einmaliges Setup:** `mobile/app.json` enthält Platzhalter (`owner`,
+`eas.projectId`, `android.package`), die an deinen eigenen Expo-Account
+gebunden sind. Vor dem ersten Build:
+```powershell
+cd mobile
+eas init
+# Verknüpft das Projekt mit deinem Expo-Account und trägt owner + projectId
+# automatisch in app.json ein. android.package kannst du frei wählen
+# (z.B. com.<deinname>.kai), sofern es noch nicht vergeben ist.
+```
+
 `mobile/.env` muss gesetzt sein:
 ```env
 EXPO_PUBLIC_API_URL=https://<deine-app>.fly.dev

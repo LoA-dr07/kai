@@ -5,7 +5,7 @@ from sqlalchemy import text
 from app.db.session import get_db
 from app.routers import recipes, meal_plans, users, household, ai, powersync, powersync_admin, shopping_list
 
-app = FastAPI(title="Meal Planner API")
+app = FastAPI(title="KAI API")
 
 app.add_middleware(
     CORSMiddleware,

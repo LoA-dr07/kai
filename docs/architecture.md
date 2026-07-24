@@ -1,4 +1,4 @@
-# Architektur – Meal-Planner
+# Architektur – KAI
 
 ## Systemüberblick
 
@@ -16,7 +16,7 @@
            ▼                      ▼
 ┌──────────────────────────────────────────────────────┐
 │            Backend (FastAPI · Python)                │
-│            fly.io · https://kai-api-long-feather-1592.fly.dev                        │
+│            fly.io · https://<deine-app>.fly.dev                        │
 │            Swagger UI: /docs                         │
 │            CORS: allow_origins=["*"]                 │
 └──────────────────────┬───────────────────────────────┘

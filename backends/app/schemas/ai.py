@@ -42,7 +42,7 @@ class RecipeSuggestion(BaseModel):
 
 # Pending actions from AI that need user confirmation before execution
 class PendingAction(BaseModel):
-    type: str  # "create_recipe" | "add_meal_plan_entry" | "delete_meal_plan_entry" | "generate_shopping_list" | "check_shopping_item" | "add_shopping_item"
+    type: str  # "create_recipe" | "add_meal_plan_entry" | "delete_meal_plan_entry" | "generate_shopping_list" | "add_shopping_item"
     description: str  # Human-readable description of what will happen
     data: dict[str, Any]  # Action-specific payload
 
