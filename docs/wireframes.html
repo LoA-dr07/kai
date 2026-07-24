@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KAI – Drei AI-first Navigationskonzepte</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,650;12..96,750&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --ink: #17233f;
+      --muted: #63708b;
+      --paper: #f5f7fc;
+      --white: #ffffff;
+      --line: #dfe5f1;
+      --kai: #4559d6;
+      --kai-dark: #3244b6;
+      --sky: #dce6ff;
+      --mint: #d9f4e7;
+      --mint-ink: #176447;
+      --sun: #ffd665;
+      --peach: #ffe1d7;
+      --danger: #bd3d52;
+      --shadow: 0 20px 60px rgba(34, 52, 100, .13);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 10%, rgba(134, 164, 255, .22), transparent 25rem),
+        radial-gradient(circle at 92% 80%, rgba(122, 218, 176, .18), transparent 28rem),
+        var(--paper);
+      font-family: "Atkinson Hyperlegible", sans-serif;
+      min-height: 100vh;
+    }
+    button, input { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+    .display { font-family: "Bricolage Grotesque", sans-serif; }
+    .page { width: min(1180px, calc(100% - 24px)); margin: 0 auto; padding: 28px 0 64px; }
+    .masthead { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 0 auto 22px; max-width: 980px; }
+    .eyebrow { color: var(--kai); font-size: 12px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+    h1 { font-size: clamp(28px, 5vw, 48px); line-height: .98; letter-spacing: -.045em; margin: 7px 0 8px; max-width: 670px; }
+    .lede { color: var(--muted); max-width: 650px; margin: 0; line-height: 1.45; }
+    .sync-pill { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.76); color: var(--muted); font-size: 13px; white-space: nowrap; }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #42a77a; box-shadow: 0 0 0 4px rgba(66,167,122,.12); }
+    .concept-switcher { max-width: 980px; margin: 0 auto 24px; padding: 5px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255,255,255,.72); backdrop-filter: blur(12px); }
+    .concept-tab { border: 0; border-radius: 13px; padding: 11px 8px; background: transparent; color: var(--muted); cursor: pointer; font-weight: 700; transition: .2s ease; }
+    .concept-tab.active { background: var(--ink); color: white; box-shadow: 0 8px 18px rgba(23,35,63,.18); }
+    .stage { display: grid; grid-template-columns: minmax(0, 390px) minmax(280px, 450px); gap: 34px; justify-content: center; align-items: start; }
+    .phone-shell { width: 390px; max-width: 100%; min-height: 780px; background: var(--white); border: 8px solid #202a42; border-radius: 44px; overflow: hidden; position: relative; box-shadow: var(--shadow); }
+    .phone-top { height: 31px; display: flex; align-items: center; justify-content: center; background: white; position: relative; }
+    .island { width: 92px; height: 19px; border-radius: 12px; background: #202a42; }
+    .app { min-height: 741px; position: relative; padding-bottom: 77px; background: #f9faff; overflow: hidden; }
+    .screen { display: none; min-height: 664px; }
+    .screen.active { display: block; }
+    .app-header { padding: 13px 18px 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 750; font-size: 19px; }
+    .kai-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 12px 12px 12px 4px; background: var(--kai); color: white; font-weight: 750; }
+    .icon-btn { width: 38px; height: 38px; border: 1px solid var(--line); background: white; color: var(--ink); border-radius: 13px; display: grid; place-items: center; cursor: pointer; }
+    .icon-btn:focus-visible, .action:focus-visible, .chip:focus-visible, .nav-item:focus-visible, .mode-btn:focus-visible, .concept-tab:focus-visible { outline: 3px solid rgba(69,89,214,.28); outline-offset: 2px; }
+    .mode-switch { margin: 3px 18px 15px; display: grid; grid-template-columns: 1fr 1fr; padding: 4px; gap: 4px; background: #e9edf7; border-radius: 15px; }
+    .mode-btn { padding: 9px; border: 0; border-radius: 11px; background: transparent; color: var(--muted); cursor: pointer; font-weight: 700; }
+    .mode-btn.active { color: var(--kai-dark); background: white; box-shadow: 0 4px 12px rgba(33,48,91,.10); }
+    .content { padding: 0 18px 20px; }
+    .hero-kai { padding: 20px; border-radius: 25px; background: var(--sky); position: relative; overflow: hidden; margin-bottom: 16px; }
+    .hero-kai::after { content: ""; position: absolute; width: 94px; height: 94px; border-radius: 31px; right: -23px; top: -30px; transform: rotate(17deg); background: rgba(255,255,255,.46); }
+    .hero-kai .tiny { font-size: 13px; color: var(--kai-dark); font-weight: 700; }
+    .hero-kai h2 { position: relative; z-index: 1; margin: 5px 0 9px; font: 650 27px/1.04 "Bricolage Grotesque", sans-serif; letter-spacing: -.035em; max-width: 280px; }
+    .hero-kai p { margin: 0; line-height: 1.38; color: #425177; font-size: 14px; max-width: 285px; }
+    .prompt-box { background: white; border: 1px solid var(--line); border-radius: 20px; padding: 13px 13px 10px; box-shadow: 0 8px 24px rgba(45,67,124,.08); }
+    .prompt-box textarea { width: 100%; resize: none; border: 0; outline: 0; min-height: 61px; color: var(--ink); background: transparent; font: inherit; }
+    .prompt-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .prompt-tools { display: flex; gap: 6px; }
+    .mini { border: 0; background: #eef1f8; color: var(--muted); border-radius: 10px; padding: 7px 9px; cursor: pointer; font-size: 12px; }
+    .send { width: 36px; height: 36px; border-radius: 12px; border: 0; background: var(--kai); color: white; cursor: pointer; font-weight: 700; }
+    .section-head { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 1px 10px; }
+    .section-head h3 { margin: 0; font: 650 16px "Bricolage Grotesque", sans-serif; }
+    .section-head span { color: var(--muted); font-size: 12px; }
+    .chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip { border: 1px solid var(--line); background: white; border-radius: 999px; padding: 9px 12px; white-space: nowrap; color: var(--ink); cursor: pointer; font-size: 13px; }
+    .chip.selected { background: var(--ink); color: white; border-color: var(--ink); }
+    .today-card { margin-top: 14px; border: 1px solid var(--line); background: white; border-radius: 19px; padding: 14px; display: flex; gap: 12px; align-items: center; }
+    .meal-thumb { width: 54px; height: 54px; border-radius: 15px; background: linear-gradient(135deg, var(--sun), #ff9d62); display: grid; place-items: center; font-size: 25px; }
+    .today-card strong { display: block; }
+    .today-card small { color: var(--muted); }
+    .avatars { margin-left: auto; display: flex; }
+    .avatar { width: 25px; height: 25px; margin-left: -5px; border-radius: 50%; color: white; display: grid; place-items: center; border: 2px solid white; font-size: 9px; font-weight: 700; }
+    .bottom-nav { position: absolute; z-index: 8; bottom: 0; left: 0; right: 0; min-height: 75px; padding: 8px 9px 12px; border-top: 1px solid var(--line); background: rgba(255,255,255,.94); backdrop-filter: blur(16px); display: flex; justify-content: space-around; }
+    .nav-item { min-width: 62px; padding: 5px 4px; border: 0; background: transparent; border-radius: 12px; color: var(--muted); font-size: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+    .nav-item .nav-icon { font-size: 20px; line-height: 1; }
+    .nav-item.active { color: var(--kai); font-weight: 700; background: #eff1ff; }
+    .manual-home { padding-top: 2px; }
+    .manual-title { padding: 2px 18px 15px; }
+    .manual-title h2 { margin: 3px 0 4px; font: 650 27px/1.1 "Bricolage Grotesque", sans-serif; letter-spacing: -.03em; }
+    .manual-title p { margin: 0; color: var(--muted); font-size: 14px; }
+    .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 18px; }
+    .tool-card { min-height: 130px; padding: 15px; border: 1px solid var(--line); border-radius: 21px; background: white; text-align: left; cursor: pointer; color: var(--ink); }
+    .tool-card:nth-child(1) { background: #eef1ff; }
+    .tool-card:nth-child(2) { background: #fff4d5; }
+    .tool-card:nth-child(3) { background: #e7f7ef; }
+    .tool-card:nth-child(4) { background: #f7eaf8; }
+    .tool-icon { font-size: 23px; display: block; margin-bottom: 19px; }
+    .tool-card strong { display: block; font: 650 16px "Bricolage Grotesque", sans-serif; }
+    .tool-card small { display: block; color: var(--muted); margin-top: 4px; line-height: 1.25; }
+    .details { padding: 12px 0; }
+    .details .number { width: 44px; height: 44px; border-radius: 15px; background: var(--sun); display: grid; place-items: center; font: 750 18px "Bricolage Grotesque"; transform: rotate(-4deg); margin-bottom: 18px; }
+    .details h2 { margin: 0 0 9px; font: 650 28px/1.04 "Bricolage Grotesque"; letter-spacing: -.035em; }
+    .details > p { color: var(--muted); line-height: 1.5; margin: 0 0 20px; }
+    .detail-block { border-top: 1px solid var(--line); padding: 15px 0; }
+    .detail-block h3 { margin: 0 0 7px; font: 650 15px "Bricolage Grotesque"; }
+    .detail-block p, .detail-block li { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+    .detail-block ul { padding-left: 18px; margin: 0; }
+    .verdict { background: var(--mint); color: var(--mint-ink); border-radius: 16px; padding: 13px 14px; font-size: 14px; font-weight: 700; line-height: 1.35; }
+
+    /* Concept B */
+    .b-header { padding: 14px 18px 8px; display: flex; justify-content: space-between; align-items: center; }
+    .b-kai { display: flex; align-items: center; gap: 9px; }
+    .orb { width: 37px; height: 37px; border-radius: 50%; background: conic-gradient(from 180deg, #4559d6, #9d78e8, #79d8bb, #4559d6); position: relative; box-shadow: 0 0 0 5px #eef0ff; }
+    .orb::after { content: ""; position: absolute; inset: 10px; border-radius: 50%; background: white; }
+    .status-line { font-size: 12px; color: var(--muted); }
+    .status-line strong { display: block; color: var(--ink); font: 650 17px "Bricolage Grotesque"; }
+    .b-canvas { padding: 12px 18px 20px; }
+    .b-greeting { font: 650 29px/1.03 "Bricolage Grotesque"; letter-spacing: -.035em; margin: 12px 0 19px; }
+    .context-strip { display: grid; grid-template-columns: 1.25fr .75fr; gap: 9px; margin-bottom: 14px; }
+    .context-card { border-radius: 19px; padding: 14px; min-height: 111px; background: var(--ink); color: white; }
+    .context-card.alt { background: var(--sun); color: var(--ink); }
+    .context-label { font-size: 11px; opacity: .68; text-transform: uppercase; letter-spacing: .08em; }
+    .context-card strong { display: block; font: 650 18px/1.1 "Bricolage Grotesque"; margin: 16px 0 4px; }
+    .context-card small { opacity: .74; }
+    .b-composer { border-radius: 23px; padding: 15px; background: white; border: 2px solid #b9c5f5; box-shadow: 0 10px 26px rgba(69,89,214,.11); }
+    .b-composer input { border: 0; outline: none; width: 100%; padding: 4px 0 14px; background: transparent; color: var(--ink); }
+    .b-actions { display: flex; justify-content: space-between; align-items: center; }
+    .voice { border: 0; border-radius: 12px; background: #edf0ff; color: var(--kai); padding: 8px 11px; cursor: pointer; }
+    .ask { border: 0; border-radius: 12px; background: var(--kai); color: white; padding: 9px 14px; cursor: pointer; font-weight: 700; }
+    .task-list { display: grid; gap: 8px; margin-top: 15px; }
+    .task { border: 1px solid var(--line); background: white; padding: 12px 13px; border-radius: 16px; display: flex; align-items: center; gap: 10px; cursor: pointer; text-align: left; color: var(--ink); }
+    .task .t-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 11px; background: #eef1ff; }
+    .task small { color: var(--muted); display: block; margin-top: 1px; }
+    .task .chev { margin-left: auto; color: var(--muted); }
+    .b-nav { position: absolute; z-index: 8; left: 13px; right: 13px; bottom: 11px; border-radius: 20px; padding: 7px; background: var(--ink); display: grid; grid-template-columns: 1fr 1fr; box-shadow: 0 13px 26px rgba(23,35,63,.25); }
+    .b-mode { border: 0; border-radius: 14px; padding: 11px; color: #aeb9d1; background: transparent; font-weight: 700; cursor: pointer; }
+    .b-mode.active { color: var(--ink); background: white; }
+    .drawer { position: absolute; z-index: 7; left: 0; right: 0; bottom: 0; padding: 13px 17px 91px; background: #f9faff; min-height: 578px; transform: translateY(110%); transition: transform .32s cubic-bezier(.2,.75,.2,1); }
+    .drawer.open { transform: translateY(0); }
+    .drawer-handle { width: 43px; height: 5px; border-radius: 4px; background: #cdd4e2; margin: 0 auto 17px; }
+    .drawer h2 { font: 650 25px "Bricolage Grotesque"; margin: 0 0 5px; }
+    .drawer > p { color: var(--muted); margin: 0 0 15px; font-size: 14px; }
+    .drawer-list { display: grid; gap: 9px; }
+    .drawer-item { border: 1px solid var(--line); background: white; border-radius: 17px; padding: 13px; display: grid; grid-template-columns: 38px 1fr auto; align-items: center; gap: 10px; color: var(--ink); cursor: pointer; text-align: left; }
+    .drawer-item .d-icon { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: #edf0ff; }
+    .drawer-item small { color: var(--muted); display: block; }
+
+    /* Concept C */
+    .c-app { background: #f8fbfa; }
+    .c-header { padding: 13px 17px 11px; display: flex; justify-content: space-between; align-items: center; }
+    .c-brand { font: 750 20px "Bricolage Grotesque"; }
+    .c-mode { display: flex; border: 1px solid #cfe2d8; border-radius: 13px; overflow: hidden; background: white; }
+    .c-mode button { border: 0; padding: 8px 10px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; }
+    .c-mode button.active { color: white; background: #236b53; }
+    .c-home { padding: 3px 17px 18px; }
+    .day-ribbon { margin: 4px 0 14px; display: flex; align-items: center; gap: 10px; }
+    .date-box { width: 47px; height: 55px; border-radius: 15px; background: var(--sun); display: grid; place-items: center; line-height: 1; }
+    .date-box small { font-size: 10px; font-weight: 700; }
+    .date-box strong { font: 750 21px "Bricolage Grotesque"; }
+    .day-ribbon h2 { font: 650 22px/1.05 "Bricolage Grotesque"; margin: 0 0 3px; }
+    .day-ribbon p { margin: 0; color: var(--muted); font-size: 13px; }
+    .timeline { border-left: 2px solid #d7e8df; margin-left: 14px; padding: 0 0 0 17px; }
+    .timeline-card { position: relative; background: white; border: 1px solid #dbe9e2; border-radius: 18px; padding: 13px; margin-bottom: 10px; }
+    .timeline-card::before { content: ""; position: absolute; width: 10px; height: 10px; left: -23px; top: 22px; border-radius: 50%; background: #3f9a77; border: 2px solid #f8fbfa; box-shadow: 0 0 0 2px #3f9a77; }
+    .timeline-card .time { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+    .timeline-card strong { display: block; margin-top: 4px; }
+    .timeline-card p { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.3; }
+    .kai-nudge { background: #e2f5eb; border-color: #baddca; }
+    .kai-nudge::before { background: var(--kai); box-shadow: 0 0 0 2px var(--kai); }
+    .nudge-label { color: var(--kai); font-size: 11px; font-weight: 700; }
+    .nudge-actions { display: flex; gap: 7px; margin-top: 11px; }
+    .nudge-actions button { border: 0; border-radius: 10px; padding: 8px 10px; cursor: pointer; font-size: 12px; }
+    .approve { color: white; background: #236b53; }
+    .change { color: var(--ink); background: white; }
+    .c-chat { margin-top: 12px; border: 1px solid #cfe2d8; background: white; border-radius: 18px; padding: 9px 9px 9px 13px; display: flex; align-items: center; gap: 8px; }
+    .c-chat input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; font-size: 13px; }
+    .c-chat button { width: 36px; height: 36px; border-radius: 12px; border: 0; color: white; background: #236b53; cursor: pointer; }
+    .c-bottom { position: absolute; z-index: 8; left: 0; right: 0; bottom: 0; min-height: 75px; border-top: 1px solid #dbe9e2; background: rgba(255,255,255,.95); display: grid; grid-template-columns: repeat(5, 1fr); padding: 8px 4px 12px; }
+    .c-bottom button { border: 0; background: transparent; color: var(--muted); display: flex; flex-direction: column; gap: 4px; align-items: center; font-size: 9px; cursor: pointer; border-radius: 11px; padding: 4px 0; }
+    .c-bottom button.active { color: #236b53; font-weight: 700; }
+    .c-bottom .ai-center { margin-top: -25px; }
+    .c-bottom .ai-center span:first-child { width: 48px; height: 48px; border-radius: 17px; display: grid; place-items: center; color: white; background: var(--kai); border: 5px solid #f8fbfa; box-sizing: content-box; font-size: 18px; box-shadow: 0 8px 15px rgba(69,89,214,.22); }
+    .manual-panel { display: none; padding: 3px 17px 18px; }
+    .manual-panel.active { display: block; }
+    .manual-panel h2 { font: 650 25px "Bricolage Grotesque"; margin: 5px 0 4px; }
+    .manual-panel > p { color: var(--muted); margin: 0 0 15px; font-size: 14px; }
+    .week-row { display: grid; grid-template-columns: 38px 1fr; gap: 9px; margin-bottom: 9px; align-items: stretch; }
+    .weekday { border-radius: 13px; background: #e1eee8; display: grid; place-items: center; font-weight: 700; font-size: 12px; }
+    .week-meal { border-radius: 15px; border: 1px solid #dbe9e2; background: white; padding: 11px 12px; }
+    .week-meal small { color: var(--muted); }
+
+    .comparison { max-width: 980px; margin: 42px auto 0; }
+    .comparison h2 { font: 650 30px "Bricolage Grotesque"; letter-spacing: -.035em; margin: 0 0 15px; }
+    .compare-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .compare-card { border: 1px solid var(--line); border-radius: 20px; background: rgba(255,255,255,.8); padding: 16px; }
+    .compare-card strong { font: 650 16px "Bricolage Grotesque"; }
+    .compare-card p { color: var(--muted); margin: 7px 0 0; line-height: 1.4; font-size: 14px; }
+    .recommend { border: 2px solid var(--kai); position: relative; }
+    .recommend::after { content: "Empfehlung"; position: absolute; top: -11px; right: 12px; background: var(--kai); color: white; padding: 4px 9px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+    .toast { position: absolute; z-index: 20; left: 50%; bottom: 92px; transform: translate(-50%, 14px); opacity: 0; color: white; background: var(--ink); padding: 10px 14px; border-radius: 12px; font-size: 12px; white-space: nowrap; pointer-events: none; transition: .2s ease; }
+    .toast.show { opacity: 1; transform: translate(-50%,0); }
+
+    @media (max-width: 820px) {
+      .page { padding-top: 18px; }
+      .masthead { align-items: start; }
+      .sync-pill { display: none; }
+      .stage { grid-template-columns: minmax(0, 390px); }
+      .details { max-width: 390px; }
+      .compare-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 460px) {
+      .page { width: 100%; padding: 12px 0 45px; }
+      .masthead, .concept-switcher, .details, .comparison { margin-left: 14px; margin-right: 14px; }
+      .concept-switcher { font-size: 12px; border-radius: 15px; }
+      .concept-tab { padding: 10px 4px; }
+      .phone-shell { border-left-width: 0; border-right-width: 0; border-radius: 0; width: 100%; min-height: 780px; }
+      .stage { display: block; }
+      .details { margin-top: 24px; }
+      h1 { font-size: 34px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="masthead">
+      <div>
+        <div class="eyebrow">KAI · AI-first Navigation</div>
+        <h1 class="display">Drei Wege, KAI zum echten Startpunkt zu machen.</h1>
+        <p class="lede">Jedes Konzept startet im KI-Modus. Der manuelle Modus bleibt klar erreichbar – aber er konkurriert nicht mehr um die erste Aufmerksamkeit.</p>
+      </div>
+      <div class="sync-pill"><span class="sync-dot"></span> Alles auf diesem Gerät verfügbar</div>
+    </header>
+
+    <nav class="concept-switcher" aria-label="Konzept auswählen">
+      <button class="concept-tab active" data-concept="a">A · Zwei Welten</button>
+      <button class="concept-tab" data-concept="b">B · KAI & Werkzeuge</button>
+      <button class="concept-tab" data-concept="c">C · Tagesbegleiter</button>
+    </nav>
+
+    <section class="stage">
+      <div class="phone-shell" aria-label="Interaktives Smartphone-Wireframe">
+        <div class="phone-top"><div class="island"></div></div>
+        <div class="app">
+          <!-- CONCEPT A -->
+          <section class="screen active" id="concept-a">
+            <div class="app-header">
+              <div class="brand"><span class="kai-mark">K</span> KAI</div>
+              <button class="icon-btn js-toast" aria-label="Konversationen öffnen">☰</button>
+            </div>
+            <div class="mode-switch" aria-label="App-Modus">
+              <button class="mode-btn active" data-a-mode="ai">✦ Mit KAI</button>
+              <button class="mode-btn" data-a-mode="manual">Manuell</button>
+            </div>
+
+            <div id="a-ai">
+              <div class="content">
+                <div class="hero-kai">
+                  <div class="tiny">Guten Morgen, Hilko</div>
+                  <h2>Was soll ich euch diese Woche abnehmen?</h2>
+                  <p>Ich kenne euren Plan, eure Rezepte und die Vorlieben im Haushalt.</p>
+                </div>
+                <div class="prompt-box">
+                  <textarea aria-label="Nachricht an KAI" placeholder="z. B. Plane drei schnelle Abendessen …"></textarea>
+                  <div class="prompt-actions">
+                    <div class="prompt-tools">
+                      <button class="mini js-toast">🎙 Sprechen</button>
+                      <button class="mini js-toast">＋ Kontext</button>
+                    </div>
+                    <button class="send js-send" aria-label="Nachricht senden">↑</button>
+                  </div>
+                </div>
+                <div class="section-head"><h3>Schnell starten</h3><span>Für heute</span></div>
+                <div class="chips">
+                  <button class="chip js-fill" data-text="Plane unsere kommende Woche.">Woche planen</button>
+                  <button class="chip js-fill" data-text="Was können wir heute schnell kochen?">Heute kochen</button>
+                  <button class="chip js-fill" data-text="Ergänze unsere Einkaufsliste.">Einkauf ergänzen</button>
+                </div>
+                <div class="today-card">
+                  <div class="meal-thumb">🍝</div>
+                  <div><small>Heute · 18:30</small><strong>Pasta Primavera</strong><small>25 Min. · alles vorhanden</small></div>
+                  <div class="avatars"><span class="avatar" style="background:#4559d6">HI</span><span class="avatar" style="background:#d66d55">AN</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div id="a-manual" style="display:none">
+              <div class="manual-home">
+                <div class="manual-title"><div class="eyebrow">Manueller Modus</div><h2>Selbst organisieren</h2><p>Direkter Zugriff auf alle Arbeitsbereiche.</p></div>
+                <div class="tool-grid">
+                  <button class="tool-card js-toast"><span class="tool-icon">▤</span><strong>Rezepte</strong><small>42 Gerichte verwalten</small></button>
+                  <button class="tool-card js-toast"><span class="tool-icon">▦</span><strong>Wochenplan</strong><small>Diese Woche bearbeiten</small></button>
+                  <button class="tool-card js-toast"><span class="tool-icon">✓</span><strong>Einkauf</strong><small>8 Artikel offen</small></button>
+                  <button class="tool-card js-toast"><span class="tool-icon">⚙</span><strong>Haushalt</strong><small>Mitglieder & Vorlieben</small></button>
+                </div>
+              </div>
+            </div>
+
+            <nav class="bottom-nav" id="a-bottom">
+              <button class="nav-item active"><span class="nav-icon">✦</span>KAI</button>
+              <button class="nav-item"><span class="nav-icon">▤</span>Rezepte</button>
+              <button class="nav-item"><span class="nav-icon">▦</span>Plan</button>
+              <button class="nav-item"><span class="nav-icon">✓</span>Einkauf</button>
+              <button class="nav-item"><span class="nav-icon">⚙</span>Mehr</button>
+            </nav>
+          </section>
+
+          <!-- CONCEPT B -->
+          <section class="screen" id="concept-b">
+            <div class="b-header">
+              <div class="b-kai"><div class="orb"></div><div class="status-line"><strong>KAI</strong>Bereit für euren Alltag</div></div>
+              <button class="icon-btn js-toast" aria-label="Verlauf öffnen">↺</button>
+            </div>
+            <div class="b-canvas">
+              <div class="b-greeting">Was können wir<br>heute leichter machen?</div>
+              <div class="context-strip">
+                <button class="context-card js-toast" style="border:0;text-align:left;cursor:pointer">
+                  <span class="context-label">Aktueller Fokus</span><strong>KW 30 planen</strong><small>4 Abende sind noch offen →</small>
+                </button>
+                <button class="context-card alt js-toast" style="border:0;text-align:left;cursor:pointer">
+                  <span class="context-label">Einkauf</span><strong>8 offen</strong><small>2 erledigt</small>
+                </button>
+              </div>
+              <div class="b-composer">
+                <input aria-label="Aufgabe für KAI" placeholder="Sag KAI, was erledigt werden soll …" />
+                <div class="b-actions"><button class="voice js-toast">🎙 Sprechen</button><button class="ask js-send">KAI fragen ↑</button></div>
+              </div>
+              <div class="section-head"><h3>Typische Aufgaben</h3><span>KAI erledigt, du bestätigst</span></div>
+              <div class="task-list">
+                <button class="task js-fill-b" data-text="Plane drei familienfreundliche Abendessen."><span class="t-icon">▦</span><span><strong>Abendessen planen</strong><small>Mit euren No-Gos & Favoriten</small></span><span class="chev">›</span></button>
+                <button class="task js-fill-b" data-text="Erstelle die Einkaufsliste aus unserem Plan."><span class="t-icon">✓</span><span><strong>Einkauf vorbereiten</strong><small>Aus dem aktuellen Wochenplan</small></span><span class="chev">›</span></button>
+                <button class="task js-fill-b" data-text="Finde eine Alternative für das heutige Essen."><span class="t-icon">↔</span><span><strong>Gericht austauschen</strong><small>Passend für alle im Haushalt</small></span><span class="chev">›</span></button>
+              </div>
+            </div>
+            <div class="drawer" id="b-drawer">
+              <div class="drawer-handle"></div>
+              <h2>Manuelle Werkzeuge</h2>
+              <p>Wenn du selbst ins Detail gehen möchtest.</p>
+              <div class="drawer-list">
+                <button class="drawer-item js-toast"><span class="d-icon">▤</span><span><strong>Rezepte</strong><small>Suchen, importieren, bearbeiten</small></span><span>›</span></button>
+                <button class="drawer-item js-toast"><span class="d-icon">▦</span><span><strong>Wochenplan</strong><small>Mahlzeiten direkt verschieben</small></span><span>›</span></button>
+                <button class="drawer-item js-toast"><span class="d-icon">✓</span><span><strong>Einkaufsliste</strong><small>Im Laden abhaken</small></span><span>›</span></button>
+                <button class="drawer-item js-toast"><span class="d-icon">⚙</span><span><strong>Haushalt</strong><small>Vorlieben und Mitglieder</small></span><span>›</span></button>
+              </div>
+            </div>
+            <nav class="b-nav">
+              <button class="b-mode active" data-b-mode="kai">✦ KAI</button>
+              <button class="b-mode" data-b-mode="tools">▦ Werkzeuge</button>
+            </nav>
+          </section>
+
+          <!-- CONCEPT C -->
+          <section class="screen" id="concept-c">
+            <div class="c-header">
+              <div class="c-brand">KAI</div>
+              <div class="c-mode"><button class="active" data-c-mode="ai">Begleiten</button><button data-c-mode="manual">Bearbeiten</button></div>
+              <button class="icon-btn js-toast" style="width:34px;height:34px" aria-label="Einstellungen">⚙</button>
+            </div>
+            <div class="c-home" id="c-ai">
+              <div class="day-ribbon"><div class="date-box"><small>MI</small><strong>22</strong></div><div><h2>Euer Mittwoch</h2><p>Drei Dinge sind bereits geregelt.</p></div></div>
+              <div class="timeline">
+                <div class="timeline-card"><span class="time">Heute Abend</span><strong>Ofengemüse mit Feta</strong><p>30 Minuten · für Hilko und Anna</p></div>
+                <div class="timeline-card kai-nudge"><span class="nudge-label">✦ KAI hat mitgedacht</span><strong>Tomaten fehlen noch</strong><p>Soll ich sie zur Einkaufsliste hinzufügen?</p><div class="nudge-actions"><button class="approve js-approve">Hinzufügen</button><button class="change js-toast">Nicht nötig</button></div></div>
+                <div class="timeline-card"><span class="time">Morgen</span><strong>Noch kein Abendessen</strong><p>KAI kann etwas mit euren Vorräten vorschlagen.</p></div>
+              </div>
+              <div class="c-chat"><input aria-label="KAI etwas fragen" placeholder="KAI etwas fragen oder ändern lassen …"><button class="js-send">↑</button></div>
+            </div>
+            <div class="manual-panel" id="c-manual">
+              <div class="eyebrow">Manueller Modus</div><h2>Wochenplan bearbeiten</h2><p>Der zuletzt relevante Bereich öffnet sich direkt.</p>
+              <div class="week-row"><div class="weekday">MO</div><button class="week-meal js-toast"><strong>Pasta Primavera</strong><br><small>Abendessen · alle</small></button></div>
+              <div class="week-row"><div class="weekday">DI</div><button class="week-meal js-toast"><strong>Resteabend</strong><br><small>Abendessen · alle</small></button></div>
+              <div class="week-row"><div class="weekday">MI</div><button class="week-meal js-toast"><strong>Ofengemüse mit Feta</strong><br><small>Abendessen · Hilko, Anna</small></button></div>
+              <div class="week-row"><div class="weekday">DO</div><button class="week-meal js-toast" style="border-style:dashed;color:#63708b"><strong>＋ Mahlzeit eintragen</strong><br><small>Abendessen</small></button></div>
+              <div class="week-row"><div class="weekday">FR</div><button class="week-meal js-toast" style="border-style:dashed;color:#63708b"><strong>＋ Mahlzeit eintragen</strong><br><small>Abendessen</small></button></div>
+            </div>
+            <nav class="c-bottom">
+              <button><span>▤</span><span>Rezepte</span></button><button><span>▦</span><span>Plan</span></button><button class="ai-center active" data-c-nav-ai><span>✦</span><span>KAI</span></button><button><span>✓</span><span>Einkauf</span></button><button><span>⚙</span><span>Mehr</span></button>
+            </nav>
+          </section>
+          <div class="toast" id="toast">Interaktion ausgelöst</div>
+        </div>
+      </div>
+
+      <aside class="details" id="details-a">
+        <div class="number">A</div>
+        <h2>Zwei klar getrennte Welten</h2>
+        <p>Ein sichtbarer Modusschalter bildet dein mentales Modell direkt ab: <strong>„KAI macht es mit mir“</strong> oder <strong>„Ich mache es selbst“</strong>.</p>
+        <div class="detail-block"><h3>Navigation</h3><p>Der Startscreen ist immer KAI. Im manuellen Modus bleiben Rezepte, Wochenplan, Einkauf und Haushalt als klassische Bereiche erhalten.</p></div>
+        <div class="detail-block"><h3>Stärke</h3><p>Am leichtesten zu verstehen und mit der bestehenden Tab-Struktur am risikoärmsten umzusetzen.</p></div>
+        <div class="detail-block"><h3>Risiko</h3><p>Der sichtbare Wechsel kann sich langfristig wie zwei Apps anfühlen, wenn Zustände nicht sauber miteinander verbunden werden.</p></div>
+        <div class="verdict">Gut für einen evolutionären Umbau mit wenig Navigationsrisiko.</div>
+      </aside>
+      <aside class="details" id="details-b" style="display:none">
+        <div class="number">B</div>
+        <h2>KAI vorne, Werkzeuge dahinter</h2>
+        <p>KAI wird nicht als eigener Tab verstanden, sondern als <strong>primäre Bedienoberfläche</strong>. Manuelle Funktionen heißen bewusst „Werkzeuge“ und öffnen sich als eigener Arbeitsraum.</p>
+        <div class="detail-block"><h3>Navigation</h3><p>Nur zwei globale Ziele: KAI und Werkzeuge. Innerhalb der Werkzeuge bleiben die bekannten vier Bereiche bestehen.</p></div>
+        <div class="detail-block"><h3>Stärke</h3><p>Die stärkste AI-first Positionierung und die ruhigste globale Navigation. KAI wirkt wie ein Assistent, nicht wie ein Chat-Feature.</p></div>
+        <div class="detail-block"><h3>Risiko</h3><p>Ein zusätzlicher Schritt zu Rezepten oder Einkauf kann Power-User stören; Deep Links und zuletzt geöffneter Bereich werden wichtig.</p></div>
+        <div class="verdict">Meine Empfehlung: klare Produktthese, trotzdem volle manuelle Kontrolle.</div>
+      </aside>
+      <aside class="details" id="details-c" style="display:none">
+        <div class="number">C</div>
+        <h2>Ein Tagesbegleiter statt Chat</h2>
+        <p>KAI startet mit einer ruhigen <strong>Tagesübersicht</strong>. Die KI greift genau dort ein, wo etwas offen ist, und bleibt über das mittige KAI-Ziel jederzeit ansprechbar.</p>
+        <div class="detail-block"><h3>Navigation</h3><p>Die bestehenden Tabs bleiben fast unverändert. „Begleiten / Bearbeiten“ schaltet zwischen kuratierter KI-Sicht und direkter manueller Bearbeitung.</p></div>
+        <div class="detail-block"><h3>Stärke</h3><p>Sehr alltagsnah: Nutzer müssen nicht erst wissen, was sie KAI fragen sollen. Offene Loops werden sichtbar und handhabbar.</p></div>
+        <div class="detail-block"><h3>Risiko</h3><p>Benötigt gute Priorisierungslogik, damit Hinweise hilfreich statt aufdringlich wirken.</p></div>
+        <div class="verdict">Stärkstes Zukunftsbild für den späteren Familienkalender.</div>
+      </aside>
+    </section>
+
+    <section class="comparison">
+      <div class="eyebrow">Kurzvergleich</div>
+      <h2>Welche Richtung löst welches Problem?</h2>
+      <div class="compare-grid">
+        <article class="compare-card"><strong>A · Sofort verständlich</strong><p>Beste Wahl, wenn der Umbau schrittweise erfolgen und die heutige Informationsarchitektur weitgehend erhalten bleiben soll.</p></article>
+        <article class="compare-card recommend"><strong>B · Konsequentes AI-first</strong><p>Beste Balance aus KI-Fokus, Ruhe und Kontrolle. Die App spricht in Aufgaben, nicht in technischen Funktionsbereichen.</p></article>
+        <article class="compare-card"><strong>C · Proaktive Entlastung</strong><p>Beste Wahl für das langfristige Ziel eines Familienassistenten, der Essen, Einkauf und später Termine verbindet.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (s, root=document) => root.querySelector(s);
+    const $$ = (s, root=document) => [...root.querySelectorAll(s)];
+    const toast = $('#toast');
+    let toastTimer;
+    function showToast(message='Interaktion ausgelöst') {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 1600);
+    }
+
+    $$('.concept-tab').forEach(btn => btn.addEventListener('click', () => {
+      $$('.concept-tab').forEach(x => x.classList.remove('active'));
+      btn.classList.add('active');
+      const id = btn.dataset.concept;
+      $$('.screen').forEach(x => x.classList.toggle('active', x.id === `concept-${id}`));
+      $$('.details').forEach(x => x.style.display = x.id === `details-${id}` ? 'block' : 'none');
+    }));
+
+    $$('[data-a-mode]').forEach(btn => btn.addEventListener('click', () => {
+      $$('[data-a-mode]').forEach(x => x.classList.remove('active'));
+      btn.classList.add('active');
+      const manual = btn.dataset.aMode === 'manual';
+      $('#a-ai').style.display = manual ? 'none' : 'block';
+      $('#a-manual').style.display = manual ? 'block' : 'none';
+      $$('.nav-item', $('#a-bottom')).forEach((x,i) => x.classList.toggle('active', manual ? i === 1 : i === 0));
+    }));
+
+    $$('[data-b-mode]').forEach(btn => btn.addEventListener('click', () => {
+      $$('[data-b-mode]').forEach(x => x.classList.remove('active'));
+      btn.classList.add('active');
+      $('#b-drawer').classList.toggle('open', btn.dataset.bMode === 'tools');
+    }));
+
+    $$('[data-c-mode]').forEach(btn => btn.addEventListener('click', () => {
+      $$('[data-c-mode]').forEach(x => x.classList.remove('active'));
+      btn.classList.add('active');
+      const manual = btn.dataset.cMode === 'manual';
+      $('#c-ai').style.display = manual ? 'none' : 'block';
+      $('#c-manual').classList.toggle('active', manual);
+    }));
+    $('[data-c-nav-ai]').addEventListener('click', () => {
+      $('[data-c-mode="ai"]').click();
+      showToast('KAI ist bereit');
+    });
+
+    $$('.js-toast').forEach(btn => btn.addEventListener('click', () => showToast('Bereich würde sich jetzt öffnen')));
+    $$('.js-send').forEach(btn => btn.addEventListener('click', () => showToast('Nachricht an KAI gesendet')));
+    $$('.js-fill').forEach(btn => btn.addEventListener('click', () => {
+      $('#concept-a textarea').value = btn.dataset.text;
+      $('#concept-a textarea').focus();
+    }));
+    $$('.js-fill-b').forEach(btn => btn.addEventListener('click', () => {
+      $('#concept-b input').value = btn.dataset.text;
+      $('#concept-b input').focus();
+    }));
+    $$('.chip').forEach(btn => btn.addEventListener('click', () => btn.classList.toggle('selected')));
+    $$('.nav-item').forEach(btn => btn.addEventListener('click', () => {
+      $$('.nav-item').forEach(x => x.classList.remove('active'));
+      btn.classList.add('active');
+      showToast(btn.textContent.trim() + ' geöffnet');
+    }));
+    $$('.c-bottom button:not(.ai-center)').forEach(btn => btn.addEventListener('click', () => showToast(btn.textContent.trim() + ' geöffnet')));
+    const approve = $('.js-approve');
+    approve.addEventListener('click', () => {
+      approve.textContent = '✓ Hinzugefügt';
+      approve.disabled = true;
+      showToast('Tomaten stehen auf der Einkaufsliste');
+    });
+  </script>
+<style>
+  .page{display:none!important}
+  .deep-page{min-height:100vh;padding:24px 16px 56px;color:#17233f}
+  .deep-wrap{width:min(1120px,100%);margin:0 auto}
+  .deep-head{display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:20px}
+  .deep-head h1{font:650 clamp(30px,5vw,52px)/.98 "Bricolage Grotesque",sans-serif;letter-spacing:-.045em;margin:6px 0 9px;max-width:720px}
+  .deep-head p{margin:0;color:#63708b;max-width:700px;line-height:1.45}
+  .flow-tabs{display:flex;gap:7px;overflow:auto;padding:6px;margin-bottom:22px;border:1px solid #dfe5f1;border-radius:18px;background:rgba(255,255,255,.8);scrollbar-width:none}
+  .flow-tabs button{border:0;background:transparent;color:#63708b;white-space:nowrap;padding:10px 13px;border-radius:12px;font-weight:700;cursor:pointer}
+  .flow-tabs button.active{background:#17233f;color:white}
+  .deep-stage{display:grid;grid-template-columns:minmax(0,390px) minmax(300px,480px);gap:38px;justify-content:center;align-items:start}
+  .deep-phone{width:390px;max-width:100%;height:780px;border:8px solid #202a42;border-radius:44px;overflow:hidden;background:#f9faff;box-shadow:0 20px 60px rgba(34,52,100,.13);position:relative}
+  .deep-island{height:31px;background:white;display:flex;justify-content:center;align-items:center}
+  .deep-island:after{content:"";width:92px;height:19px;border-radius:12px;background:#202a42}
+  .deep-app{height:733px;position:relative;overflow:hidden;background:#f9faff}
+  .deep-screen{display:none;height:100%;overflow:auto;padding-bottom:92px;scrollbar-width:none}
+  .deep-screen.active{display:block}
+  .deep-screen::-webkit-scrollbar{display:none}
+  .kai-header{padding:13px 17px 10px;display:flex;justify-content:space-between;align-items:center;background:rgba(249,250,255,.94);position:sticky;top:0;z-index:5;backdrop-filter:blur(14px)}
+  .kai-id{display:flex;align-items:center;gap:10px}.kai-orb{width:38px;height:38px;border-radius:50%;background:conic-gradient(from 180deg,#4559d6,#9476df,#72cfb0,#4559d6);box-shadow:0 0 0 5px #edf0ff;position:relative}.kai-orb:after{content:"";position:absolute;inset:10px;border-radius:50%;background:white}
+  .kai-id strong{display:block;font:650 18px "Bricolage Grotesque"}.kai-id small{display:block;color:#63708b;font-size:11px}
+  .deep-icon{width:38px;height:38px;border:1px solid #dfe5f1;border-radius:13px;background:white;cursor:pointer;color:#17233f}
+  .home-pad,.result-pad,.history-pad,.tools-pad{padding:8px 17px 20px}
+  .home-title{font:650 30px/1.02 "Bricolage Grotesque";letter-spacing:-.04em;margin:12px 0 18px}
+  .focus-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:9px;margin-bottom:14px}
+  .focus-card{border:0;border-radius:19px;padding:14px;text-align:left;min-height:112px;cursor:pointer;color:white;background:#17233f}.focus-card.sun{background:#ffd665;color:#17233f}.focus-card span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.09em;opacity:.65}.focus-card strong{display:block;font:650 18px/1.08 "Bricolage Grotesque";margin:17px 0 4px}.focus-card small{opacity:.72}
+  .composer{border:2px solid #b9c5f5;background:white;border-radius:23px;padding:14px;box-shadow:0 10px 26px rgba(69,89,214,.11)}
+  .composer textarea{border:0;outline:0;resize:none;width:100%;min-height:60px;background:transparent;color:#17233f}.composer-row{display:flex;justify-content:space-between;align-items:center;gap:8px}.ghost-action{border:0;border-radius:11px;background:#eef1ff;color:#4559d6;padding:8px 10px;cursor:pointer;font-size:12px}.primary-action{border:0;border-radius:11px;background:#4559d6;color:white;padding:9px 13px;font-weight:700;cursor:pointer}
+  .subhead{display:flex;justify-content:space-between;align-items:baseline;margin:18px 1px 10px}.subhead strong{font:650 16px "Bricolage Grotesque"}.subhead small{color:#63708b}
+  .task-stack{display:grid;gap:8px}.quick-task{border:1px solid #dfe5f1;background:white;border-radius:16px;padding:12px;display:grid;grid-template-columns:35px 1fr auto;align-items:center;gap:10px;text-align:left;cursor:pointer;color:#17233f}.quick-task .qicon{width:35px;height:35px;border-radius:11px;background:#eef1ff;display:grid;place-items:center}.quick-task strong{display:block}.quick-task small{display:block;color:#63708b;margin-top:2px}.quick-task b{color:#8a94aa;font-size:20px}
+  .mode-bar{position:absolute;z-index:10;left:13px;right:13px;bottom:11px;border-radius:20px;padding:7px;background:#17233f;display:grid;grid-template-columns:1fr 1fr;box-shadow:0 13px 26px rgba(23,35,63,.25)}.mode-bar button{border:0;border-radius:14px;padding:11px;background:transparent;color:#aeb9d1;font-weight:700;cursor:pointer}.mode-bar button.active{background:white;color:#17233f}
+  .backline{display:flex;align-items:center;gap:9px;padding:12px 17px 5px}.backline button{border:0;background:transparent;font-size:20px;cursor:pointer}.backline strong{font:650 17px "Bricolage Grotesque"}
+  .user-bubble{margin-left:52px;background:#4559d6;color:white;border-radius:18px 18px 5px 18px;padding:12px 14px;font-size:14px;line-height:1.4}
+  .thinking{display:flex;gap:10px;align-items:center;margin:17px 0;color:#63708b;font-size:13px}.thinking .mini-orb{width:28px;height:28px;border-radius:50%;background:conic-gradient(#4559d6,#72cfb0,#9476df,#4559d6)}
+  .answer{background:white;border:1px solid #dfe5f1;border-radius:20px;padding:15px}.answer h2{font:650 23px/1.05 "Bricolage Grotesque";letter-spacing:-.03em;margin:0 0 7px}.answer>p{color:#63708b;font-size:14px;margin:0 0 13px;line-height:1.4}
+  .plan-item{border-top:1px solid #e6eaf2;padding:12px 0;display:grid;grid-template-columns:45px 1fr auto;gap:10px;align-items:center}.day-chip{width:43px;height:43px;border-radius:13px;background:#eef1ff;color:#4559d6;display:grid;place-items:center;font-weight:700;font-size:12px}.plan-item strong{display:block}.plan-item small{color:#63708b}.why{border:0;background:#f1f3f8;color:#63708b;border-radius:9px;padding:6px 8px;cursor:pointer;font-size:11px}
+  .reason{display:none;grid-column:2/4;color:#63708b;background:#f5f7fc;border-radius:10px;padding:8px;font-size:12px;line-height:1.35}.plan-item.open .reason{display:block}
+  .impact{margin-top:12px;background:#e1f3e9;border-radius:14px;padding:11px 12px;color:#176447;font-size:13px}.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.result-actions button{border-radius:13px;padding:11px;border:1px solid #cfd7e8;background:white;cursor:pointer;font-weight:700}.result-actions .commit{background:#236b53;color:white;border-color:#236b53}
+  .success-box{display:none;margin-top:12px;background:#236b53;color:white;border-radius:15px;padding:13px;text-align:center;font-weight:700}.success-box.show{display:block}
+  .tool-title{font:650 28px/1.05 "Bricolage Grotesque";letter-spacing:-.035em;margin:12px 0 5px}.tool-lede{margin:0 0 16px;color:#63708b;font-size:14px}.tool-list{display:grid;gap:9px}.tool-entry{border:1px solid #dfe5f1;background:white;border-radius:18px;padding:13px;display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:11px;text-align:left;cursor:pointer;color:#17233f}.tool-entry .tool-symbol{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:#eef1ff;font-size:19px}.tool-entry strong{display:block}.tool-entry small{display:block;color:#63708b;margin-top:2px}.tool-entry b{font-size:20px;color:#8a94aa}.offline-note{margin-top:14px;border:1px solid #d7e7df;background:#f2faf6;border-radius:15px;padding:11px;display:flex;gap:9px;color:#47675a;font-size:12px;line-height:1.35}.offline-note i{width:9px;height:9px;border-radius:50%;background:#42a77a;margin-top:3px;flex:none}
+  .history-item{border-bottom:1px solid #dfe5f1;padding:13px 2px;cursor:pointer}.history-item strong{display:block}.history-item small{color:#63708b}.history-item p{margin:4px 0 0;color:#63708b;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .deep-notes{padding-top:7px}.deep-notes .step{display:none}.deep-notes .step.active{display:block}.step-tag{display:inline-flex;background:#ffd665;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:700;margin-bottom:12px}.deep-notes h2{font:650 31px/1.03 "Bricolage Grotesque";letter-spacing:-.04em;margin:0 0 9px}.deep-notes>div>p{color:#63708b;line-height:1.5;margin:0 0 20px}.note-block{border-top:1px solid #dfe5f1;padding:14px 0}.note-block h3{font:650 16px "Bricolage Grotesque";margin:0 0 6px}.note-block p,.note-block li{color:#63708b;font-size:14px;line-height:1.45;margin:0}.note-block ul{margin:0;padding-left:18px}.rule{background:#dce6ff;color:#3244b6;border-radius:15px;padding:12px 13px;font-weight:700;font-size:13px;line-height:1.4}
+  @media(max-width:820px){.deep-head{align-items:start}.deep-stage{grid-template-columns:minmax(0,390px)}.deep-notes{max-width:390px}.deep-head .sync-pill{display:none}}
+  @media(max-width:460px){.deep-page{padding:13px 0 45px}.deep-head,.flow-tabs,.deep-notes{margin-left:14px;margin-right:14px}.deep-phone{width:100%;border-left:0;border-right:0;border-radius:0}.deep-head h1{font-size:35px}}
+  /* Icon-derived KAI identity: Midnight #16133E, Deep Blue #13335B, Cyan #06B6D4 */
+  :root{--brand-night:#16133e;--brand-blue:#13335b;--brand-cyan:#06b6d4;--brand-cyan-soft:#dff8fc;--brand-bg:#f5f9fc;--brand-line:#d8e5ed;--ink:#16133e;--muted:#607487;--paper:#f5f9fc;--line:#d8e5ed;--kai:#06b6d4;--kai-dark:#087f94;--sky:#dff8fc;--mint:#dff8fc;--mint-ink:#08758a;--sun:#06b6d4}
+  body{background:radial-gradient(circle at 13% 8%,rgba(6,182,212,.16),transparent 24rem),radial-gradient(circle at 90% 82%,rgba(19,51,91,.12),transparent 28rem),var(--brand-bg);color:var(--brand-night)}
+  .deep-page{color:var(--brand-night)}.eyebrow{color:#078aa3}.flow-tabs{border-color:var(--brand-line)}.flow-tabs button.active{background:var(--brand-night)}
+  .deep-phone{border-color:var(--brand-night)}.deep-island:after,.mode-bar{background:var(--brand-night)}.deep-app,.deep-screen{background:#f7fafc}.kai-header{background:rgba(247,250,252,.94)}
+  .kai-orb{border-radius:13px;background:linear-gradient(145deg,var(--brand-night),var(--brand-blue));box-shadow:0 0 0 4px var(--brand-cyan-soft)}.kai-orb:after{content:"K";inset:0;background:transparent;color:white;display:grid;place-items:center;font:700 19px "Bricolage Grotesque"}
+  .focus-card{background:linear-gradient(145deg,var(--brand-night),var(--brand-blue))}.focus-card.sun{background:var(--brand-cyan);color:var(--brand-night)}.composer{border-color:#77dbea;box-shadow:0 10px 26px rgba(6,182,212,.12)}.ghost-action,.quick-task .qicon,.tool-entry .tool-symbol,.day-chip{background:var(--brand-cyan-soft);color:#087f94}.primary-action,.user-bubble{background:var(--brand-cyan);color:var(--brand-night)}.thinking .mini-orb{background:var(--brand-cyan)}.result-actions .commit,.success-box{background:var(--brand-blue);border-color:var(--brand-blue)}.rule{background:var(--brand-cyan-soft);color:#08758a}.step-tag{background:var(--brand-cyan);color:var(--brand-night)}
+  .tool-top{position:sticky;top:0;z-index:5;padding:12px 15px 10px;display:grid;grid-template-columns:38px 1fr 38px;align-items:center;gap:9px;background:rgba(247,250,252,.95);backdrop-filter:blur(14px);border-bottom:1px solid var(--brand-line)}.tool-top>button:first-child{border:0;background:transparent;font-size:25px;cursor:pointer}.tool-top strong{display:block;font:650 18px "Bricolage Grotesque"}.tool-top small{color:#66788b;font-size:11px}.tool-content{padding:13px 16px 26px}.searchbar{height:45px;border:1px solid var(--brand-line);background:white;border-radius:15px;display:flex;align-items:center;gap:8px;padding:0 13px;font-size:20px;color:#6b7c8e}.searchbar input,.add-row input{border:0;outline:0;min-width:0;flex:1;background:transparent;color:var(--brand-night)}.filter-chips{display:flex;gap:7px;overflow:auto;padding:11px 0;scrollbar-width:none}.filter-chips button{border:1px solid var(--brand-line);background:white;border-radius:999px;padding:8px 11px;white-space:nowrap;color:#5c6f82;cursor:pointer;font-size:12px}.filter-chips button.active{background:var(--brand-night);border-color:var(--brand-night);color:white}
+  .recipe-feature{background:linear-gradient(135deg,var(--brand-night),var(--brand-blue));color:white;border-radius:22px;padding:14px;display:grid;grid-template-columns:72px 1fr auto;gap:12px;align-items:center}.food-art{width:72px;height:78px;border-radius:17px;background:var(--brand-cyan);color:var(--brand-night);display:grid;place-items:center;font:750 32px "Bricolage Grotesque"}.micro{font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.67}.recipe-feature h3,.house-card h3{font:650 19px/1.05 "Bricolage Grotesque";margin:4px 0}.recipe-feature p,.house-card p{font-size:12px;opacity:.68;margin:0}.recipe-feature>button{border:0;background:transparent;color:white;font-size:25px}.member-dots{display:flex;margin-top:8px}.member-dots i{width:23px;height:23px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:8px;font-weight:700;background:var(--brand-cyan);color:var(--brand-night);border:2px solid var(--brand-blue)}.member-dots i+ i{margin-left:-4px;background:white}
+  .recipe-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.recipe-tile{min-height:151px;border:1px solid var(--brand-line);border-radius:18px;background:white;padding:10px;text-align:left;cursor:pointer;color:var(--brand-night)}.tile-art{height:72px;border-radius:13px;background:#eaf2f6;display:grid;place-items:center;font:700 24px "Bricolage Grotesque";margin-bottom:9px}.tile-art.cyan{background:var(--brand-cyan-soft);color:#087d92}.tile-art.navy{background:#dfe7f0;color:var(--brand-blue)}.tile-art.pale{background:#e8f6f7;color:#087d92}.recipe-tile strong{display:block;font-size:13px;line-height:1.15}.recipe-tile small{display:block;color:#6b7c8e;font-size:10px;margin-top:5px}.recipe-tile.dashed{border-style:dashed}
+  .week-switch{display:grid;grid-template-columns:38px 1fr 38px;align-items:center;text-align:center;margin-bottom:10px}.week-switch button{border:1px solid var(--brand-line);background:white;border-radius:11px;height:35px;cursor:pointer}.family-row{display:flex;align-items:center;gap:7px;margin-bottom:12px;color:#6b7c8e;font-size:12px}.person{width:31px;height:31px;border:2px solid white;box-shadow:0 0 0 1px var(--brand-line);border-radius:50%;background:var(--brand-cyan);font-size:9px;font-weight:700;cursor:pointer}.person.anna{background:#f5a994}.person.all{width:auto;border-radius:999px;padding:0 10px;background:white;color:#6b7c8e}.person.active{box-shadow:0 0 0 2px var(--brand-night)}.day-list{display:grid;gap:9px}.day-card{display:grid;grid-template-columns:43px 1fr;gap:9px}.day-date{border-radius:13px;background:#e8eff4;display:grid;place-items:center;padding:6px 0}.day-date b{font-size:10px;color:#687b8e}.day-date span{font:650 18px "Bricolage Grotesque"}.day-card.today .day-date{background:var(--brand-cyan);color:var(--brand-night)}.meal-card{border:1px solid var(--brand-line);background:white;border-radius:15px;padding:10px 12px;text-align:left;cursor:pointer;color:var(--brand-night)}.meal-card small,.meal-card span{display:block;color:#6b7c8e;font-size:10px}.meal-card strong{display:block;margin:3px 0;font-size:13px}.meal-card.muted{border-style:dashed;background:transparent}.kai-inline{width:100%;margin-top:12px;border:1px solid #72d8e8;background:var(--brand-cyan-soft);border-radius:16px;padding:11px;display:grid;grid-template-columns:35px 1fr auto;align-items:center;gap:9px;text-align:left;color:var(--brand-night);cursor:pointer}.kai-inline>span:first-child{width:35px;height:35px;border-radius:11px;background:var(--brand-cyan);display:grid;place-items:center}.kai-inline strong,.kai-inline small{display:block}.kai-inline small{color:#5f7385;margin-top:2px}.kai-inline b{font-size:20px}
+  .add-row{height:45px;border:2px solid #75dbea;background:white;border-radius:15px;padding-left:12px;display:flex;overflow:hidden}.add-row button{width:45px;border:0;background:var(--brand-cyan);color:var(--brand-night);font-size:21px;cursor:pointer}.shop-progress{background:linear-gradient(135deg,var(--brand-night),var(--brand-blue));color:white;border-radius:18px;padding:13px;margin:11px 0}.shop-progress strong,.shop-progress span{display:block}.shop-progress span{font-size:11px;opacity:.68;margin-top:2px}.progress-track{height:5px;background:rgba(255,255,255,.18);border-radius:5px;margin-top:10px;overflow:hidden}.progress-track i{display:block;width:20%;height:100%;background:var(--brand-cyan)}.shop-group{background:white;border:1px solid var(--brand-line);border-radius:18px;padding:4px 12px;margin-bottom:9px}.shop-group h3{font:650 13px "Bricolage Grotesque";margin:10px 0 4px}.shop-group h3 span{color:#728496;font-size:10px}.shop-group label{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:center;border-top:1px solid #e8eef2;padding:10px 0;cursor:pointer}.shop-group label input{display:none}.shop-group label i{width:24px;height:24px;border:2px solid #a8bbc8;border-radius:8px}.shop-group label input:checked+i{background:var(--brand-cyan);border-color:var(--brand-cyan);box-shadow:inset 0 0 0 5px white}.shop-group strong,.shop-group small{display:block}.shop-group small{color:#728496;font-size:10px}.done-group{border:1px solid var(--brand-line);border-radius:14px;padding:10px 12px;color:#66798b;font-size:12px}.done-group summary{cursor:pointer;font-weight:700}
+  .house-card{background:linear-gradient(135deg,var(--brand-night),var(--brand-blue));color:white;border-radius:20px;padding:14px;display:grid;grid-template-columns:49px 1fr;gap:12px;align-items:center}.house-icon{width:49px;height:49px;border-radius:15px;background:var(--brand-cyan);color:var(--brand-night);display:grid;place-items:center;font-size:22px}.section-label{font:650 13px "Bricolage Grotesque";margin:16px 2px 7px}.member-card{width:100%;border:1px solid var(--brand-line);background:white;border-radius:17px;padding:11px;display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;text-align:left;color:var(--brand-night);margin-bottom:8px;cursor:pointer}.big-avatar{width:44px;height:44px;border-radius:14px;background:var(--brand-cyan);display:grid;place-items:center;font-size:11px;font-weight:700}.big-avatar.anna{background:#f5a994}.member-card strong,.member-card small,.member-card em{display:block}.member-card small{color:#697c8e;font-size:10px;margin:2px 0}.member-card em{font-style:normal;color:#087f94;font-size:10px}.member-card b{font-size:20px;color:#8394a3}.setting-row{width:100%;border:0;border-top:1px solid var(--brand-line);background:transparent;padding:12px 2px;display:flex;justify-content:space-between;color:var(--brand-night);cursor:pointer}.setting-row strong{font-size:11px;color:#687b8c}.privacy-note{background:var(--brand-cyan-soft);border-radius:15px;padding:12px;margin-top:10px}.privacy-note strong{font-size:12px}.privacy-note p{font-size:11px;color:#567182;line-height:1.35;margin:4px 0 0}
+  @media(min-width:768px){.recipe-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<main class="deep-page">
+  <div class="deep-wrap">
+    <header class="deep-head">
+      <div><div class="eyebrow">Konzept B · Vertiefung</div><h1>KAI erledigt. Du behältst die Kontrolle.</h1><p>Ein zusammenhängender Kernflow für den AI-first Start, nachvollziehbare Vorschläge, explizite Bestätigung und den Wechsel in die manuellen Werkzeuge.</p></div>
+      <div class="sync-pill"><span class="sync-dot"></span>Daten auf diesem Gerät verfügbar</div>
+    </header>
+    <nav class="flow-tabs" aria-label="Wireframe-Schritt">
+      <button class="active" data-deep="home">Start</button><button data-deep="result">Vorschlag</button><button data-deep="tools">Werkzeuge</button><button data-deep="recipes">Rezepte</button><button data-deep="mealplan">Wochenplan</button><button data-deep="shopping">Einkauf</button><button data-deep="household">Haushalt</button><button data-deep="history">Verlauf</button>
+    </nav>
+    <section class="deep-stage">
+      <div class="deep-phone">
+        <div class="deep-island"></div>
+        <div class="deep-app">
+          <section class="deep-screen active" id="deep-home">
+            <header class="kai-header"><div class="kai-id"><div class="kai-orb"></div><div><strong>KAI</strong><small>Bereit für euren Alltag</small></div></div><button class="deep-icon" data-go="history" aria-label="Verlauf öffnen">↺</button></header>
+            <div class="home-pad">
+              <h2 class="home-title">Was können wir<br>heute leichter machen?</h2>
+              <div class="focus-grid"><button class="focus-card" data-task="Plane die vier offenen Abendessen in KW 30."><span>Aktueller Fokus</span><strong>KW 30 planen</strong><small>4 Abende sind noch offen →</small></button><button class="focus-card sun" data-task="Bereite unseren Einkauf vor."><span>Einkauf</span><strong>8 offen</strong><small>2 erledigt</small></button></div>
+              <div class="composer"><textarea id="deep-prompt" aria-label="Aufgabe für KAI" placeholder="Sag KAI, was erledigt werden soll …"></textarea><div class="composer-row"><button class="ghost-action" data-toast="Spracheingabe würde starten">🎙 Sprechen</button><button class="primary-action" id="deep-send">KAI fragen ↑</button></div></div>
+              <div class="subhead"><strong>Typische Aufgaben</strong><small>Du bestätigst jeden Schritt</small></div>
+              <div class="task-stack">
+                <button class="quick-task" data-task="Plane drei familienfreundliche Abendessen."><span class="qicon">▦</span><span><strong>Abendessen planen</strong><small>Mit No-Gos und Favoriten</small></span><b>›</b></button>
+                <button class="quick-task" data-task="Erstelle die Einkaufsliste aus unserem Plan."><span class="qicon">✓</span><span><strong>Einkauf vorbereiten</strong><small>Aus dem aktuellen Wochenplan</small></span><b>›</b></button>
+                <button class="quick-task" data-task="Finde eine Alternative für das heutige Gericht."><span class="qicon">↔</span><span><strong>Gericht austauschen</strong><small>Passend für alle</small></span><b>›</b></button>
+              </div>
+            </div>
+          </section>
+
+          <section class="deep-screen" id="deep-result">
+            <div class="backline"><button data-go="home" aria-label="Zurück">‹</button><strong>Wochenplanung</strong></div>
+            <div class="result-pad">
+              <div class="user-bubble" id="deep-request">Plane drei familienfreundliche Abendessen.</div>
+              <div class="thinking"><span class="mini-orb"></span><span>Mit Plan, Vorlieben und Bewertungen abgeglichen</span></div>
+              <article class="answer"><h2>Drei Abende, die für euch passen</h2><p>Alle Vorschläge dauern höchstens 30 Minuten. Annas Pilz-No-Go ist berücksichtigt.</p>
+                <div class="plan-item"><span class="day-chip">MO</span><span><strong>Pasta Primavera</strong><small>25 Min. · Hilko, Anna</small></span><button class="why">Warum?</button><div class="reason">Beide haben ähnliche Pastagerichte positiv bewertet; alle Zutaten sind unkompliziert erhältlich.</div></div>
+                <div class="plan-item"><span class="day-chip">MI</span><span><strong>Ofengemüse mit Feta</strong><small>30 Min. · Hilko, Anna</small></span><button class="why">Warum?</button><div class="reason">Passt zum gewünschten vegetarischen Abend und vermeidet Annas abgelehnte Zutaten.</div></div>
+                <div class="plan-item"><span class="day-chip">FR</span><span><strong>Wraps zum Selbstfüllen</strong><small>20 Min. · alle</small></span><button class="why">Warum?</button><div class="reason">Individuell zusammenstellbar und damit konfliktarm bei unterschiedlichen Vorlieben.</div></div>
+                <div class="impact">✓ Ändert nur drei bisher leere Abend-Slots. Bestehende Mahlzeiten bleiben unberührt.</div>
+                <div class="result-actions"><button data-go="home">Ändern</button><button class="commit" id="commit-plan">Plan übernehmen</button></div><div class="success-box" id="plan-success">✓ Drei Mahlzeiten wurden eingetragen</div>
+              </article>
+            </div>
+          </section>
+
+          <section class="deep-screen" id="deep-tools">
+            <header class="kai-header"><div class="kai-id"><div class="kai-orb"></div><div><strong>Werkzeuge</strong><small>Manuell organisieren</small></div></div><button class="deep-icon" data-toast="Einstellungen geöffnet" aria-label="Einstellungen">⚙</button></header>
+            <div class="tools-pad"><h2 class="tool-title">Direkt ins Detail</h2><p class="tool-lede">KAI bleibt erreichbar, während du selbst bearbeitest.</p>
+              <div class="tool-list">
+                <button class="tool-entry" data-go="recipes"><span class="tool-symbol">▤</span><span><strong>Rezepte</strong><small>42 Rezepte · suchen und pflegen</small></span><b>›</b></button>
+                <button class="tool-entry" data-go="mealplan"><span class="tool-symbol">▦</span><span><strong>Wochenplan</strong><small>KW 30 · vier Abende offen</small></span><b>›</b></button>
+                <button class="tool-entry" data-go="shopping"><span class="tool-symbol">✓</span><span><strong>Einkaufsliste</strong><small>8 Artikel offen</small></span><b>›</b></button>
+                <button class="tool-entry" data-go="household"><span class="tool-symbol">●</span><span><strong>Haushalt</strong><small>Mitglieder und Vorlieben</small></span><b>›</b></button>
+                <button class="tool-entry" data-toast="Import geöffnet"><span class="tool-symbol">↓</span><span><strong>Rezepte importieren</strong><small>Einzeln oder aus mehreren URLs</small></span><b>›</b></button>
+              </div>
+              <div class="offline-note"><i></i><span><strong>Auch ohne Netz nutzbar:</strong> Rezepte, Plan und Einkauf bleiben verfügbar. KAI wartet ruhig, bis wieder eine Verbindung besteht.</span></div>
+            </div>
+          </section>
+
+          <section class="deep-screen tool-screen" id="deep-recipes">
+            <div class="tool-top"><button data-go="tools" aria-label="Zurück">‹</button><div><strong>Rezepte</strong><small>42 im Haushalt</small></div><button class="deep-icon" data-toast="Neues Rezept geöffnet" aria-label="Neues Rezept">＋</button></div>
+            <div class="tool-content"><div class="searchbar">⌕ <input aria-label="Rezepte suchen" placeholder="Rezepte oder Zutaten suchen"></div><div class="filter-chips"><button class="active">Alle</button><button>Schnell</button><button>Vegetarisch</button><button>Anna</button></div>
+              <div class="recipe-feature"><div class="food-art">P</div><div><span class="micro">Zuletzt gekocht</span><h3>Pasta Primavera</h3><p>25 Min. · 2 Portionen</p><div class="member-dots"><i>HI</i><i>AN</i></div></div><button data-toast="Rezeptdetail geöffnet">›</button></div>
+              <div class="recipe-grid"><button class="recipe-tile" data-toast="Rezeptdetail geöffnet"><span class="tile-art cyan">W</span><strong>Wraps zum Selbstfüllen</strong><small>20 Min. · ⭐ 4,5</small></button><button class="recipe-tile" data-toast="Rezeptdetail geöffnet"><span class="tile-art navy">O</span><strong>Ofengemüse mit Feta</strong><small>30 Min. · ⭐ 4,0</small></button><button class="recipe-tile" data-toast="Rezeptdetail geöffnet"><span class="tile-art pale">C</span><strong>Cremige Tomatensuppe</strong><small>25 Min. · ⭐ 4,5</small></button><button class="recipe-tile dashed" data-toast="Import geöffnet"><span class="tile-art">↓</span><strong>Rezept importieren</strong><small>Aus einer URL</small></button></div>
+            </div>
+          </section>
+
+          <section class="deep-screen tool-screen" id="deep-mealplan">
+            <div class="tool-top"><button data-go="tools" aria-label="Zurück">‹</button><div><strong>Wochenplan</strong><small>KW 30 · 20.–26. Juli</small></div><button class="deep-icon" data-toast="Wochenoptionen geöffnet">•••</button></div>
+            <div class="tool-content"><div class="week-switch"><button data-toast="Vorherige Woche">‹</button><strong>Diese Woche</strong><button data-toast="Nächste Woche">›</button></div><div class="family-row"><span>Für</span><button class="person active">HI</button><button class="person anna">AN</button><button class="person all">Alle</button></div>
+              <div class="day-list"><article class="day-card"><div class="day-date"><b>MO</b><span>20</span></div><button class="meal-card" data-toast="Rezeptdetail geöffnet"><small>Abendessen · 18:30</small><strong>Pasta Primavera</strong><span>25 Min. · HI · AN</span></button></article><article class="day-card"><div class="day-date"><b>DI</b><span>21</span></div><button class="meal-card muted" data-toast="Mahlzeit eintragen"><small>Abendessen</small><strong>＋ Mahlzeit eintragen</strong><span>Noch nichts geplant</span></button></article><article class="day-card today"><div class="day-date"><b>MI</b><span>22</span></div><button class="meal-card" data-toast="Rezeptdetail geöffnet"><small>Abendessen · heute</small><strong>Ofengemüse mit Feta</strong><span>30 Min. · HI · AN</span></button></article><article class="day-card"><div class="day-date"><b>DO</b><span>23</span></div><button class="meal-card muted" data-toast="Mahlzeit eintragen"><small>Abendessen</small><strong>＋ Mahlzeit eintragen</strong><span>Noch nichts geplant</span></button></article></div>
+              <button class="kai-inline" data-go="home"><span>✦</span><span><strong>Offene Tage mit KAI planen</strong><small>4 Abendessen fehlen noch</small></span><b>›</b></button>
+            </div>
+          </section>
+
+          <section class="deep-screen tool-screen" id="deep-shopping">
+            <div class="tool-top"><button data-go="tools" aria-label="Zurück">‹</button><div><strong>Einkaufsliste</strong><small>8 Artikel offen</small></div><button class="deep-icon" data-toast="Listenoptionen geöffnet">•••</button></div>
+            <div class="tool-content"><div class="add-row"><input aria-label="Artikel hinzufügen" placeholder="Artikel hinzufügen …"><button id="add-shopping">＋</button></div><div class="shop-progress"><div><strong>2 von 10 erledigt</strong><span>Für euren aktuellen Plan</span></div><div class="progress-track"><i></i></div></div>
+              <section class="shop-group"><h3>Gemüse & Obst <span>4</span></h3><label><input type="checkbox"><i></i><span><strong>Tomaten</strong><small>500 g</small></span></label><label><input type="checkbox"><i></i><span><strong>Paprika</strong><small>3 Stück</small></span></label><label><input type="checkbox"><i></i><span><strong>Zucchini</strong><small>2 Stück</small></span></label></section>
+              <section class="shop-group"><h3>Kühlregal <span>2</span></h3><label><input type="checkbox"><i></i><span><strong>Feta</strong><small>200 g</small></span></label><label><input type="checkbox"><i></i><span><strong>Joghurt</strong><small>1 Becher</small></span></label></section>
+              <details class="done-group"><summary>Erledigt · 2</summary><p>✓ Olivenöl &nbsp; ✓ Wraps</p></details><button class="kai-inline" data-go="home"><span>✦</span><span><strong>Liste mit KAI prüfen</strong><small>Fehlende Zutaten erkennen</small></span><b>›</b></button>
+            </div>
+          </section>
+
+          <section class="deep-screen tool-screen" id="deep-household">
+            <div class="tool-top"><button data-go="tools" aria-label="Zurück">‹</button><div><strong>Haushalt</strong><small>2 Mitglieder</small></div><button class="deep-icon" data-toast="Mitglied hinzufügen">＋</button></div>
+            <div class="tool-content"><div class="house-card"><span class="house-icon">⌂</span><div><span class="micro">Unser Haushalt</span><h3>Familie Delonge</h3><p>KAI berücksichtigt diese Angaben bei Vorschlägen.</p></div></div>
+              <div class="section-label">Mitglieder</div><button class="member-card" data-toast="Hilkos Präferenzen geöffnet"><span class="big-avatar">HI</span><span><strong>Hilko</strong><small>Keine Allergien · Portion normal</small><em>Italienisch · Asiatisch</em></span><b>›</b></button><button class="member-card" data-toast="Annas Präferenzen geöffnet"><span class="big-avatar anna">AN</span><span><strong>Anna</strong><small>Vegetarisch · keine Pilze</small><em>Mild · Portion klein</em></span><b>›</b></button>
+              <div class="section-label">Alltagsregeln</div><button class="setting-row" data-toast="Kochtage bearbeiten"><span>Kochtage</span><strong>Mo, Mi, Fr ›</strong></button><button class="setting-row" data-toast="Reste bearbeiten"><span>Reste einplanen</span><strong>Manchmal ›</strong></button><button class="setting-row" data-toast="KI-Notizen bearbeiten"><span>Notizen für KAI</span><strong>Vorhanden ›</strong></button><div class="privacy-note"><strong>Kontrolle bleibt bei euch</strong><p>KAI nutzt Präferenzen nur für euren Haushalt und erklärt wichtige Entscheidungen in Vorschlägen.</p></div>
+            </div>
+          </section>
+
+          <section class="deep-screen" id="deep-history">
+            <div class="backline"><button data-go="home" aria-label="Zurück">‹</button><strong>Mit KAI erledigt</strong></div>
+            <div class="history-pad">
+              <button class="primary-action" style="width:100%;margin:8px 0 12px" data-go="home">＋ Neue Aufgabe</button>
+              <div class="history-item" data-go="result"><strong>Abendessen für KW 30</strong><small>Heute · 10:42</small><p>Drei familienfreundliche Abendessen planen …</p></div>
+              <div class="history-item" data-toast="Konversation geöffnet"><strong>Einkauf für das Wochenende</strong><small>Gestern · 19:16</small><p>Liste aus dem Wochenplan erzeugt und ergänzt …</p></div>
+              <div class="history-item" data-toast="Konversation geöffnet"><strong>Alternative ohne Pilze</strong><small>Montag · 17:31</small><p>Ofengemüse statt Pilzrisotto eingetragen …</p></div>
+            </div>
+          </section>
+
+          <nav class="mode-bar"><button class="active" id="mode-kai">✦ KAI</button><button id="mode-tools">▦ Werkzeuge</button></nav>
+          <div class="toast" id="deep-toast">Aktion ausgeführt</div>
+        </div>
+      </div>
+
+      <aside class="deep-notes">
+        <div class="step active" id="note-home"><span class="step-tag">Startscreen</span><h2>Aufgaben statt Features</h2><p>Die Startseite beantwortet nicht „Wo möchtest du hin?“, sondern „Was soll leichter werden?“. Kontextkarten zeigen nur Dinge, die gerade relevant und handlungsfähig sind.</p><div class="note-block"><h3>Informationshierarchie</h3><ul><li>Aktuelle offene Loops zuerst</li><li>Freie Eingabe als Hauptaktion</li><li>Drei wiederkehrende Aufgaben als Starthilfe</li><li>Kein leerer Chatverlauf beim Einstieg</li></ul></div><div class="note-block"><h3>Kontrollprinzip</h3><p>KAI darf Vorschläge vorbereiten, aber keine sichtbaren Haushaltsdaten ohne Bestätigung verändern.</p></div><div class="rule">Signatur: Die zwei Kontextkarten machen aus Daten konkrete, erledigbare Aufgaben.</div></div>
+        <div class="step" id="note-result"><span class="step-tag">Vorschlag & Bestätigung</span><h2>Verstehen, bevor etwas passiert</h2><p>Das Ergebnis ist kein langer Chattext, sondern eine prüfbare Aktionsvorschau. Jede Mahlzeit erklärt auf Wunsch kurz, warum sie passt.</p><div class="note-block"><h3>Bestätigung</h3><ul><li>Betroffene Tage und Personen sichtbar</li><li>Auswirkung vor dem Speichern erklärt</li><li>„Ändern“ und „Plan übernehmen“ eindeutig</li><li>Nach Erfolg dieselbe Sprache: „eingetragen“</li></ul></div><div class="note-block"><h3>Technischer Anschluss</h3><p>Die Vorschau kann auf `pending_actions` aufbauen. Erst die Bestätigung führt die vorhandenen Meal-Plan-Mutations aus.</p></div><div class="rule">Keine Black Box: KAI nennt No-Gos, Zeitrahmen und Umfang der Änderung.</div></div>
+        <div class="step" id="note-tools"><span class="step-tag">Manueller Modus</span><h2>Volle Kontrolle, ein Ziel entfernt</h2><p>Der Werkzeugraum bündelt die bestehenden Bereiche, ohne sie abzuwerten. Er ist ein eigener Modus und merkt sich den zuletzt geöffneten Bereich.</p><div class="note-block"><h3>Bestehende Screens</h3><p>Rezepte, Wochenplan, Einkauf und Einstellungen bleiben fachlich erhalten. `BaseModal`, `UserChipRow`, `RecipeSearchPanel`, `Tooltip` und `RecipeDetailContent` können unverändert weiterverwendet werden.</p></div><div class="note-block"><h3>Responsive ab 768 px</h3><p>Die Zwei-Ziel-Navigation wandert als schmale Seitenleiste nach links. Der aktive Arbeitsbereich steht daneben; KAI kann als rechte Assistenzspalte eingeblendet werden.</p></div><div class="rule">Offline ist kein Alarmzustand: Werkzeuge funktionieren weiter, nur KI-Aufträge warten.</div></div>
+        <div class="step" id="note-recipes"><span class="step-tag">Werkzeug · Rezepte</span><h2>Bibliothek statt Datenbank</h2><p>Rezepte werden visuell und schnell erfassbar. Suche, persönliche Filter und zuletzt gekochte Gerichte stehen vor Verwaltungsaktionen.</p><div class="note-block"><h3>Geänderte Komponenten</h3><p>`RecipeLibraryHeader`, `RecipeFilterChips`, `RecipeFeatureCard` und kompaktere `RecipeCard`. `RecipeDetailContent` bleibt der Detailkern.</p></div><div class="rule">Das Icon-Farbsystem wird zum Ordnungsprinzip: Cyan markiert primäre Aktionen, Navy schafft Ruhe.</div></div>
+        <div class="step" id="note-mealplan"><span class="step-tag">Werkzeug · Wochenplan</span><h2>Eine Woche als lesbare Liste</h2><p>Auf 390 px ist eine vertikale Tagesliste stressärmer als ein 7 × 5 Grid. Leere Slots sind klare Einladungen, keine Fehlerzustände.</p><div class="note-block"><h3>Interaktion</h3><p>Tap öffnet `RecipeDetailContent` beziehungsweise den bestehenden Picker. Long-Press bleibt für Verschieben, Kopieren, Löschen und Wiederholen erhalten.</p></div><div class="rule">KAI erscheint nur dort als Inline-Hilfe, wo echte Planungslücken bestehen.</div></div>
+        <div class="step" id="note-shopping"><span class="step-tag">Werkzeug · Einkauf</span><h2>Im Laden zählt der Daumen</h2><p>Große Checkbox-Ziele, Warengruppen und eine dauerhaft erreichbare Schnelleingabe optimieren die Nutzung mit einer Hand.</p><div class="note-block"><h3>Offline-first</h3><p>Abhaken wirkt sofort lokal. Der Sync-Status bleibt sekundär und bestätigt nur, statt Unsicherheit zu erzeugen.</p></div><div class="rule">Fortschritt informiert, bewertet aber nicht – keine Punkte, Serien oder Schuldmechanik.</div></div>
+        <div class="step" id="note-household"><span class="step-tag">Werkzeug · Haushalt</span><h2>Menschen vor Einstellungen</h2><p>Mitglieder und ihre relevanten Präferenzen werden zuerst sichtbar. Technische Einstellungen treten hinter verständlichen Alltagsregeln zurück.</p><div class="note-block"><h3>Bestehender Anschluss</h3><p>`UserChipRow` und Avatarfarben bleiben konsistent. Bearbeitung nutzt die bestehenden User- und Household-Hooks ohne neue native Dependencies.</p></div><div class="rule">Präferenzen sind Unterstützung für konfliktarme Vorschläge, kein Profiling-Dashboard.</div></div>
+        <div class="step" id="note-history"><span class="step-tag">Verlauf</span><h2>Erledigte Aufgaben statt Chatarchive</h2><p>Konversationen werden nach dem Ergebnis benannt. So finden Eltern „Abendessen für KW 30“ leichter als einen generischen Chat mit Zeitstempel.</p><div class="note-block"><h3>Verhalten</h3><ul><li>Maximal zehn Verläufe wie bisher</li><li>Neue Aufgabe startet mit leerem Composer</li><li>Ergebniszustand bleibt nachvollziehbar</li><li>Löschen und Umbenennen über Kontextmenü</li></ul></div><div class="rule">Der Verlauf dokumentiert Entlastung: Was wurde geplant, geändert oder ergänzt?</div></div>
+      </aside>
+    </section>
+  </div>
+</main>
+<script>
+(function(){
+ const q=(s,r=document)=>r.querySelector(s), qa=(s,r=document)=>[...r.querySelectorAll(s)];
+ const toast=q('#deep-toast'); let timer;
+ function notify(t){toast.textContent=t;toast.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>toast.classList.remove('show'),1500)}
+ function go(id){qa('.deep-screen').forEach(x=>x.classList.toggle('active',x.id==='deep-'+id));qa('.flow-tabs button').forEach(x=>x.classList.toggle('active',x.dataset.deep===id));qa('.deep-notes .step').forEach(x=>x.classList.toggle('active',x.id==='note-'+id));const toolIds=['tools','recipes','mealplan','shopping','household'];const isTool=toolIds.includes(id);q('#mode-kai').classList.toggle('active',!isTool);q('#mode-tools').classList.toggle('active',isTool);}
+ qa('[data-deep]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.deep)));
+ qa('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
+ q('#mode-kai').addEventListener('click',()=>go('home'));q('#mode-tools').addEventListener('click',()=>go('tools'));
+ qa('[data-task]').forEach(b=>b.addEventListener('click',()=>{q('#deep-prompt').value=b.dataset.task;q('#deep-prompt').focus()}));
+ q('#deep-send').addEventListener('click',()=>{const v=q('#deep-prompt').value.trim()||'Plane drei familienfreundliche Abendessen.';q('#deep-request').textContent=v;go('result')});
+ qa('.why').forEach(b=>b.addEventListener('click',()=>b.closest('.plan-item').classList.toggle('open')));
+ q('#commit-plan').addEventListener('click',()=>{q('#plan-success').classList.add('show');q('#commit-plan').textContent='Übernommen';q('#commit-plan').disabled=true;notify('Wochenplan aktualisiert')});
+ qa('[data-toast]').forEach(b=>b.addEventListener('click',()=>notify(b.dataset.toast)));
+ qa('.filter-chips button').forEach(b=>b.addEventListener('click',()=>{qa('.filter-chips button').forEach(x=>x.classList.remove('active'));b.classList.add('active')}));
+ qa('.shop-group input').forEach(i=>i.addEventListener('change',()=>notify(i.checked?'Artikel abgehakt':'Artikel wieder geöffnet')));
+ const add=q('#add-shopping'); if(add)add.addEventListener('click',()=>notify('Artikel hinzugefügt'));
+})();
+</script>
+</body>
+</html>
