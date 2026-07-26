@@ -161,7 +161,7 @@ Dreistufiger Flow:
   - Präferenz-Felder: Ernährungsweise, Allergien, ungemochte Zutaten (Freitext-Tag-Input), bevorzugte Küchen, Schärfeverträglichkeit, Portionsgröße → `useUpdateUserPreferences`
 - **„+ Mitglied hinzufügen"**-Button im Sektions-Header öffnet `AddMemberForm`-Karte: Name, Kürzel (auto-generiert), Farbauswahl → `useCreateUser`; erstellt gleichzeitig family-Tag
 - Feedback via `showAlert` / `showConfirm` aus `mobile/lib/alert.ts`
-- **Sektion PowerSync** (nur Native, `Platform.OS !== 'web'`): „PowerSync stoppen"-Button → `useStopPowerSync()`. Nach Bestätigung (`showConfirm`) fragt Face ID/Fingerabdruck ab (`confirmWithBiometrics`), erst danach geht `POST /admin/powersync/stop` raus. Start passiert nicht über einen Button, sondern automatisch bei jedem App-Start (`startPowerSyncOnLaunch()` in `_layout.tsx`) – ebenfalls mit Biometrie-Bestätigung.
+- **Sektion PowerSync** (nur Native, `Platform.OS !== 'web'`): „PowerSync starten"- und „PowerSync stoppen"-Button nebeneinander → `useStartPowerSync()` / `useStopPowerSync()`. Beide fragen zuerst Face ID/Fingerabdruck ab (`confirmWithBiometrics`), erst danach geht `POST /admin/powersync/start` bzw. `/stop` raus (Stop zusätzlich mit vorgeschaltetem `showConfirm`). Der Button-Erfolg meldet nur, dass der Deploy-Befehl durchgelaufen ist – ob die Verbindung danach tatsächlich steht, sieht man daran, dass `SyncStatusBanner` (siehe unten) verschwindet.
 
 ---
 
@@ -188,12 +188,37 @@ offenhält (verhindert Neons Auto-Suspend), lässt sich PowerSync gezielt stoppe
 - **Stop:** manueller Button in `(tabs)/settings.tsx` (nur Native) →
   `useStopPowerSync()` → Bestätigungsdialog → Face-ID/Fingerabdruck
   (`confirmWithBiometrics` in `lib/biometricAuth.ts`) → `POST /admin/powersync/stop`
-- **Start:** automatisch bei jedem App-Start via `startPowerSyncOnLaunch()`
-  (`_layout.tsx`, nur Native) → Biometrie-Bestätigung → `POST /admin/powersync/start`
+- **Start:** entweder manuell über den „PowerSync starten"-Button in
+  `(tabs)/settings.tsx` (`useStartPowerSync()`) oder automatisch bei jedem
+  App-Start via `startPowerSyncOnLaunch()` (`_layout.tsx`, nur Native) → in
+  beiden Fällen Biometrie-Bestätigung → `POST /admin/powersync/start`
 - Beide Requests senden den Header `X-Admin-Secret`
   (`EXPO_PUBLIC_POWERSYNC_ADMIN_SECRET`); die Biometrie läuft rein lokal auf dem
   Gerät und ersetzt keine Server-Prüfung, sondern gated nur den API-Aufruf
 - Backend-seitig: `backends/app/routers/powersync_admin.py` (siehe `docs/api.md`)
+
+### Offline-Modus beim App-Start
+
+`startPowerSyncOnLaunch()` fragt bei jedem nativen App-Start zuerst per
+`showAlert` (nicht die Biometrie selbst) nach, ob synchronisiert werden soll:
+
+- **„Jetzt synchronisieren"** → löst wie bisher die Biometrie-Abfrage und
+  `POST /admin/powersync/start` aus (fire-and-forget)
+- **„Offline-Modus"** → bricht sofort ab, es wird weder Biometrie abgefragt
+  noch ein Request geschickt; die App arbeitet mit dem zuletzt lokal
+  synchronisierten SQLite-Stand weiter (`db.connect()` in `_layout.tsx` läuft
+  unabhängig davon weiter und verbindet sich automatisch, sobald die
+  PowerSync-Instanz wieder erreichbar ist)
+
+### Sync-Status-Erkennung
+
+`components/SyncStatusBanner.tsx` beobachtet reaktiv `useStatus().connected`
+aus `@powersync/react` (unabhängig vom Start/Stop-Request-Erfolg – dieser
+sagt nur, dass der Deploy-Befehl durchgelaufen ist, nicht dass die
+Sync-Verbindung schon steht). Solange keine Verbindung besteht, zeigt die
+Banner „Keine Verbindung zur Synchronisation" (bzw. mit Zeitstempel des
+letzten Syncs); sobald die Verbindung tatsächlich steht, verschwindet sie
+automatisch – ohne zusätzliche Erfolgsmeldung.
 
 ### Platform-Resolution
 Metro wählt automatisch nach Priorität:
