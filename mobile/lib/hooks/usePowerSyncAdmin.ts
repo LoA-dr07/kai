@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../api';
 import { confirmWithBiometrics } from '../biometricAuth';
+import { showAlert } from '../alert';
 
 const ADMIN_SECRET = process.env.EXPO_PUBLIC_POWERSYNC_ADMIN_SECRET ?? '';
 
@@ -22,13 +23,29 @@ export function useStopPowerSync() {
   return useMutation({ mutationFn: () => callPowerSyncAdmin('stop') });
 }
 
+export function useStartPowerSync() {
+  return useMutation({ mutationFn: () => callPowerSyncAdmin('start') });
+}
+
 /**
- * Called once on app launch (native only) to redeploy PowerSync after it was
- * stopped. Fire-and-forget: on failure the existing SyncStatusBanner already
- * shows "keine Verbindung", so no extra error UI is needed here.
+ * Called once on app launch (native only). Asks whether to redeploy PowerSync
+ * (in case it was stopped) or continue in offline mode with the last synced
+ * state, without ever triggering the biometric prompt / admin call.
  */
 export function startPowerSyncOnLaunch(): void {
-  callPowerSyncAdmin('start').catch(error => {
-    console.warn('PowerSync auto-start failed:', error?.message ?? error);
-  });
+  showAlert(
+    'PowerSync synchronisieren?',
+    'Falls die Synchronisation pausiert war, kann der Neustart einige Minuten dauern. Im Offline-Modus arbeitest du mit dem zuletzt synchronisierten Stand weiter, ohne Biometrie-Abfrage.',
+    [
+      { text: 'Offline-Modus', style: 'cancel' },
+      {
+        text: 'Jetzt synchronisieren',
+        onPress: () => {
+          callPowerSyncAdmin('start').catch(error => {
+            console.warn('PowerSync auto-start failed:', error?.message ?? error);
+          });
+        },
+      },
+    ]
+  );
 }
