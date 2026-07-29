@@ -12,14 +12,21 @@
 mobile/
 ├── app/                    # Expo Router – file-based Routing
 │   ├── _layout.tsx         # Root-Layout (QueryClientProvider)
-│   ├── index.tsx           # Weiterleitung → /recipes
-│   ├── (tabs)/
-│   │   ├── _layout.tsx         # Tab-Navigation (Rezepte | Wochenplan | Einkaufsliste | KI-Chat | Einstellungen)
-│   │   ├── recipes.tsx         # Rezeptliste-Screen
-│   │   ├── meal-plan.tsx       # Wochenplan-Screen
-│   │   ├── shopping-list.tsx   # Einkaufsliste-Screen
-│   │   ├── ai-chat.tsx         # KI-Chat-Screen
-│   │   └── settings.tsx        # Einstellungen-Screen (Haushalt + Mitglieder)
+│   ├── index.tsx           # Weiterleitung → /(modes)/kai
+│   ├── (modes)/
+│   │   ├── _layout.tsx         # Mode-Shell: KAI-Modus | Werkzeuge-Modus (siehe "Navigation" unten)
+│   │   ├── kai/
+│   │   │   ├── _layout.tsx         # Stack (headerShown: false)
+│   │   │   ├── index.tsx           # KAI-Modus Startscreen (Begrüßung, Fokus-Karten, Composer, Schnellaufgaben)
+│   │   │   ├── chat.tsx            # KI-Chat (vormals (tabs)/ai-chat.tsx), nimmt ?prompt / ?conversationId entgegen
+│   │   │   └── history.tsx         # Konversationsverlauf als eigener Screen
+│   │   └── tools/
+│   │       ├── _layout.tsx         # Stack mit nativen Headern (Zurück-Titel "Werkzeuge")
+│   │       ├── index.tsx           # Werkzeuge-Kartenraster (Rezepte, Wochenplan, Einkauf, Einstellungen, Import)
+│   │       ├── recipes.tsx         # Rezeptliste-Screen
+│   │       ├── meal-plan.tsx       # Wochenplan-Screen
+│   │       ├── shopping-list.tsx   # Einkaufsliste-Screen
+│   │       └── settings.tsx        # Einstellungen-Screen (Haushalt + Mitglieder)
 │   └── recipe/
 │       ├── new.tsx         # Neues Rezept erstellen
 │       └── [id]/
@@ -27,6 +34,8 @@ mobile/
 │           ├── edit.tsx    # Rezept bearbeiten
 │           └── cook.tsx    # Koch-Ansicht
 ├── components/             # Wiederverwendbare UI-Komponenten
+│   ├── AppShell/ModeSwitcher.tsx # Globaler Modus-Switch: Pille unten (Hochkant) / Sidebar links (Tablet-Querformat)
+│   ├── ConversationList.tsx   # Konversationsliste (präsentational), genutzt von kai/history.tsx
 │   ├── AddToMealPlanModal.tsx # Rezept zum Essensplan hinzufügen (Woche, Tag, Mahlzeit, User)
 │   ├── AiSuggestionModal.tsx  # KI-Wochenplan-Modal (Mahlzeitstyp-Filter, Eingabe → Laden → Vorschau → Übernehmen)
 │   ├── BaseModal.tsx          # Gemeinsame Modal-Hülle (Header + Schließen-Button) für alle pageSheet-Modals
@@ -71,7 +80,24 @@ mobile/
 
 ## Screens
 
-### `(tabs)/recipes.tsx` – Rezeptliste
+### `(modes)/kai/index.tsx` – KAI-Modus Startscreen
+- Startpunkt der App (`/` leitet hierher weiter)
+- Begrüßung nach Tageszeit + Haushaltsname (bewusst **kein** personalisiertes "Guten Morgen, {Name}" – die App kennt keinen "aktuellen Nutzer", Haushalt teilt eine Instanz)
+- Zwei Fokus-Karten: offene Mahlzeiten-Slots der aktuellen Woche (aus `useMealPlans()`/`useWeekNavigation()` aggregiert), offene Einkaufsartikel (aus `useShoppingList()`)
+- Composer (Freitext-Eingabe) + drei Schnellaufgaben-Buttons (vorbefüllte Prompts) → `router.push('/kai/chat', { prompt })`
+- Verlauf-Icon im Header → `/kai/history`
+- Spracheingabe-Button ist bewusst ein reiner UI-Stub (disabled) – keine echte Spracherkennung
+
+### `(modes)/kai/history.tsx` – Konversationsverlauf
+- Eigener Screen (vormals Modal in `ai-chat.tsx`), nutzt `components/ConversationList.tsx`
+- Tippen auf eine Konversation → `/kai/chat?conversationId=...`; "+ Neue Konversation" → `/kai/chat` ohne Parameter
+
+### `(modes)/tools/index.tsx` – Werkzeuge-Kartenraster
+- Einstiegspunkt des Werkzeuge-Modus: Karten für Rezepte, Wochenplan, Einkaufsliste, Haushalt/Einstellungen, Rezepte importieren
+- 2 Spalten (Hochkant) / 3 Spalten (Tablet-Querformat), berechnet über `flexBasis` pro Karte (nicht über eine leere Platzhalter-Klasse)
+- Alle Badges sind live: Rezeptanzahl (`useRecipes()`), offene Einkaufsartikel (`useShoppingList()`), offene Wochenplan-Slots der aktuellen Woche (`useMealPlans()` + `useWeekNavigation()`, gleiche Berechnung wie auf dem KAI-Modus-Startscreen)
+
+### `(modes)/tools/recipes.tsx` – Rezeptliste
 - Zeigt alle Rezepte als scrollbare Liste (responsive: 1–4 Spalten je nach Bildschirmbreite)
 - Zeigt pro Karte: Name, Zubereitungszeit, Portionen, Zutatenanzahl, Durchschnittsbewertung, Tags
 - **Tag-Filter-Leiste** (horizontale ScrollView) direkt über der Rezeptliste:
@@ -87,7 +113,7 @@ mobile/
 - Tippt man auf eine Karte → navigiert zu `recipe/[id]`
 - Unterstützt `filter_ids`-Query-Parameter (komma-separierte Rezept-IDs): Zeigt nur diese Rezepte und blendet einen Filter-Banner ein ("X neue Rezepte · Filter aktiv"). Banner-✕ entfernt den Filter.
 
-### `(tabs)/meal-plan.tsx` – Wochenplan
+### `(modes)/tools/meal-plan.tsx` – Wochenplan
 - Zeigt eine Woche als Grid: 7 Tage × 5 Mahlzeiten (Frühstück, Mittagessen, Snack, Abendessen, Dessert)
 - Wochennavigation: vorherige / nächste Woche; **KI ✨-Button** öffnet den KI-Vorschlagsmodal (`AiSuggestionModal`)
 - Pro Zelle: geplantes Rezept oder Freitext, farbige User-Avatar-Chips
@@ -102,7 +128,7 @@ mobile/
 - Leere Zelle antippen → Bearbeitungsmodal zum Neuanlegen
 - Responsiv: Tablet-Layout ab 768px Breite
 
-### `(tabs)/shopping-list.tsx` – Einkaufsliste
+### `(modes)/tools/shopping-list.tsx` – Einkaufsliste
 - Einkaufsliste mit Generierung aus dem Mahlzeitenplan, Checkbox-System und manuellen Einträgen
 - **Generieren:** Zeitraum (Datum von/bis) auswählen und Liste aus den geplanten Mahlzeiten erzeugen; Konflikt-Dialog bei bereits vorhandener Liste (zusammenführen oder ersetzen)
 - **Checkbox-System:** Einträge abhaken; abgehakte Einträge werden in einem „Erledigt"-Abschnitt gesammelt
@@ -110,8 +136,11 @@ mobile/
 - **Erledigt-Sektion:** Zusammenführung aller abgehakten Einträge mit Option „Erledigte löschen"
 - **Gesamte Liste löschen** über Header-Button
 
-### `(tabs)/ai-chat.tsx` – KI-Chat
-- Chat-Interface mit KI-Assistent (Claude API via `POST /ai/chat`)
+### `(modes)/kai/chat.tsx` – KI-Chat
+- Chat-Interface mit KI-Assistent (Claude API via `POST /ai/chat`), vormals `(tabs)/ai-chat.tsx`
+- `?prompt=` Query-Param: Nachricht wird vorbefüllt und beim Erstladen automatisch gesendet (Schnellaufgaben aus dem KAI-Modus-Start)
+- `?conversationId=` Query-Param: lädt die angegebene Konversation direkt beim Mounten
+- Header mit Zurück-Button (`/kai`) und Verlauf-Button (`/kai/history`) statt des früheren Modal-Konversationslisten-Buttons; der `isUltraWide`-Zweig (permanente Sidebar ab 2560px) ist unverändert
 - Haushaltsmitglieder, Präferenzen, Nie-Bewertungen und verfügbare Rezepte werden automatisch als Kontext mitgegeben
 - **Multi-Konversationen:** Konversationsliste-Modal zum Wechseln, Erstellen und Löschen von Gesprächsverläufen
 - **Nachrichtenblase:** User-Nachrichten rechts (grün), KI-Antworten links (weiß)
@@ -153,7 +182,7 @@ Dreistufiger Flow:
 ### `recipe/[id]/cook.tsx` – Koch-Ansicht
 - Vereinfachte Ansicht der Zutaten für die Küche
 
-### `(tabs)/settings.tsx` – Einstellungen
+### `(modes)/tools/settings.tsx` – Einstellungen
 - **Sektion Haushalt:** Kochtage (Checkbox-Grid Mo–So), warme Mahlzeit (Mittags/Abends/Beides), Tage mit kalten Mahlzeiten, Reste-Häufigkeit (Nie/Manchmal/Oft), Gemeinsames-Essen-Skala (1–5), Kochkenntnisse, bevorzugte Küchen, Wochenbudget, **Notizen für die KI** (mehrzeiliges Freitextfeld – wird als `HAUSHALT-NOTIZEN` in beide KI-Endpunkte injiziert)
 - **Sektion Haushaltsmitglieder:** Pro Mitglied eine Karte mit:
   - **Name bearbeiten** (Stift-Icon): Inline-Editierung von Name, Kürzel (max 4 Zeichen) und Farbe (8 vordefinierte Farben) → `useUpdateUser`; der zugehörige `family`-Tag an Rezepten wird automatisch umbenannt
@@ -316,9 +345,9 @@ Alle Meal-Plan-Mutations invalidieren `['meal-plans']`.
 
 | Hook | Rückgabe | Beschreibung |
 |------|----------|--------------|
-| `useOrientation()` | `{ isLandscape, isPortrait, isTablet }` | Erkennt Geräteausrichtung und Tablet-Formfaktor via `useWindowDimensions`. Tablet = längste Seite ≥ 768px. |
+| `useOrientation()` | `{ isLandscape, isPortrait, isTablet, isWide, isUltraWide, width, height }` | Erkennt Geräteausrichtung und Tablet-Formfaktor via `useWindowDimensions`. Tablet = längste Seite ≥ 768px. `isWide`/`isUltraWide` (768px/2560px) sind auf Web und Native identisch berechnet, `isTablet`/`isLandscape` bewusst nur Native (`useOrientation.web.ts` liefert dafür immer `false` – Browserfensterbreite ≠ Geräteausrichtung). |
 
-Wird u.a. in `app/(tabs)/_layout.tsx` verwendet, um die Tab-Leiste im Querformat auf Tablets seitlich (`left`) statt unten (`bottom`) anzuzeigen.
+Wird in `app/(modes)/_layout.tsx` verwendet, um zwischen der Hochkant-Pille (unten) und der Tablet-Querformat-Sidebar (links) der `ModeSwitcher`-Komponente umzuschalten.
 
 ### Konversations-Hooks (`useConversations.ts`)
 
@@ -654,11 +683,15 @@ const isTablet = width >= 768;
 
 | Pfad | Beschreibung |
 |------|-------------|
-| `/` | Weiterleitung → `/recipes` |
-| `/(tabs)/recipes` | Rezeptliste |
-| `/(tabs)/meal-plan` | Wochenplan |
-| `/(tabs)/shopping-list` | Einkaufsliste |
-| `/(tabs)/ai-chat` | KI-Chat |
+| `/` | Weiterleitung → `/kai` |
+| `/kai` | KAI-Modus Startscreen |
+| `/kai/chat` | KI-Chat (optional `?prompt=` / `?conversationId=`) |
+| `/kai/history` | Konversationsverlauf |
+| `/tools` | Werkzeuge-Kartenraster |
+| `/tools/recipes` | Rezeptliste |
+| `/tools/meal-plan` | Wochenplan |
+| `/tools/shopping-list` | Einkaufsliste |
+| `/tools/settings` | Einstellungen |
 | `/recipe/bulk-import` | Bulk-Import aus URLs |
 | `/recipe/new` | Neues Rezept |
 | `/recipe/[id]` | Rezeptdetail |
@@ -666,3 +699,35 @@ const isTablet = width >= 768;
 | `/recipe/[id]/cook` | Koch-Ansicht |
 
 Navigation mit `router.push('/recipe/new')` oder `router.replace(...)` aus `expo-router`.
+
+### Navigations-Shell: KAI-Modus / Werkzeuge-Modus ("Konzept B")
+
+Seit dem Redesign nach `docs/wireframes-mobile.html` / `docs/wireframes-tablet.html` gibt es keine flache 5-Tab-Leiste mehr, sondern genau zwei globale Modi, umgesetzt in `app/(modes)/_layout.tsx` + `components/AppShell/ModeSwitcher.tsx`:
+
+- **KAI-Modus** (`/kai/*`) – KI-Assistent als Startpunkt
+- **Werkzeuge-Modus** (`/tools/*`) – Rezepte, Wochenplan, Einkauf, Einstellungen
+
+**Wichtig – bewusst KEIN `<Tabs>` von expo-router:** Ein erster Versuch verschachtelte `kai`/`tools` als `<Tabs.Screen>` mit jeweils eigenem `<Stack>` darunter. Auf Web führte das dazu, dass beim Moduswechsel der vorherige Modus (inkl. aller bereits aufgerufenen Stack-Screens) weiterhin im DOM gemountet blieb – `react-native-screens`' Display-Umschaltung greift auf Web nicht zuverlässig, wenn ein Tab selbst einen verschachtelten Stack enthält. Die aktuelle Lösung verwendet stattdessen einen einfachen `<Stack screenOptions={{headerShown:false}}>` mit den Geschwister-Routen `kai` und `tools`, plus `ModeSwitcher` als persistente Chrome außerhalb des Stacks (`usePathname()` bestimmt den aktiven Modus, `router.replace('/kai' | '/tools')` schaltet um). Bei zukünftigen Navigations-Umbauten: verschachtelte `Stack`-in-`Stack`-Strukturen sind unproblematisch, `Stack`-in-`Tabs` auf Web nicht.
+
+`ModeSwitcher` rendert zwei Varianten:
+- `variant="pill"` – fixe untere 2-Segment-Pille (Phone + Tablet-Hochkant)
+- `variant="sidebar"` – linke Sidebar (Tablet-Querformat, `isTablet && isLandscape`), zusätzlich mit permanenter Werkzeug-Linkliste, wenn Werkzeuge-Modus aktiv ist; der aktuell offene Werkzeug-Screen wird in der Linkliste hervorgehoben (`pathname.startsWith(link.href)`)
+
+**Hinweis Testbarkeit:** Die Sidebar-Variante ist im Web-Preview nicht sichtbar, da `useOrientation.web.ts` bewusst immer `isTablet: false` liefert (siehe oben) – Korrektheit wurde per Code-Review geprüft, eine visuelle Prüfung erfordert ein echtes Tablet/EAS-Build.
+
+### Design-Tokens (`mobile/lib/theme.ts`)
+
+Additiv zur bisherigen grünen Palette (`Colors.green/greenLight/greenDark/red/border/bg`, wird schrittweise abgelöst) gibt es die neue, am Redesign orientierte Palette:
+
+```ts
+Colors.night / blue / cyan / cyanSoft / cyanDark / paper / surface / line / muted / peach / danger / ink
+Fonts.display / displayBold / body / bodyBold   // "Bricolage Grotesque" / "Atkinson Hyperlegible", aktuell nur Web (Platform.select), native Custom-Fonts noch nicht geladen
+Spacing.xs–xxl
+Radii.sm–pill
+```
+
+Konvention für Buttons mit `Colors.cyan`-Hintergrund: Textfarbe `Colors.night` (dunkel auf hell), nicht Weiß – siehe `tools/index.tsx`/`tools/recipes.tsx` (`fab`-Button). Für Buttons mit **weißem** Text (z. B. "Speichern", "Generieren") wird stattdessen `Colors.cyanDark` als Hintergrund verwendet – ausreichender Kontrast, siehe `tools/meal-plan.tsx`, `tools/shopping-list.tsx`, `tools/settings.tsx`.
+
+**Rollout-Stand:** Abgeschlossen. Alle Mobile/Tablet-Screens und -Komponenten sind auf die neue Palette umgestellt – `(modes)/tools/{recipes,meal-plan,shopping-list,settings}.tsx`, `(modes)/kai/chat.tsx`, alle `recipe/*`-Screens (Detail, Bearbeiten, Kochen, Neu, Bulk-Import, Import-Vorschau) sowie die geteilten Komponenten (`RecipeForm`, `RecipeSearchPanel`, `RecipeDetailContent`, `RecipeDetailModal`, `AddToMealPlanModal`, `AiSuggestionModal`, `BaseModal`, `UserChipRow`, `ErrorScreen`, `ScreenErrorBoundary`). Die alten `Colors`-Keys (`green`, `greenLight`, `greenDark`, `red`, `border`, `bg`) wurden aus `theme.ts` entfernt, nachdem keine Referenzen mehr bestanden. Konvention der jeweiligen Datei: lokale `GREEN`/`BORDER`-Konstanten zeigen jetzt auf `Colors.cyanDark`/`Colors.line` statt auf die alten Keys – das hält den Diff pro Datei klein, da nur die Konstanten-Deklaration angepasst werden muss.
+
+`SyncStatusBanner.tsx` nutzt jetzt ebenfalls `Colors.danger` statt eines eigenen Hex-Werts. Bewusst unverändert: das Web-Breitbild-Layout (`isUltraWide`) – siehe Ausschlussliste im Umsetzungsplan.

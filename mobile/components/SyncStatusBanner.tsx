@@ -1,5 +1,6 @@
 import { useStatus } from '@powersync/react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Colors } from '../lib/theme';
 
 export function SyncStatusBanner() {
   const status = useStatus();
@@ -23,7 +24,7 @@ export function SyncStatusBanner() {
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: '#E65100',
+    backgroundColor: Colors.danger,
     paddingVertical: 5,
     paddingHorizontal: 16,
     alignItems: 'center',

@@ -13,6 +13,8 @@ import { useState } from 'react';
 import { showAlert } from '../lib/alert';
 import { useRecipe, useDeleteRecipe, useRateRecipe, useUpdateIngredient, useUpdateRecipeIngredient, useIngredients, useUpdateRecipe } from '../lib/hooks/useRecipes';
 import { useUsers } from '../lib/hooks/useUsers';
+// Note: breakpoint stays on raw useWindowDimensions here (isNarrow uses a
+// custom 400px tier not exposed by useOrientation) — see isWide/isNarrow below.
 import type { Tag, User } from '../lib/types';
 import { ErrorScreen } from './ErrorScreen';
 import { Tooltip } from './Tooltip';
@@ -131,7 +133,7 @@ export function RecipeDetailContent({ recipeId, onNavigate, onDeleted }: RecipeD
     : [];
 
   if (isLoading) {
-    return <ActivityIndicator style={styles.center} size="large" color="#2E7D32" />;
+    return <ActivityIndicator style={styles.center} size="large" color={Colors.cyanDark} />;
   }
 
   if (error || !recipe) {
@@ -486,10 +488,10 @@ function MetaCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-const GREEN = Colors.green;
+const GREEN = Colors.cyanDark;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
+  container: { flex: 1, backgroundColor: Colors.paper },
   content: { padding: 20, paddingBottom: 48 },
   contentWide: { maxWidth: 800, alignSelf: 'center', width: '100%' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -505,12 +507,12 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   metaCard: {
     flex: 1,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: Colors.cyanSoft,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  metaLabel: { fontSize: 12, color: '#4CAF50', fontWeight: '500', marginBottom: 4 },
+  metaLabel: { fontSize: 12, color: Colors.cyanDark, fontWeight: '500', marginBottom: 4 },
   metaValue: { fontSize: 22, fontWeight: '700', color: GREEN },
   section: {
     backgroundColor: '#fff',
@@ -523,12 +525,12 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  sectionTitle: { fontSize: 17, fontWeight: '700', color: '#1A1A1A', marginBottom: 12 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', color: Colors.ink, marginBottom: 12 },
 
   // Tags
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tagChip: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: Colors.cyanSoft,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 5,
@@ -556,7 +558,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarText: { fontSize: 12, color: '#fff', fontWeight: '700' },
-  userName: { fontSize: 15, color: '#1A1A1A', flex: 1 },
+  userName: { fontSize: 15, color: Colors.ink, flex: 1 },
   starsWrapper: { flexDirection: 'column', alignItems: 'flex-end' },
   starsContainer: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   star: { fontSize: 24, color: '#DDD' },
@@ -575,14 +577,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
-  ingName: { fontSize: 15, color: '#1A1A1A' },
+  ingName: { fontSize: 15, color: Colors.ink },
   ingAmount: { fontSize: 15, color: '#666' },
   ingEditRow: { flex: 1, flexDirection: 'row', alignItems: 'center', marginRight: 8 },
   ingEditInputWrapper: { flex: 1, zIndex: 10 },
   ingEditInput: {
     flex: 1,
     fontSize: 15,
-    color: '#1A1A1A',
+    color: Colors.ink,
     borderBottomWidth: 1.5,
     borderBottomColor: GREEN,
     paddingVertical: 2,
@@ -608,7 +610,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   dropdownItem: { borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
-  dropdownText: { padding: 12, fontSize: 15, color: '#1A1A1A' },
+  dropdownText: { padding: 12, fontSize: 15, color: Colors.ink },
 
   // Source URL
   sourceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -619,7 +621,7 @@ const styles = StyleSheet.create({
   sourceEditInput: {
     flex: 1,
     fontSize: 14,
-    color: '#1A1A1A',
+    color: Colors.ink,
     borderBottomWidth: 1.5,
     borderBottomColor: GREEN,
     paddingVertical: 4,
@@ -633,7 +635,7 @@ const styles = StyleSheet.create({
   actionBtnFull: { flex: undefined, width: '100%' },
   cookBtn: {
     flex: 1,
-    backgroundColor: '#1B5E20',
+    backgroundColor: Colors.night,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -641,7 +643,7 @@ const styles = StyleSheet.create({
   cookBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   mealPlanBtn: {
     flex: 1,
-    backgroundColor: Colors.greenLight,
+    backgroundColor: Colors.cyanSoft,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',

@@ -6,10 +6,10 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { showAlert } from '../lib/alert';
 import { useAddEntry, useCreateMealPlan, useMealPlans, ensurePlanForWeek } from '../lib/hooks/useMealPlan';
+import { useOrientation } from '../lib/hooks/useOrientation';
 import { useWeekNavigation } from '../lib/hooks/useWeekNavigation';
 import { useUsers } from '../lib/hooks/useUsers';
 import { DAYS_SHORT, MEAL_TYPES } from '../lib/constants';
@@ -32,13 +32,12 @@ function todayDayIndex(): number {
   return day === 0 ? 6 : day - 1;
 }
 
-const GREEN = Colors.green;
-const GREEN_LIGHT = Colors.greenLight;
-const BORDER = Colors.border;
+const GREEN = Colors.cyanDark;
+const GREEN_LIGHT = Colors.cyanSoft;
+const BORDER = Colors.line;
 
 export function AddToMealPlanModal({ recipeId, recipeName, visible, onClose }: AddToMealPlanModalProps) {
-  const { width } = useWindowDimensions();
-  const isWide = width >= 768;
+  const { isWide } = useOrientation();
 
   const { weekStartIso, weekNum, year, navigateWeek, resetToToday } = useWeekNavigation();
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(todayDayIndex);
@@ -226,7 +225,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   weekNavArrow: { fontSize: 22, color: GREEN, fontWeight: '600', lineHeight: 26 },
-  weekLabel: { fontSize: 16, fontWeight: '600', color: '#1A1A1A' },
+  weekLabel: { fontSize: 16, fontWeight: '600', color: Colors.ink },
 
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   chip: {

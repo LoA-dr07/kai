@@ -54,11 +54,11 @@ const overlayStyles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 10,
   },
-  title: { fontSize: 16, fontWeight: '700', color: Colors.red, marginBottom: 10 },
+  title: { fontSize: 16, fontWeight: '700', color: Colors.danger, marginBottom: 10 },
   scroll: { maxHeight: 300, marginBottom: 16 },
   msg: { fontSize: 13, color: '#444', lineHeight: 18, marginBottom: 8 },
   stack: { fontSize: 10, color: '#888', lineHeight: 14, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
-  btn: { backgroundColor: Colors.green, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+  btn: { backgroundColor: Colors.cyanDark, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
   btnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });
 
@@ -144,7 +144,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     // Native only: PowerSync may have been stopped to save DB compute hours
-    // (see mobile/app/(tabs)/settings.tsx) – redeploy it on every app launch.
+    // (see mobile/app/(modes)/tools/settings.tsx) – redeploy it on every app launch.
     if (Platform.OS !== 'web') {
       startPowerSyncOnLaunch();
     }
@@ -153,7 +153,7 @@ export default function RootLayout() {
   const screens = (
     <QueryClientProvider client={queryClient}>
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(modes)" options={{ headerShown: false }} />
         <Stack.Screen
           name="recipe/new"
           options={{ title: 'Rezept erstellen', presentation: 'modal' }}

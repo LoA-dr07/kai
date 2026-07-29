@@ -10,6 +10,10 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### Added
 
+- Neue Mobile/Tablet-Navigation ("Konzept B – KAI vorne, Werkzeuge dahinter"): statt fünf gleichwertiger Tabs gibt es jetzt zwei globale Modi, KAI-Modus (KI-Assistent als Startpunkt, mit neuem Fokus-Karten/Composer/Schnellaufgaben-Startscreen unter `/kai`) und Werkzeuge-Modus (Rezepte, Wochenplan, Einkauf, Einstellungen als Kartenraster unter `/tools`, Tablet-Querformat zeigt eine permanente linke Sidebar statt Kartenraster); Phase 1 der geplanten Umsetzung (siehe `docs/wireframes-mobile.html` / `docs/wireframes-tablet.html`), rein UI-seitig, keine Backend-Änderungen
+- Neue Design-Tokens (`Colors.night/blue/cyan/...`, `Fonts`, `Spacing`, `Radii`) in `mobile/lib/theme.ts`; das visuelle Reskin auf die neue Night/Cyan-Palette ist jetzt für die komplette Mobile/Tablet-UI abgeschlossen (Werkzeuge-Screens, KI-Chat, alle Rezept-Screens und -Komponenten, `SyncStatusBanner`, reines Reskin ohne Logikänderung) – die alte grüne Palette wurde vollständig aus `theme.ts` entfernt
+- Werkzeuge-Kartenraster: Wochenplan-Karte zeigt jetzt die aktuelle Kalenderwoche und die Anzahl offener Mahlzeiten-Slots (statt eines statischen Textes), Tablet-Querformat zeigt korrekt 3 statt 2 Spalten
+- Tablet-Querformat-Sidebar: der aktuell geöffnete Werkzeug-Bereich wird in der Linkliste jetzt hervorgehoben
 - Wochenplan: Tap auf einen Eintrag mit Rezept öffnet die Rezeptdetailansicht als Modal (statt direkt die Rezeptauswahl); über einen "Austauschen"-Button im Modal-Header kann das Rezept im Slot weiterhin direkt ersetzt werden, wahlweise durch ein anderes Rezept oder per Freitext
 - PowerSync Stop/Start: neuer "PowerSync stoppen"-Button in den Einstellungen (nur Native), abgesichert per Face-ID/Fingerabdruck, stoppt die PowerSync-Cloud-Instanz, damit Neon zwischen Nutzungsphasen auto-suspenden kann; zusätzlich jetzt ein "PowerSync starten"-Button daneben für den manuellen Neustart (`useStartPowerSync()`)
 - Offline-Modus beim App-Start: der automatische PowerSync-Neustart bei jedem App-Öffnen fragt jetzt zuerst per Dialog "Jetzt synchronisieren" vs. "Offline-Modus" ab, bevor überhaupt Biometrie abgefragt wird – im Offline-Modus wird kein Request geschickt und die App nutzt direkt den zuletzt synchronisierten Stand
@@ -21,6 +25,7 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 
 ### Fixed
 
+- Bulk-Import: Sprung zur Rezeptübersicht nach erfolgreichem Import zeigte auf die beim Navigations-Umbau entfernte Route `/(tabs)/recipes` und landete damit ins Leere – zeigt jetzt korrekt auf `/tools/recipes`
 - Einkaufsliste: Zutaten konnten doppelt übernommen werden, wenn ein Rezept für dieselbe Woche eingeplant wurde – Ursache war eine Race Condition, durch die für eine Woche mehrere Wochenpläne statt einem einzigen angelegt werden konnten. `POST /meal-plans` ist jetzt idempotent bezüglich `week_start_date`; bereits bestehende Duplikat-Wochenpläne wurden per Migration bereinigt
 
 ---

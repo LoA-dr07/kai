@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ErrorScreen } from '../../components/ErrorScreen';
+import { ErrorScreen } from '../../../components/ErrorScreen';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, useWindowDimensions } from 'react-native';
-import { useOrientation } from '../../lib/hooks/useOrientation';
+import { Platform } from 'react-native';
+import { useOrientation } from '../../../lib/hooks/useOrientation';
 import {
   ActivityIndicator,
   FlatList,
@@ -16,13 +16,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { showAlert } from '../../lib/alert';
-import { api } from '../../lib/api';
-import { useImportRecipes, useRecipes, useTags } from '../../lib/hooks/useRecipes';
-import type { Recipe, RecipeExportItem } from '../../lib/types';
-import { Tooltip } from '../../components/Tooltip';
-import { Colors } from '../../lib/theme';
-import { AddToMealPlanModal } from '../../components/AddToMealPlanModal';
+import { showAlert } from '../../../lib/alert';
+import { api } from '../../../lib/api';
+import { useImportRecipes, useRecipes, useTags } from '../../../lib/hooks/useRecipes';
+import type { Recipe, RecipeExportItem } from '../../../lib/types';
+import { Tooltip } from '../../../components/Tooltip';
+import { Colors } from '../../../lib/theme';
+import { AddToMealPlanModal } from '../../../components/AddToMealPlanModal';
 
 const RATING_LABELS: Record<number, string> = {
   0: 'Nie',
@@ -36,9 +36,7 @@ const RATING_LABELS: Record<number, string> = {
 export default function RecipesScreen() {
   const router = useRouter();
   const { filter_ids } = useLocalSearchParams<{ filter_ids?: string }>();
-  const { width } = useWindowDimensions();
-  const { isLandscape } = useOrientation();
-  const isUltraWide = width >= 2560;
+  const { width, isLandscape, isUltraWide } = useOrientation();
   const numColumns = isUltraWide ? 6 : width >= 1400 ? 4 : width >= 1024 ? 3 : width >= 768 ? 2 : 1;
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
   const importMutation = useImportRecipes();
@@ -168,7 +166,7 @@ export default function RecipesScreen() {
   }
 
   if (isLoading) {
-    return <ActivityIndicator style={styles.center} size="large" color="#2E7D32" />;
+    return <ActivityIndicator style={styles.center} size="large" color={Colors.cyanDark} />;
   }
 
   if (error) {
@@ -200,7 +198,7 @@ export default function RecipesScreen() {
               }}
               accessibilityLabel="Filter aufheben"
             >
-              <Ionicons name="close-circle" size={20} color={GREEN} />
+              <Ionicons name="close-circle" size={20} color={Colors.cyanDark} />
             </TouchableOpacity>
           </Tooltip>
         </View>
@@ -280,7 +278,7 @@ export default function RecipesScreen() {
             onPress={() => router.push('/recipe/bulk-import')}
             accessibilityLabel="Rezepte aus URLs importieren"
           >
-            <Ionicons name="link-outline" size={22} color="#2E7D32" />
+            <Ionicons name="link-outline" size={22} color={Colors.cyanDark} />
           </TouchableOpacity>
         </Tooltip>
         <Tooltip label="Rezepte importieren (JSON)">
@@ -291,8 +289,8 @@ export default function RecipesScreen() {
             accessibilityLabel="Rezepte importieren"
           >
             {isImporting
-              ? <ActivityIndicator size="small" color="#2E7D32" />
-              : <Ionicons name="download-outline" size={22} color="#2E7D32" />}
+              ? <ActivityIndicator size="small" color={Colors.cyanDark} />
+              : <Ionicons name="download-outline" size={22} color={Colors.cyanDark} />}
           </TouchableOpacity>
         </Tooltip>
         <Tooltip label="Rezepte exportieren (JSON)">
@@ -303,8 +301,8 @@ export default function RecipesScreen() {
             accessibilityLabel="Rezepte exportieren"
           >
             {isExporting
-              ? <ActivityIndicator size="small" color="#2E7D32" />
-              : <Ionicons name="share-outline" size={22} color="#2E7D32" />}
+              ? <ActivityIndicator size="small" color={Colors.cyanDark} />
+              : <Ionicons name="share-outline" size={22} color={Colors.cyanDark} />}
           </TouchableOpacity>
         </Tooltip>
         <TouchableOpacity style={styles.fab} onPress={() => router.push('/recipe/new')}>
@@ -371,7 +369,7 @@ function RecipeCard({
           onPress={onAddToMealPlan}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="calendar-outline" size={18} color={Colors.green} />
+          <Ionicons name="calendar-outline" size={18} color={Colors.cyanDark} />
         </TouchableOpacity>
       </Tooltip>
     </View>
@@ -386,11 +384,8 @@ function Chip({ label }: { label: string }) {
   );
 }
 
-const GREEN = Colors.green;
-const BORDER = Colors.border;
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
+  container: { flex: 1, backgroundColor: Colors.paper },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { padding: 16, paddingBottom: 120 },
   listWide: { maxWidth: 1600, alignSelf: 'center', width: '100%' },
@@ -399,7 +394,7 @@ const styles = StyleSheet.create({
   columnWrapper: { gap: 12 },
   emptyContainer: { alignItems: 'center', marginTop: 80 },
   emptyContainerLandscape: { marginTop: 32 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: '#444', marginBottom: 8 },
+  emptyTitle: { fontSize: 18, fontWeight: '600', color: Colors.ink, marginBottom: 8 },
   emptySubtitle: { fontSize: 15, color: '#888' },
   fabGroup: {
     position: 'absolute',
@@ -415,7 +410,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: '#fff',
     borderWidth: 1.5,
-    borderColor: GREEN,
+    borderColor: Colors.cyanDark,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -444,22 +439,22 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.greenLight,
+    backgroundColor: Colors.cyanSoft,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cardTitle: { fontSize: 18, fontWeight: '600', color: '#1A1A1A', marginBottom: 6, paddingRight: 38 },
+  cardTitle: { fontSize: 18, fontWeight: '600', color: Colors.ink, marginBottom: 6, paddingRight: 38 },
   cardDesc: { fontSize: 14, color: '#666', marginBottom: 10, lineHeight: 20 },
   cardMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: Colors.cyanSoft,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
-  chipText: { fontSize: 12, color: GREEN, fontWeight: '500' },
+  chipText: { fontSize: 12, color: Colors.cyanDark, fontWeight: '500' },
   fab: {
-    backgroundColor: GREEN,
+    backgroundColor: Colors.cyan,
     paddingHorizontal: 22,
     paddingVertical: 14,
     borderRadius: 28,
@@ -469,25 +464,25 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 6,
   },
-  fabText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  fabText: { color: Colors.night, fontSize: 16, fontWeight: '700' },
   cardTagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
   cardTag: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: Colors.cyanSoft,
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: '#2E7D32',
+    borderColor: Colors.cyanDark,
   },
   cardTagCustom: { backgroundColor: '#EDE7F6', borderColor: '#5C6BC0' },
-  cardTagText: { fontSize: 11, fontWeight: '600', color: '#2E7D32' },
+  cardTagText: { fontSize: 11, fontWeight: '600', color: Colors.cyanDark },
   cardTagTextCustom: { color: '#5C6BC0' },
 
   // Tag filter bar
   tagFilterBar: {
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: Colors.line,
     paddingVertical: 8,
   },
   tagFilterScroll: {
@@ -498,18 +493,18 @@ const styles = StyleSheet.create({
   },
   tagFilterChip: {
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: Colors.line,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: '#fff',
   },
   tagFilterChipSelected: {
-    borderColor: Colors.green,
-    backgroundColor: Colors.greenLight,
+    borderColor: Colors.night,
+    backgroundColor: Colors.night,
   },
   tagFilterChipClear: {
-    borderColor: Colors.border,
+    borderColor: Colors.line,
     backgroundColor: '#F0F0F0',
   },
   tagFilterChipText: {
@@ -518,7 +513,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   tagFilterChipTextSelected: {
-    color: Colors.green,
+    color: '#fff',
     fontWeight: '700',
   },
   tagFilterChipClearText: {
@@ -532,11 +527,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.greenLight,
+    backgroundColor: Colors.cyanSoft,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: Colors.line,
   },
-  filterBannerText: { fontSize: 14, fontWeight: '600', color: Colors.greenDark, flex: 1 },
+  filterBannerText: { fontSize: 14, fontWeight: '600', color: Colors.cyanDark, flex: 1 },
 });

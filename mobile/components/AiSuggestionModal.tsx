@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  useWindowDimensions,
 } from 'react-native';
 import { showAlert } from '../lib/alert';
 import { BaseModal } from './BaseModal';
 import { useAiMealPlanSuggestion } from '../lib/hooks/useAiMealPlanSuggestion';
+import { useOrientation } from '../lib/hooks/useOrientation';
 import type { User, Recipe, AiMealPlanSuggestionEntry, MealType } from '../lib/types';
 import { DAYS_DE, MEAL_TYPES } from '../lib/constants';
 import { Colors } from '../lib/theme';
@@ -19,9 +19,9 @@ import axios from 'axios';
 
 // --- Konstanten ---
 
-const GREEN = Colors.green;
-const GREEN_LIGHT = Colors.greenLight;
-const BORDER = Colors.border;
+const GREEN = Colors.cyanDark;
+const GREEN_LIGHT = Colors.cyanSoft;
+const BORDER = Colors.line;
 
 const ALL_MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'snack', 'dinner', 'dessert'];
 
@@ -48,8 +48,7 @@ export default function AiSuggestionModal({
   onClose,
   onApply,
 }: AiSuggestionModalProps) {
-  const { width } = useWindowDimensions();
-  const isWide = width >= 768;
+  const { isWide } = useOrientation();
 
   const [phase, setPhase] = useState<Phase>('input');
   const [requestingUserId, setRequestingUserId] = useState<number>(users[0]?.id ?? 0);
@@ -339,7 +338,7 @@ const styles = StyleSheet.create({
     gap: 16,
     padding: 32,
   },
-  loadingText: { fontSize: 17, fontWeight: '600', color: '#1A1A1A', textAlign: 'center' },
+  loadingText: { fontSize: 17, fontWeight: '600', color: Colors.ink, textAlign: 'center' },
   loadingHint: { fontSize: 13, color: '#888', textAlign: 'center' },
 
   // Preview phase
@@ -371,7 +370,7 @@ const styles = StyleSheet.create({
   },
   mealIcon: { fontSize: 16, width: 22, textAlign: 'center' },
   mealInfo: { flex: 1 },
-  mealName: { fontSize: 14, fontWeight: '500', color: '#1A1A1A' },
+  mealName: { fontSize: 14, fontWeight: '500', color: Colors.ink },
   assignedBadges: { flexDirection: 'row', gap: 4, marginTop: 3 },
   userBadge: {
     borderRadius: 8,

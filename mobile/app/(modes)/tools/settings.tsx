@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ErrorScreen } from '../../components/ErrorScreen';
+import { ErrorScreen } from '../../../components/ErrorScreen';
 import {
   View,
   Text,
@@ -8,28 +8,28 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  useWindowDimensions,
   Platform,
 } from 'react-native';
-import { useHousehold, useUpdateHouseholdSettings } from '../../lib/hooks/useHousehold';
+import { useOrientation } from '../../../lib/hooks/useOrientation';
+import { useHousehold, useUpdateHouseholdSettings } from '../../../lib/hooks/useHousehold';
 import {
   useUsers,
   useUpdateUserPreferences,
   useUpdateUser,
   useDeleteUser,
   useCreateUser,
-} from '../../lib/hooks/useUsers';
-import { useStartPowerSync, useStopPowerSync } from '../../lib/hooks/usePowerSyncAdmin';
-import { showAlert, showConfirm } from '../../lib/alert';
-import type { HouseholdSettings, UserPreferences, User } from '../../lib/types';
-import { Tooltip } from '../../components/Tooltip';
-import { Colors } from '../../lib/theme';
+} from '../../../lib/hooks/useUsers';
+import { useStartPowerSync, useStopPowerSync } from '../../../lib/hooks/usePowerSyncAdmin';
+import { showAlert, showConfirm } from '../../../lib/alert';
+import type { HouseholdSettings, UserPreferences, User } from '../../../lib/types';
+import { Tooltip } from '../../../components/Tooltip';
+import { Colors } from '../../../lib/theme';
 
-const GREEN = Colors.green;
-const LIGHT_GREEN = Colors.greenLight;
-const BORDER = Colors.border;
-const BG = Colors.bg;
-const RED = Colors.red;
+const GREEN = Colors.cyanDark;
+const LIGHT_GREEN = Colors.cyanSoft;
+const BORDER = Colors.line;
+const BG = Colors.paper;
+const RED = Colors.danger;
 
 const AVATAR_COLORS = [
   '#1565C0',
@@ -752,9 +752,7 @@ function PowerSyncControlCard() {
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function SettingsScreen() {
-  const { width } = useWindowDimensions();
-  const isWide = width >= 768;
-  const isUltraWide = width >= 2560;
+  const { isWide, isUltraWide } = useOrientation();
   const { data: household, isLoading: loadingHousehold, error: errorHousehold } = useHousehold();
   const { data: users, isLoading: loadingUsers, error: errorUsers } = useUsers();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -890,7 +888,7 @@ const styles = StyleSheet.create({
   membersHeading: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#333',
+    color: Colors.ink,
   },
   addMemberBtn: {
     width: 34,
@@ -1022,7 +1020,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   avatarText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  memberName: { fontSize: 17, fontWeight: '700', color: '#333', flex: 1 },
+  memberName: { fontSize: 17, fontWeight: '700', color: Colors.ink, flex: 1 },
   memberEditFields: { flex: 1, flexDirection: 'row', gap: 8 },
   memberNameInput: { flex: 1, marginTop: 0 },
   memberShortInput: { width: 70, marginTop: 0 },
@@ -1050,7 +1048,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  colorDotActive: { borderColor: '#333', transform: [{ scale: 1.2 }] },
+  colorDotActive: { borderColor: Colors.ink, transform: [{ scale: 1.2 }] },
   colorPickerSection: { marginBottom: 4 },
 
   // Add member

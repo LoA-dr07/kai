@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, FlatLi
 import type { Recipe, Tag, User } from '../lib/types';
 import { Colors } from '../lib/theme';
 
-const GREEN = Colors.green;
-const GREEN_LIGHT = Colors.greenLight;
-const BORDER = Colors.border;
+const GREEN = Colors.cyanDark;
+const GREEN_LIGHT = Colors.cyanSoft;
+const BORDER = Colors.line;
 
 interface RecipeSearchPanelProps {
   recipes: Recipe[];
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
 
   searchInput: { borderWidth: 1, borderColor: BORDER, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, marginBottom: 12, backgroundColor: '#FAFAFA' },
   recipeRow: { paddingVertical: 12, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: BORDER },
-  recipeName: { fontSize: 15, fontWeight: '600', color: '#1A1A1A' },
+  recipeName: { fontSize: 15, fontWeight: '600', color: Colors.ink },
   recipeDesc: { fontSize: 13, color: '#888', marginTop: 2 },
   emptyText: { textAlign: 'center', color: '#AAA', marginTop: 32, fontSize: 14 },
 

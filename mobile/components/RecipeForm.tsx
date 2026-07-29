@@ -674,7 +674,7 @@ export default function RecipeForm({
             disabled={createIngredient.isPending}
           >
             {createIngredient.isPending ? (
-              <ActivityIndicator color="#2E7D32" />
+              <ActivityIndicator color={Colors.cyanDark} />
             ) : (
               <Text style={styles.addIngBtnText}>+ Zutat hinzufügen</Text>
             )}
@@ -700,11 +700,11 @@ export default function RecipeForm({
   );
 }
 
-const GREEN = Colors.green;
+const GREEN = Colors.cyanDark;
 const BORDER = '#DDD';
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
+  container: { flex: 1, backgroundColor: Colors.paper },
   content: { padding: 16, paddingBottom: 48, maxWidth: 700, alignSelf: 'center', width: '100%' },
   card: {
     backgroundColor: '#fff',
@@ -717,7 +717,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  sectionTitle: { fontSize: 17, fontWeight: '700', color: '#1A1A1A', marginBottom: 12 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', color: Colors.ink, marginBottom: 12 },
   label: { fontSize: 13, fontWeight: '500', color: '#555', marginBottom: 6, marginTop: 12 },
   input: {
     borderWidth: 1,
@@ -727,7 +727,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 15,
     backgroundColor: '#FAFAFA',
-    color: '#1A1A1A',
+    color: Colors.ink,
   },
   textArea: { height: 80 },
   row: { flexDirection: 'row' },
@@ -784,7 +784,7 @@ const styles = StyleSheet.create({
   moveBtn: { padding: 2 },
   moveBtnText: { fontSize: 12, color: '#888' },
   moveBtnDisabled: { color: '#DDD' },
-  ingName: { flex: 1, fontSize: 15, color: '#1A1A1A' },
+  ingName: { flex: 1, fontSize: 15, color: Colors.ink },
   ingAmount: { fontSize: 15, color: '#555', marginRight: 10 },
   removeBtn: { padding: 6 },
   removeBtnText: { color: '#D32F2F', fontSize: 16, fontWeight: '700' },
@@ -817,8 +817,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F5F5F5',
   },
-  dropdownItemHighlighted: { backgroundColor: '#E8F5E9' },
-  dropdownText: { fontSize: 15, color: '#1A1A1A' },
+  dropdownItemHighlighted: { backgroundColor: Colors.cyanSoft },
+  dropdownText: { fontSize: 15, color: Colors.ink },
   addIngBtn: {
     marginTop: 10,
     borderWidth: 1.5,

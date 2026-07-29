@@ -32,7 +32,7 @@ function ImportPreviewScreenContent() {
   if (usersLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={Colors.green} />
+        <ActivityIndicator size="large" color={Colors.cyanDark} />
       </View>
     );
   }
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9F9F9',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.line,
   },
   ratingsSectionTitle: {
     fontSize: 14,

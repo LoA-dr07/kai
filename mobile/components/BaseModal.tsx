@@ -2,8 +2,8 @@ import React from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { Colors } from '../lib/theme';
 
-const GREEN = Colors.green;
-const BORDER = Colors.border;
+const GREEN = Colors.cyanDark;
+const BORDER = Colors.line;
 
 interface BaseModalProps {
   visible: boolean;
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     borderBottomColor: BORDER,
     gap: 8,
   },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: Colors.ink },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   headerClose: { fontSize: 16, color: GREEN, fontWeight: '600' },
 });

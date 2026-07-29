@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: Colors.line,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 6,
