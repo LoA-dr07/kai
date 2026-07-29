@@ -10,7 +10,7 @@ interface Props {
 export function ErrorScreen({ message = 'Es ist ein Fehler aufgetreten.', onRetry }: Props) {
   return (
     <View style={styles.container}>
-      <Ionicons name="alert-circle-outline" size={52} color={Colors.red} />
+      <Ionicons name="alert-circle-outline" size={52} color={Colors.danger} />
       <Text style={styles.title}>Fehler</Text>
       <Text style={styles.message}>{message}</Text>
       {onRetry && (
@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.red,
+    color: Colors.danger,
   },
   message: {
     fontSize: 15,
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
   },
   retryBtn: {
     marginTop: 8,
-    backgroundColor: Colors.green,
+    backgroundColor: Colors.cyanDark,
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 8,

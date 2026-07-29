@@ -6,9 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  useWindowDimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { useOrientation } from '../../../lib/hooks/useOrientation';
 import { ErrorScreen } from '../../../components/ErrorScreen';
 import { ScreenErrorBoundary } from '../../../components/ScreenErrorBoundary';
 import { useRecipe } from '../../../lib/hooks/useRecipes';
@@ -24,7 +24,7 @@ function CookScreenContent() {
   const router = useRouter();
   const recipeId = Number(id);
 
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useOrientation();
   // Split-Layout wenn breit (Web / Tablet) oder Querformat (Mobile rotiert)
   const isSplit = width >= height || width >= 600;
 
@@ -33,7 +33,7 @@ function CookScreenContent() {
   const { data: recipe, isLoading, error } = useRecipe(recipeId);
 
   if (isLoading) {
-    return <ActivityIndicator style={styles.center} size="large" color="#2E7D32" />;
+    return <ActivityIndicator style={styles.center} size="large" color={Colors.cyanDark} />;
   }
 
   if (error || !recipe) {
@@ -80,7 +80,7 @@ function CookScreenContent() {
       <Stack.Screen
         options={{
           title: recipe.name,
-          headerStyle: { backgroundColor: '#1B5E20' },
+          headerStyle: { backgroundColor: Colors.night },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: '700' },
         }}
@@ -144,13 +144,12 @@ export default function CookScreen() {
 // Styles
 // -------------------------------------------------------------------
 
-const GREEN = Colors.green;
-const GREEN_DARK = Colors.greenDark;
-const GREEN_LIGHT = Colors.greenLight;
-const BORDER = Colors.border;
+const GREEN = Colors.cyanDark;
+const GREEN_DARK = Colors.cyanDark;
+const BORDER = Colors.line;
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F0F4F0' },
+  root: { flex: 1, backgroundColor: Colors.paper },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // ── Split ───────────────────────────────────────────────────────
@@ -171,7 +170,7 @@ const styles = StyleSheet.create({
   },
   panelRight: {
     flex: 3,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: Colors.paper,
   },
   divider: {
     width: 1,
@@ -235,7 +234,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F0F0F0',
     gap: 12,
   },
-  ingName: { fontSize: 16, color: '#1A1A1A', flex: 1 },
+  ingName: { fontSize: 16, color: Colors.ink, flex: 1 },
   ingAmount: {
     fontSize: 15,
     color: GREEN,

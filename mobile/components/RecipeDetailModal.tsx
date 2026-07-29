@@ -9,8 +9,8 @@ import { RecipeSearchPanel } from './RecipeSearchPanel';
 import { Tooltip } from './Tooltip';
 import { Colors } from '../lib/theme';
 
-const GREEN = Colors.green;
-const BORDER = Colors.border;
+const GREEN = Colors.cyanDark;
+const BORDER = Colors.line;
 
 interface RecipeDetailModalProps {
   recipeId: number | null;
@@ -115,7 +115,7 @@ export function RecipeDetailModal({ recipeId, visible, onClose, onSwap }: Recipe
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
+  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: Colors.ink },
   headerBack: { fontSize: 16, color: GREEN, fontWeight: '600' },
   headerIconBtn: { padding: 4 },
   headerIconText: { fontSize: 20, color: GREEN },

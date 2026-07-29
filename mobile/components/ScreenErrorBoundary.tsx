@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.red,
+    color: Colors.danger,
     marginBottom: 4,
   },
   message: {
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   backBtn: {
-    backgroundColor: Colors.green,
+    backgroundColor: Colors.cyanDark,
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 24,
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
   },
   retryBtn: {
     borderWidth: 1.5,
-    borderColor: Colors.green,
+    borderColor: Colors.cyanDark,
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 24,
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   retryBtnText: {
-    color: Colors.green,
+    color: Colors.cyanDark,
     fontWeight: '600',
     fontSize: 15,
   },

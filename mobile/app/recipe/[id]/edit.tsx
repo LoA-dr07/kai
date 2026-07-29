@@ -5,6 +5,7 @@ import { ErrorScreen } from '../../../components/ErrorScreen';
 import { ScreenErrorBoundary } from '../../../components/ScreenErrorBoundary';
 import RecipeForm from '../../../components/RecipeForm';
 import { useRecipe, useUpdateRecipe } from '../../../lib/hooks/useRecipes';
+import { Colors } from '../../../lib/theme';
 
 function EditRecipeScreenContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,7 +18,7 @@ function EditRecipeScreenContent() {
   if (isLoading) {
     return (
       <View style={{ flex: 1 }}>
-        <ActivityIndicator style={{ flex: 1 }} size="large" color="#2E7D32" />
+        <ActivityIndicator style={{ flex: 1 }} size="large" color={Colors.cyanDark} />
       </View>
     );
   }

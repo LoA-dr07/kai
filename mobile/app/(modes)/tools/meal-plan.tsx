@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { useOrientation } from '../../lib/hooks/useOrientation';
-import { ErrorScreen } from '../../components/ErrorScreen';
+import { useOrientation } from '../../../lib/hooks/useOrientation';
+import { ErrorScreen } from '../../../components/ErrorScreen';
 import {
   View,
   Text,
@@ -10,10 +10,9 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
-  useWindowDimensions,
   Platform,
 } from 'react-native';
-import { showAlert } from '../../lib/alert';
+import { showAlert } from '../../../lib/alert';
 import {
   useMealPlans,
   useCreateMealPlan,
@@ -21,25 +20,25 @@ import {
   useUpdateEntry,
   useDeleteEntry,
   ensurePlanForWeek,
-} from '../../lib/hooks/useMealPlan';
-import { useWeekNavigation } from '../../lib/hooks/useWeekNavigation';
-import { useRecentRecipes } from '../../lib/hooks/useRecentRecipes';
-import { useRecipes, useTags } from '../../lib/hooks/useRecipes';
-import { useUsers } from '../../lib/hooks/useUsers';
-import AiSuggestionModal from '../../components/AiSuggestionModal';
-import type { MealPlanEntry, MealType, User, AiMealPlanSuggestionEntry } from '../../lib/types';
-import { BaseModal } from '../../components/BaseModal';
-import { Tooltip } from '../../components/Tooltip';
-import { UserChipRow } from '../../components/UserChipRow';
-import { RecipeSearchPanel } from '../../components/RecipeSearchPanel';
-import { RecipeDetailModal } from '../../components/RecipeDetailModal';
-import { DAYS_DE, DAYS_SHORT, MEAL_TYPES } from '../../lib/constants';
-import { Colors } from '../../lib/theme';
-import { getMondayOf, isoDate } from '../../lib/dateUtils';
+} from '../../../lib/hooks/useMealPlan';
+import { useWeekNavigation } from '../../../lib/hooks/useWeekNavigation';
+import { useRecentRecipes } from '../../../lib/hooks/useRecentRecipes';
+import { useRecipes, useTags } from '../../../lib/hooks/useRecipes';
+import { useUsers } from '../../../lib/hooks/useUsers';
+import AiSuggestionModal from '../../../components/AiSuggestionModal';
+import type { MealPlanEntry, MealType, User, AiMealPlanSuggestionEntry } from '../../../lib/types';
+import { BaseModal } from '../../../components/BaseModal';
+import { Tooltip } from '../../../components/Tooltip';
+import { UserChipRow } from '../../../components/UserChipRow';
+import { RecipeSearchPanel } from '../../../components/RecipeSearchPanel';
+import { RecipeDetailModal } from '../../../components/RecipeDetailModal';
+import { DAYS_DE, DAYS_SHORT, MEAL_TYPES } from '../../../lib/constants';
+import { Colors } from '../../../lib/theme';
+import { getMondayOf, isoDate } from '../../../lib/dateUtils';
 
-const GREEN = Colors.green;
-const GREEN_LIGHT = Colors.greenLight;
-const BORDER = Colors.border;
+const GREEN = Colors.cyanDark;
+const GREEN_LIGHT = Colors.cyanSoft;
+const BORDER = Colors.line;
 
 const MEAL_TYPE_TAG_NAMES: Record<MealType, string> = {
   breakfast: 'Frühstück',
@@ -66,11 +65,8 @@ function AvatarBadges({ entry, users }: { entry: MealPlanEntry; users: User[] })
 
 // --- Main component ---
 export default function MealPlanScreen() {
-  const { width } = useWindowDimensions();
-  const { isLandscape, height } = useOrientation();
-  const isWide = width >= 768;
+  const { width, height, isLandscape, isWide, isUltraWide } = useOrientation();
   const isDesktop = width >= 1024;
-  const isUltraWide = width >= 2560;
 
   const CONTENT_PADDING = 12;
   const CARD_GAP = 10;
@@ -584,19 +580,19 @@ export default function MealPlanScreen() {
 // --- Styles ---
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F8F9FA' },
+  root: { flex: 1, backgroundColor: Colors.paper },
 
   weekNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', paddingHorizontal: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: BORDER },
   navBtn: { paddingHorizontal: 16, paddingVertical: 8 },
   navArrow: { fontSize: 28, color: GREEN, lineHeight: 32 },
-  weekLabel: { fontSize: 17, fontWeight: '700', color: '#1A1A1A' },
+  weekLabel: { fontSize: 17, fontWeight: '700', color: Colors.ink },
   weekNavRight: { flexDirection: 'row', alignItems: 'center' },
   cancelMoveBtn: { borderWidth: 1.5, borderColor: '#888', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4, marginRight: 6 },
   cancelMoveBtnText: { fontSize: 13, color: '#555', fontWeight: '600' },
   todayBtn: { borderWidth: 1.5, borderColor: GREEN, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4, marginRight: 6 },
   todayBtnText: { fontSize: 13, color: GREEN, fontWeight: '700' },
-  aiBtn: { backgroundColor: GREEN, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, marginRight: 2 },
-  aiBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  aiBtn: { backgroundColor: Colors.cyan, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, marginRight: 2 },
+  aiBtnText: { color: Colors.night, fontSize: 13, fontWeight: '700' },
 
   moveBanner: { backgroundColor: '#FFF9C4', paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F9A825' },
   moveBannerText: { fontSize: 13, color: '#795548', fontWeight: '600', textAlign: 'center' },
@@ -626,7 +622,7 @@ const styles = StyleSheet.create({
 
   entryRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 7, marginHorizontal: 8, marginBottom: 4, backgroundColor: GREEN_LIGHT, borderRadius: 8, gap: 8 },
   entryContent: { flex: 1 },
-  entryName: { fontSize: 14, fontWeight: '500', color: '#1A1A1A' },
+  entryName: { fontSize: 14, fontWeight: '500', color: Colors.ink },
   deleteBtn: { fontSize: 13, color: '#B71C1C', fontWeight: '700' },
   addRow: { paddingHorizontal: 12, paddingVertical: 7, marginHorizontal: 8, marginBottom: 4 },
   addRowText: { fontSize: 13, color: '#AAA' },
@@ -659,12 +655,12 @@ const bsStyles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 40, paddingTop: 12 },
   handle: { width: 40, height: 4, backgroundColor: BORDER, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
-  entryTitle: { fontSize: 16, fontWeight: '700', color: '#1A1A1A', paddingHorizontal: 20, marginBottom: 8 },
+  entryTitle: { fontSize: 16, fontWeight: '700', color: Colors.ink, paddingHorizontal: 20, marginBottom: 8 },
   action: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, gap: 14, borderTopWidth: 1, borderTopColor: BORDER },
   actionDestructive: {},
   actionIcon: { fontSize: 20, width: 28, textAlign: 'center' },
   actionIconDestructive: { color: '#B71C1C' },
-  actionText: { fontSize: 16, color: '#1A1A1A', flex: 1 },
+  actionText: { fontSize: 16, color: Colors.ink, flex: 1 },
   actionTextDestructive: { color: '#B71C1C' },
   toggleChip: { borderWidth: 1.5, borderColor: BORDER, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 3 },
   toggleChipActive: { borderColor: GREEN, backgroundColor: GREEN_LIGHT },

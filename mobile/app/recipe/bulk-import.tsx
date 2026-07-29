@@ -24,8 +24,8 @@ import { useUsers } from '../../lib/hooks/useUsers';
 import type { BulkUrlImportResult, RecipeUrlPreview, Tag } from '../../lib/types';
 import { Colors } from '../../lib/theme';
 
-const GREEN = Colors.green;
-const BORDER = Colors.border;
+const GREEN = Colors.cyanDark;
+const BORDER = Colors.line;
 const RED = '#D32F2F';
 
 function isValidUrl(s: string): boolean {
@@ -360,7 +360,7 @@ function BulkImportScreenContent() {
   function handleNavigateToRecipes() {
     if (!results || results.created_ids.length === 0) return;
     router.replace({
-      pathname: '/(tabs)/recipes',
+      pathname: '/tools/recipes',
       params: { filter_ids: results.created_ids.join(',') },
     });
   }
@@ -457,7 +457,7 @@ function BulkImportScreenContent() {
         >
           {/* Info banner */}
           <View style={styles.infoBanner}>
-            <Ionicons name="information-circle-outline" size={18} color={Colors.greenDark} />
+            <Ionicons name="information-circle-outline" size={18} color={Colors.cyanDark} />
             <Text style={styles.infoBannerText}>
               Tags und Bewertungen aus Schritt 1 sind hier pro Rezept noch anpassbar.
             </Text>
@@ -687,7 +687,7 @@ function BulkImportScreenContent() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg },
+  container: { flex: 1, backgroundColor: Colors.paper },
   content: { padding: 16, paddingBottom: 48, maxWidth: 700, alignSelf: 'center', width: '100%' },
 
   card: {
@@ -711,14 +711,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    backgroundColor: Colors.greenLight,
+    backgroundColor: Colors.cyanSoft,
     borderRadius: 10,
     padding: 12,
     marginBottom: 12,
   },
-  infoBannerText: { flex: 1, fontSize: 13, color: Colors.greenDark, lineHeight: 18 },
+  infoBannerText: { flex: 1, fontSize: 13, color: Colors.cyanDark, lineHeight: 18 },
 
-  sectionTitle: { fontSize: 17, fontWeight: '700', color: '#1A1A1A', marginBottom: 6 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', color: Colors.ink, marginBottom: 6 },
   sectionSubtitle: { fontSize: 14, fontWeight: '700', color: '#333', marginBottom: 8 },
   hint: { fontSize: 13, color: '#888', marginBottom: 12 },
 
@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
   },
   recipeIndexText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   recipeCardTitleBlock: { flex: 1 },
-  recipeCardTitle: { fontSize: 16, fontWeight: '700', color: '#1A1A1A', marginBottom: 2 },
+  recipeCardTitle: { fontSize: 16, fontWeight: '700', color: Colors.ink, marginBottom: 2 },
   recipeCardUrl: { fontSize: 12, color: '#999' },
   divider: { height: 1, backgroundColor: '#F0F0F0', marginBottom: 14 },
 
@@ -771,7 +771,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
     backgroundColor: '#FAFAFA',
-    color: '#1A1A1A',
+    color: Colors.ink,
   },
   urlInput: { flex: 1, borderWidth: 0, borderRadius: 0, backgroundColor: 'transparent', paddingHorizontal: 4 },
   urlInputInvalid: { backgroundColor: '#FFF5F5' },
@@ -859,11 +859,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     marginBottom: 12,
-    backgroundColor: Colors.greenLight,
+    backgroundColor: Colors.cyanSoft,
     borderRadius: 10,
     padding: 14,
   },
-  successText: { fontSize: 16, fontWeight: '600', color: Colors.greenDark, flex: 1 },
+  successText: { fontSize: 16, fontWeight: '600', color: Colors.cyanDark, flex: 1 },
   allFailedBox: {
     flexDirection: 'row',
     alignItems: 'center',

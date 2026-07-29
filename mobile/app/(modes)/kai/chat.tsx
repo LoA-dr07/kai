@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -10,24 +11,23 @@ import {
   KeyboardAvoidingView,
   Platform,
   useWindowDimensions,
-  Modal,
 } from 'react-native';
-import { showAlert } from '../../lib/alert';
-import { Tooltip } from '../../components/Tooltip';
-import { useAiChat } from '../../lib/hooks/useAiChat';
-import { useConversations, useConversationMessages, useCreateConversation, useDeleteConversation } from '../../lib/hooks/useConversations';
-import { useMealPlans, useCreateMealPlan, useAddEntry, useDeleteEntry } from '../../lib/hooks/useMealPlan';
-import { useUsers } from '../../lib/hooks/useUsers';
-import { useGenerateShoppingList, useAddShoppingItem } from '../../lib/hooks/useShoppingList';
-import type { ChatMessage, RecipeSuggestion, MealType, PendingAction, Conversation } from '../../lib/types';
-import { DAYS_SHORT, MEAL_TYPES } from '../../lib/constants';
-import { Colors } from '../../lib/theme';
-import { getMondayOf, isoDate, getISOWeek } from '../../lib/dateUtils';
+import { showAlert } from '../../../lib/alert';
+import { Tooltip } from '../../../components/Tooltip';
+import { useAiChat } from '../../../lib/hooks/useAiChat';
+import { useConversations, useConversationMessages, useCreateConversation, useDeleteConversation } from '../../../lib/hooks/useConversations';
+import { useMealPlans, useCreateMealPlan, useAddEntry, useDeleteEntry } from '../../../lib/hooks/useMealPlan';
+import { useUsers } from '../../../lib/hooks/useUsers';
+import { useGenerateShoppingList, useAddShoppingItem } from '../../../lib/hooks/useShoppingList';
+import type { ChatMessage, RecipeSuggestion, MealType, PendingAction, Conversation } from '../../../lib/types';
+import { DAYS_SHORT, MEAL_TYPES } from '../../../lib/constants';
+import { Colors } from '../../../lib/theme';
+import { getMondayOf, isoDate, getISOWeek } from '../../../lib/dateUtils';
 import axios from 'axios';
 
-const GREEN = Colors.green;
-const GREEN_LIGHT = Colors.greenLight;
-const BORDER = Colors.border;
+const GREEN = Colors.cyanDark;
+const GREEN_LIGHT = Colors.cyanSoft;
+const BORDER = Colors.line;
 
 const WELCOME_MESSAGE: ChatMessage = {
   role: 'assistant',
@@ -52,10 +52,14 @@ export default function AiChatScreen() {
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
   const isUltraWide = width >= 2560;
+  const router = useRouter();
+  const { prompt: initialPrompt, conversationId: initialConversationId } = useLocalSearchParams<{ prompt?: string; conversationId?: string }>();
+  const consumedInitialParams = useRef(false);
 
-  const [activeConvId, setActiveConvId] = useState<number | null>(null);
-  const [convListVisible, setConvListVisible] = useState(false);
-  const [loadingConv, setLoadingConv] = useState(false);
+  const [activeConvId, setActiveConvId] = useState<number | null>(
+    initialConversationId ? Number(initialConversationId) : null
+  );
+  const [loadingConv, setLoadingConv] = useState(!!initialConversationId);
 
   const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([{ message: WELCOME_MESSAGE }]);
   const [input, setInput] = useState('');
@@ -81,6 +85,14 @@ export default function AiChatScreen() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
+
+  // Arrived from KAI-Modus home with a pre-filled prompt (e.g. a quick task) — send it once.
+  useEffect(() => {
+    if (consumedInitialParams.current || !initialPrompt) return;
+    consumedInitialParams.current = true;
+    setInput(initialPrompt);
+    setTimeout(() => handleSendRef.current(), 0);
+  }, [initialPrompt]);
 
   const weekStartIso = isoDate(weekStart);
   const weekNum = getISOWeek(weekStart);
@@ -322,7 +334,6 @@ export default function AiChatScreen() {
     setLoadingConv(false);
     setDisplayMessages([{ message: WELCOME_MESSAGE }]);
     setInput('');
-    setConvListVisible(false);
   };
 
   const handleSelectConversation = (conv: Conversation) => {
@@ -330,7 +341,6 @@ export default function AiChatScreen() {
     setLoadingConv(true);
     setDisplayMessages([{ message: WELCOME_MESSAGE }]);
     setInput('');
-    setConvListVisible(false);
   };
 
   const handleDeleteConversation = (convId: number) => {
@@ -395,16 +405,20 @@ export default function AiChatScreen() {
       <View style={[styles.inner, !isUltraWide && isWide && styles.innerWide]}>
         {/* Conversation header */}
         <View style={styles.convHeader}>
-          {!isUltraWide && (
-            <TouchableOpacity style={styles.convListBtn} onPress={() => setConvListVisible(true)}>
-              <Text style={styles.convListBtnText}>☰ Verlauf</Text>
-            </TouchableOpacity>
-          )}
-          {isUltraWide && <View style={styles.convListBtn} />}
-          <Text style={styles.weekBannerText}>KW {weekNum}, {year}</Text>
-          <TouchableOpacity style={styles.newConvBtn} onPress={handleNewConversation}>
-            <Text style={styles.newConvBtnText}>+ Neu</Text>
+          <TouchableOpacity style={styles.convListBtn} onPress={() => router.push('/kai')}>
+            <Text style={styles.convListBtnText}>‹ KAI</Text>
           </TouchableOpacity>
+          <Text style={styles.weekBannerText}>KW {weekNum}, {year}</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {!isUltraWide && (
+              <TouchableOpacity style={styles.convListBtn} onPress={() => router.push('/kai/history')}>
+                <Text style={styles.convListBtnText}>☰ Verlauf</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.newConvBtn} onPress={handleNewConversation}>
+              <Text style={styles.newConvBtnText}>+ Neu</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Chat messages */}
@@ -601,21 +615,6 @@ export default function AiChatScreen() {
         </View>
       </View>
       </View>
-
-      {/* Conversation list modal (compact/wide screens only) */}
-      {!isUltraWide && (
-        <Modal visible={convListVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setConvListVisible(false)}>
-          <View style={[styles.convModal, isWide && styles.convModalWide]}>
-            <View style={styles.convModalHeader}>
-              <Text style={styles.convModalTitle}>Konversationen</Text>
-              <TouchableOpacity onPress={() => setConvListVisible(false)}>
-                <Text style={styles.convModalClose}>Schließen</Text>
-              </TouchableOpacity>
-            </View>
-            {convListContent}
-          </View>
-        </Modal>
-      )}
     </KeyboardAvoidingView>
   );
 }
@@ -623,7 +622,7 @@ export default function AiChatScreen() {
 // --- Styles ---
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
+  root: { flex: 1, backgroundColor: Colors.paper },
   outerContainer: { flex: 1 },
   ultraWideContainer: { flex: 1, flexDirection: 'row' },
   convSidebar: { width: 300, borderRightWidth: 1, borderRightColor: BORDER, backgroundColor: '#fff', flexShrink: 0 },
@@ -647,19 +646,19 @@ const styles = StyleSheet.create({
   bubbleAssistant: { backgroundColor: '#fff', borderWidth: 1, borderColor: BORDER },
   bubbleUser: { backgroundColor: GREEN },
   bubbleLoading: { paddingVertical: 14, paddingHorizontal: 20 },
-  bubbleText: { fontSize: 15, color: '#1A1A1A', lineHeight: 22 },
+  bubbleText: { fontSize: 15, color: Colors.ink, lineHeight: 22 },
   bubbleTextUser: { color: '#fff' },
   speakBtn: { padding: 4 },
   speakBtnText: { fontSize: 18 },
 
   suggestionsBlock: { gap: 8, marginBottom: 8, marginLeft: 8 },
   suggestionCard: { backgroundColor: '#fff', borderWidth: 1, borderColor: BORDER, borderRadius: 12, padding: 12, maxWidth: '90%' },
-  suggestionName: { fontSize: 15, fontWeight: '700', color: '#1A1A1A', marginBottom: 4 },
+  suggestionName: { fontSize: 15, fontWeight: '700', color: Colors.ink, marginBottom: 4 },
   suggestionReason: { fontSize: 13, color: '#666', marginBottom: 10, lineHeight: 18 },
   addToPlanBtn: { borderWidth: 1.5, borderColor: GREEN, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 12, alignSelf: 'flex-start' },
   addToPlanBtnText: { fontSize: 13, color: GREEN, fontWeight: '600' },
   addedConfirmText: { fontSize: 13, color: GREEN, fontWeight: '600', paddingVertical: 7 },
-  pickerBlock: { marginTop: 10, padding: 10, backgroundColor: Colors.bg, borderRadius: 8, gap: 4 },
+  pickerBlock: { marginTop: 10, padding: 10, backgroundColor: Colors.paper, borderRadius: 8, gap: 4 },
   pickerLabel: { fontSize: 12, fontWeight: '700', color: '#888', textTransform: 'uppercase', letterSpacing: 0.4 },
   pickerChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingVertical: 4 },
   pickerChip: { borderWidth: 1.5, borderColor: BORDER, borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: '#fff' },
@@ -676,8 +675,8 @@ const styles = StyleSheet.create({
   confirmAllBtn: { backgroundColor: GREEN, borderRadius: 8, paddingVertical: 5, paddingHorizontal: 10 },
   confirmAllBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   actionCard: { backgroundColor: '#fff', borderWidth: 1, borderColor: BORDER, borderRadius: 12, padding: 12, gap: 8 },
-  actionCardConfirmed: { backgroundColor: '#F1F8E9', borderColor: GREEN },
-  actionDescription: { fontSize: 14, color: '#1A1A1A', lineHeight: 20 },
+  actionCardConfirmed: { backgroundColor: Colors.cyanSoft, borderColor: GREEN },
+  actionDescription: { fontSize: 14, color: Colors.ink, lineHeight: 20 },
   actionConfirmBtn: { backgroundColor: GREEN, borderRadius: 8, paddingVertical: 8, alignItems: 'center' },
   actionConfirmBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   actionConfirmedText: { fontSize: 13, color: GREEN, fontWeight: '600' },
@@ -692,7 +691,7 @@ const styles = StyleSheet.create({
   convModal: { flex: 1, backgroundColor: '#fff', maxHeight: '90%' },
   convModalWide: { maxWidth: 480, alignSelf: 'center', width: '100%' },
   convModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: BORDER },
-  convModalTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
+  convModalTitle: { fontSize: 18, fontWeight: '700', color: Colors.ink },
   convModalClose: { fontSize: 16, color: GREEN, fontWeight: '600' },
   newConvRow: { paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BORDER },
   newConvRowText: { fontSize: 15, color: GREEN, fontWeight: '600' },
@@ -700,7 +699,7 @@ const styles = StyleSheet.create({
   convRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BORDER },
   convRowActive: { backgroundColor: GREEN_LIGHT },
   convRowContent: { flex: 1 },
-  convTitle: { fontSize: 15, fontWeight: '600', color: '#1A1A1A' },
+  convTitle: { fontSize: 15, fontWeight: '600', color: Colors.ink },
   convTitleActive: { color: GREEN },
   convMeta: { fontSize: 12, color: '#888', marginTop: 2 },
   convDelete: { fontSize: 18, paddingLeft: 12 },

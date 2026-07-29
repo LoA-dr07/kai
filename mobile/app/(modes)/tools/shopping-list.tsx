@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ErrorScreen } from '../../components/ErrorScreen';
+import { ErrorScreen } from '../../../components/ErrorScreen';
 import {
   View,
   Text,
@@ -8,13 +8,13 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  useWindowDimensions,
   Modal,
   RefreshControl,
   Platform,
 } from 'react-native';
-import { showAlert, showConfirm } from '../../lib/alert';
-import { Tooltip } from '../../components/Tooltip';
+import { showAlert, showConfirm } from '../../../lib/alert';
+import { Tooltip } from '../../../components/Tooltip';
+import { useOrientation } from '../../../lib/hooks/useOrientation';
 import {
   useShoppingList,
   useGenerateShoppingList,
@@ -23,15 +23,15 @@ import {
   useDeleteShoppingItem,
   useClearDoneItems,
   useDeleteShoppingList,
-} from '../../lib/hooks/useShoppingList';
-import { Colors } from '../../lib/theme';
-import { getMondayOf, isoDate, getISOWeek } from '../../lib/dateUtils';
-import type { ShoppingListItem } from '../../lib/types';
+} from '../../../lib/hooks/useShoppingList';
+import { Colors } from '../../../lib/theme';
+import { getMondayOf, isoDate, getISOWeek } from '../../../lib/dateUtils';
+import type { ShoppingListItem } from '../../../lib/types';
 import axios from 'axios';
 
-const GREEN = Colors.green;
-const GREEN_LIGHT = Colors.greenLight;
-const BORDER = Colors.border;
+const GREEN = Colors.cyanDark;
+const GREEN_LIGHT = Colors.cyanSoft;
+const BORDER = Colors.line;
 
 // --- Helpers ---
 
@@ -62,7 +62,7 @@ function DateInput({ value, onChange }: { value: string; onChange: (v: string) =
           padding: '10px 12px',
           fontSize: 15,
           backgroundColor: '#FAFAFA',
-          color: '#1A1A1A',
+          color: Colors.ink,
           width: '100%',
           boxSizing: 'border-box',
           outline: 'none',
@@ -128,9 +128,7 @@ type Preset = 'this_week' | 'next_week' | 'today' | 'tomorrow' | 'custom';
 
 // --- Main screen ---
 export default function ShoppingListScreen() {
-  const { width, height } = useWindowDimensions();
-  const isWide = width >= 768;
-  const isUltraWide = width >= 2560;
+  const { height, isWide, isUltraWide } = useOrientation();
 
   const { data: list, isLoading, refetch, error } = useShoppingList();
   const generate = useGenerateShoppingList();
@@ -512,7 +510,7 @@ export default function ShoppingListScreen() {
 // --- Styles ---
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F8F9FA' },
+  root: { flex: 1, backgroundColor: Colors.paper },
 
   header: {
     flexDirection: 'row',
@@ -547,7 +545,7 @@ const styles = StyleSheet.create({
 
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
   emptyIcon: { fontSize: 56 },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: '#1A1A1A' },
+  emptyTitle: { fontSize: 20, fontWeight: '700', color: Colors.ink },
   emptySubtitle: { fontSize: 14, color: '#888', textAlign: 'center', lineHeight: 20 },
 
   listContent: { padding: 12 },
@@ -586,7 +584,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   pickerCardWide: { maxWidth: 480 },
-  pickerTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
+  pickerTitle: { fontSize: 18, fontWeight: '700', color: Colors.ink },
 
   presetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   presetChip: {
@@ -636,7 +634,7 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     gap: 16,
   },
-  conflictTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
+  conflictTitle: { fontSize: 18, fontWeight: '700', color: Colors.ink },
   conflictBody: { fontSize: 14, color: '#555', lineHeight: 20 },
   conflictBtns: { flexDirection: 'row', gap: 10 },
   conflictBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
@@ -659,7 +657,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: BORDER,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A1A' },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: Colors.ink },
   modalClose: { fontSize: 16, color: GREEN, fontWeight: '600' },
   modalBody: { padding: 16, gap: 12 },
   inputLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginBottom: 4 },
@@ -714,7 +712,7 @@ const rowStyles = StyleSheet.create({
   checkmark: { color: '#fff', fontSize: 13, fontWeight: '700' },
   nameBlock: { flex: 1 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  name: { fontSize: 15, color: '#1A1A1A', fontWeight: '500' },
+  name: { fontSize: 15, color: Colors.ink, fontWeight: '500' },
   nameChecked: { color: '#AAA', textDecorationLine: 'line-through' },
   qty: { fontSize: 12, color: '#888', marginTop: 1 },
   customBadge: {
