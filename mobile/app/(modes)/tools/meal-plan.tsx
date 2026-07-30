@@ -78,6 +78,7 @@ export default function MealPlanScreen() {
   const { weekStart, weekStartIso, weekNum, year, navigateWeek: navigateWeekBase, resetToToday } = useWeekNavigation();
   const [modalVisible, setModalVisible] = useState(false);
   const [aiModalVisible, setAiModalVisible] = useState(false);
+  const [personFilter, setPersonFilter] = useState<number | 'all'>('all');
 
   // Modal state
   const [selectedSlot, setSelectedSlot] = useState<{
@@ -309,6 +310,29 @@ export default function MealPlanScreen() {
         </View>
       )}
 
+      {users.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.familyFilterScroll} contentContainerStyle={styles.familyFilterRow}>
+          <TouchableOpacity
+            style={[styles.personChip, personFilter === 'all' && styles.personChipActive]}
+            onPress={() => setPersonFilter('all')}
+          >
+            <Text style={[styles.personChipText, personFilter === 'all' && styles.personChipTextActive]}>Haushalt</Text>
+          </TouchableOpacity>
+          {users.map(user => (
+            <TouchableOpacity
+              key={user.id}
+              style={[styles.personChip, personFilter === user.id && styles.personChipActive]}
+              onPress={() => setPersonFilter(user.id)}
+            >
+              <View style={[styles.personChipDot, { backgroundColor: user.avatar_color }]}>
+                <Text style={styles.personChipDotText}>{user.short_name}</Text>
+              </View>
+              <Text style={[styles.personChipText, personFilter === user.id && styles.personChipTextActive]}>{user.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
       {isLoading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={GREEN} size="large" />
       ) : error ? (
@@ -350,7 +374,7 @@ export default function MealPlanScreen() {
 
                           {/* Per-person rows */}
                           {users.length > 0 ? (
-                            users.map(user => {
+                            (personFilter === 'all' ? users : users.filter(u => u.id === personFilter)).map(user => {
                               const entry = getEntryForUser(dayIdx, key, user.id);
                               if (entry) {
                                 const mealLabel = entry.recipe?.name ?? entry.custom_meal ?? '';
@@ -596,6 +620,25 @@ const styles = StyleSheet.create({
 
   moveBanner: { backgroundColor: '#FFF9C4', paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F9A825' },
   moveBannerText: { fontSize: 13, color: '#795548', fontWeight: '600', textAlign: 'center' },
+
+  familyFilterScroll: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: BORDER },
+  familyFilterRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 10 },
+  personChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 34,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 17,
+    paddingHorizontal: 11,
+    backgroundColor: '#fff',
+  },
+  personChipActive: { borderColor: Colors.night, borderWidth: 1.5 },
+  personChipDot: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  personChipDotText: { fontSize: 8, color: '#fff', fontWeight: '700' },
+  personChipText: { fontSize: 12, fontWeight: '600', color: '#555' },
+  personChipTextActive: { color: Colors.ink, fontWeight: '700' },
 
   scrollContent: { padding: 12, gap: 10 },
   scrollContentWide: { maxWidth: 1400, alignSelf: 'center', width: '100%' },

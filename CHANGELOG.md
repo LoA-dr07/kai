@@ -14,6 +14,13 @@ die Versionierung folgt [Semantic Versioning](https://semver.org/lang/de/).
 - Neue Design-Tokens (`Colors.night/blue/cyan/...`, `Fonts`, `Spacing`, `Radii`) in `mobile/lib/theme.ts`; das visuelle Reskin auf die neue Night/Cyan-Palette ist jetzt für die komplette Mobile/Tablet-UI abgeschlossen (Werkzeuge-Screens, KI-Chat, alle Rezept-Screens und -Komponenten, `SyncStatusBanner`, reines Reskin ohne Logikänderung) – die alte grüne Palette wurde vollständig aus `theme.ts` entfernt
 - Werkzeuge-Kartenraster: Wochenplan-Karte zeigt jetzt die aktuelle Kalenderwoche und die Anzahl offener Mahlzeiten-Slots (statt eines statischen Textes), Tablet-Querformat zeigt korrekt 3 statt 2 Spalten
 - Tablet-Querformat-Sidebar: der aktuell geöffnete Werkzeug-Bereich wird in der Linkliste jetzt hervorgehoben
+- Strukturelles Layout-Update für sechs Kern-Screens auf Mobile/Tablet, um näher an `docs/wireframes-tablet.html` heranzukommen (zuvor nur Farb-Reskin, gleiche Struktur wie vor dem Redesign):
+  - **Rezepte-Übersicht:** Suchleiste, „Zuletzt gekocht"-Hero-Karte (schmal) bzw. feste Sidebar (breit) mit „Zum Wochenplan"/„Öffnen"
+  - **Rezept-Detailansicht:** „Auf einen Blick"-Sidebar (Kennzahlen + Aktionsleiste) auf breiten Bildschirmen
+  - **Wochenplan:** echter Personen-Filter (Haushalt/einzelne Mitglieder), filtert die bestehenden Pro-Person-Zeilen
+  - **Einkaufsliste:** Fortschritts-Sidebar/-Karte mit echtem „Mit KI prüfen"-Kurzweg (öffnet KI-Chat mit vorformuliertem Prompt)
+  - **Kochansicht:** abhakbare Zutaten (lokaler UI-Zustand) und automatisch erkannte nummerierte Zubereitungsschritte
+  - **KI-Chat:** permanente Verlauf-Sidebar zeigt jetzt ab Tablet-Breite (`isWide`, ≥768px) statt erst ab Desktop-Ultra-Wide (≥2560px)
 - Wochenplan: Tap auf einen Eintrag mit Rezept öffnet die Rezeptdetailansicht als Modal (statt direkt die Rezeptauswahl); über einen "Austauschen"-Button im Modal-Header kann das Rezept im Slot weiterhin direkt ersetzt werden, wahlweise durch ein anderes Rezept oder per Freitext
 - PowerSync Stop/Start: neuer "PowerSync stoppen"-Button in den Einstellungen (nur Native), abgesichert per Face-ID/Fingerabdruck, stoppt die PowerSync-Cloud-Instanz, damit Neon zwischen Nutzungsphasen auto-suspenden kann; zusätzlich jetzt ein "PowerSync starten"-Button daneben für den manuellen Neustart (`useStartPowerSync()`)
 - Offline-Modus beim App-Start: der automatische PowerSync-Neustart bei jedem App-Öffnen fragt jetzt zuerst per Dialog "Jetzt synchronisieren" vs. "Offline-Modus" ab, bevor überhaupt Biometrie abgefragt wird – im Offline-Modus wird kein Request geschickt und die App nutzt direkt den zuletzt synchronisierten Stand

@@ -10,8 +10,8 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  useWindowDimensions,
 } from 'react-native';
+import { useOrientation } from '../../../lib/hooks/useOrientation';
 import { showAlert } from '../../../lib/alert';
 import { Tooltip } from '../../../components/Tooltip';
 import { useAiChat } from '../../../lib/hooks/useAiChat';
@@ -49,9 +49,9 @@ interface SlotPickerState {
 }
 
 export default function AiChatScreen() {
-  const { width } = useWindowDimensions();
-  const isWide = width >= 768;
-  const isUltraWide = width >= 2560;
+  // Persistent conversation sidebar shows on any tablet-width layout, matching
+  // docs/wireframes-tablet.html's chat-layout (not just desktop-web ultra-wide).
+  const { isWide } = useOrientation();
   const router = useRouter();
   const { prompt: initialPrompt, conversationId: initialConversationId } = useLocalSearchParams<{ prompt?: string; conversationId?: string }>();
   const consumedInitialParams = useRef(false);
@@ -391,9 +391,9 @@ export default function AiChatScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
-      <View style={isUltraWide ? styles.ultraWideContainer : styles.outerContainer}>
-        {/* Permanent sidebar on ultra-wide screens */}
-        {isUltraWide && (
+      <View style={isWide ? styles.sidebarContainer : styles.outerContainer}>
+        {/* Permanent sidebar on tablet-width layouts */}
+        {isWide && (
           <View style={styles.convSidebar}>
             <View style={styles.convSidebarHeader}>
               <Text style={styles.convModalTitle}>Verlauf</Text>
@@ -402,7 +402,7 @@ export default function AiChatScreen() {
           </View>
         )}
 
-      <View style={[styles.inner, !isUltraWide && isWide && styles.innerWide]}>
+      <View style={styles.inner}>
         {/* Conversation header */}
         <View style={styles.convHeader}>
           <TouchableOpacity style={styles.convListBtn} onPress={() => router.push('/kai')}>
@@ -410,7 +410,7 @@ export default function AiChatScreen() {
           </TouchableOpacity>
           <Text style={styles.weekBannerText}>KW {weekNum}, {year}</Text>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            {!isUltraWide && (
+            {!isWide && (
               <TouchableOpacity style={styles.convListBtn} onPress={() => router.push('/kai/history')}>
                 <Text style={styles.convListBtnText}>☰ Verlauf</Text>
               </TouchableOpacity>
@@ -624,11 +624,10 @@ export default function AiChatScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.paper },
   outerContainer: { flex: 1 },
-  ultraWideContainer: { flex: 1, flexDirection: 'row' },
+  sidebarContainer: { flex: 1, flexDirection: 'row' },
   convSidebar: { width: 300, borderRightWidth: 1, borderRightColor: BORDER, backgroundColor: '#fff', flexShrink: 0 },
   convSidebarHeader: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: BORDER },
   inner: { flex: 1 },
-  innerWide: { maxWidth: 800, alignSelf: 'center', width: '100%' },
 
   convHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: BORDER },
   convListBtn: { paddingHorizontal: 10, paddingVertical: 6 },
