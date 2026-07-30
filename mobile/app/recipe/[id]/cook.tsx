@@ -19,6 +19,20 @@ import { Colors } from '../../../lib/theme';
 // Kochansicht – Zutaten links | Zubereitung rechts (bei Querformat)
 // -------------------------------------------------------------------
 
+/** Splits a "1. ... 2. ..." formatted description into individual steps. */
+function parseSteps(text: string): string[] {
+  const matches = [...text.matchAll(/(?:^|\n)\s*\d+\.\s*/g)];
+  if (matches.length < 2) return [];
+  const steps: string[] = [];
+  for (let i = 0; i < matches.length; i++) {
+    const start = matches[i].index! + matches[i][0].length;
+    const end = i + 1 < matches.length ? matches[i + 1].index! : text.length;
+    const step = text.slice(start, end).trim();
+    if (step) steps.push(step);
+  }
+  return steps;
+}
+
 function CookScreenContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -29,6 +43,7 @@ function CookScreenContent() {
   const isSplit = width >= height || width >= 600;
 
   const [activeTab, setActiveTab] = useState<'ingredients' | 'description'>('ingredients');
+  const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
 
   const { data: recipe, isLoading, error } = useRecipe(recipeId);
 
@@ -40,6 +55,17 @@ function CookScreenContent() {
     return <ErrorScreen message="Rezept nicht gefunden." />;
   }
 
+  const toggleIngredient = (ingId: number) => {
+    setCheckedIngredients(prev => {
+      const next = new Set(prev);
+      if (next.has(ingId)) next.delete(ingId);
+      else next.add(ingId);
+      return next;
+    });
+  };
+
+  const steps = recipe.description ? parseSteps(recipe.description) : [];
+
   const ingredientsPanel = (
     <ScrollView style={styles.panelScroll} contentContainerStyle={styles.panelContent}>
       <Text style={styles.panelTitle}>Zutaten</Text>
@@ -49,14 +75,20 @@ function CookScreenContent() {
       {recipe.ingredients.length === 0 ? (
         <Text style={styles.emptyHint}>Keine Zutaten eingetragen.</Text>
       ) : (
-        recipe.ingredients.map((ing: RecipeIngredient) => (
-          <View key={ing.id} style={styles.ingRow}>
-            <Text style={styles.ingName}>{ing.ingredient.name}</Text>
-            <Text style={styles.ingAmount}>
-              {ing.amount} {ing.unit}
-            </Text>
-          </View>
-        ))
+        recipe.ingredients.map((ing: RecipeIngredient) => {
+          const checked = checkedIngredients.has(ing.id);
+          return (
+            <TouchableOpacity key={ing.id} style={styles.ingRow} onPress={() => toggleIngredient(ing.id)} activeOpacity={0.6}>
+              <View style={[styles.ingCheck, checked && styles.ingCheckDone]}>
+                {checked && <Text style={styles.ingCheckMark}>✓</Text>}
+              </View>
+              <Text style={[styles.ingName, checked && styles.ingNameDone]}>{ing.ingredient.name}</Text>
+              <Text style={[styles.ingAmount, checked && styles.ingNameDone]}>
+                {ing.amount} {ing.unit}
+              </Text>
+            </TouchableOpacity>
+          );
+        })
       )}
     </ScrollView>
   );
@@ -67,7 +99,16 @@ function CookScreenContent() {
       {recipe.prep_time_minutes ? (
         <Text style={styles.prepHint}>⏱ {recipe.prep_time_minutes} Min.</Text>
       ) : null}
-      {recipe.description ? (
+      {steps.length > 0 ? (
+        steps.map((step, i) => (
+          <View key={i} style={[styles.stepRow, i === 0 && styles.stepRowFirst]}>
+            <View style={styles.stepNumber}>
+              <Text style={styles.stepNumberText}>{i + 1}</Text>
+            </View>
+            <Text style={styles.stepText}>{step}</Text>
+          </View>
+        ))
+      ) : recipe.description ? (
         <Text style={styles.descriptionText}>{recipe.description}</Text>
       ) : (
         <Text style={styles.emptyHint}>Keine Zubereitung eingetragen.</Text>
@@ -227,13 +268,23 @@ const styles = StyleSheet.create({
   // ── Zutaten ──────────────────────────────────────────────────────
   ingRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
     gap: 12,
   },
+  ingCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: BORDER,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ingCheckDone: { backgroundColor: GREEN, borderColor: GREEN },
+  ingCheckMark: { color: '#fff', fontSize: 13, fontWeight: '700' },
   ingName: { fontSize: 16, color: Colors.ink, flex: 1 },
   ingAmount: {
     fontSize: 15,
@@ -241,6 +292,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'right',
   },
+  ingNameDone: { color: '#AAA', textDecorationLine: 'line-through' },
 
   // ── Beschreibung ─────────────────────────────────────────────────
   descriptionText: {
@@ -248,4 +300,17 @@ const styles = StyleSheet.create({
     color: '#2A2A2A',
     lineHeight: 28,
   },
+  stepRow: { flexDirection: 'row', gap: 12, paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
+  stepRowFirst: { borderTopWidth: 0 },
+  stepNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: Colors.cyan,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  stepNumberText: { color: Colors.night, fontWeight: '700', fontSize: 14 },
+  stepText: { flex: 1, fontSize: 16, color: '#2A2A2A', lineHeight: 24 },
 });

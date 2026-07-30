@@ -98,7 +98,9 @@ mobile/
 - Alle Badges sind live: Rezeptanzahl (`useRecipes()`), offene Einkaufsartikel (`useShoppingList()`), offene Wochenplan-Slots der aktuellen Woche (`useMealPlans()` + `useWeekNavigation()`, gleiche Berechnung wie auf dem KAI-Modus-Startscreen)
 
 ### `(modes)/tools/recipes.tsx` – Rezeptliste
-- Zeigt alle Rezepte als scrollbare Liste (responsive: 1–4 Spalten je nach Bildschirmbreite)
+- Zeigt alle Rezepte als scrollbare Liste (responsive: 1–4 Spalten je nach Bildschirmbreite, reduziert um die Sidebar-Breite bei `isWide`)
+- **Suchleiste** über der Tag-Filter-Leiste, filtert client-seitig nach Rezeptname
+- **„Zuletzt gekocht"-Hinweis:** `useLastCookedRecipe()` (`lib/hooks/useRecentRecipes.ts`) ermittelt das zuletzt tatsächlich eingeplante Rezept aus der Vergangenheit über alle Wochenpläne hinweg (nicht nur die aktuelle Woche). Auf schmalen Bildschirmen als Hero-Karte über der Liste, auf breiten Bildschirmen (`isWide`) als feste Sidebar rechts mit „Zum Wochenplan"/„Öffnen"-Aktionen
 - Zeigt pro Karte: Name, Zubereitungszeit, Portionen, Zutatenanzahl, Durchschnittsbewertung, Tags
 - **Tag-Filter-Leiste** (horizontale ScrollView) direkt über der Rezeptliste:
   - Alle verfügbaren Tags als anklickbare Chips
@@ -116,6 +118,7 @@ mobile/
 ### `(modes)/tools/meal-plan.tsx` – Wochenplan
 - Zeigt eine Woche als Grid: 7 Tage × 5 Mahlzeiten (Frühstück, Mittagessen, Snack, Abendessen, Dessert)
 - Wochennavigation: vorherige / nächste Woche; **KI ✨-Button** öffnet den KI-Vorschlagsmodal (`AiSuggestionModal`)
+- **Personen-Filter** (horizontale Chip-Leiste unter der Wochennavigation): „Haushalt" zeigt alle Mitglieder, ein Personen-Chip blendet alle anderen Zeilen aus – filtert dieselben Pro-Person-Zeilen, keine separate Datenabfrage
 - Pro Zelle: geplantes Rezept oder Freitext, farbige User-Avatar-Chips
 - **Pro-Person-Zeilen:** Bei unterschiedlichen Mahlzeiten pro Haushaltsmitglied werden separate Zeilen pro Person angezeigt
 - **Long-Press Bottom Sheet:** Langes Drücken auf einen Eintrag öffnet ein Action-Sheet mit Optionen: Verschieben, Kopieren, Löschen, Wöchentlich wiederholen
@@ -135,12 +138,14 @@ mobile/
 - **Manuelle Einträge:** Einzelne Artikel mit Name, Menge und Einheit manuell hinzufügen
 - **Erledigt-Sektion:** Zusammenführung aller abgehakten Einträge mit Option „Erledigte löschen"
 - **Gesamte Liste löschen** über Header-Button
+- **Fortschritts-Karte** („Diese Woche", Fortschrittsbalken, „X von Y Artikeln erledigt"): auf schmalen Bildschirmen unter der Liste, auf breiten Bildschirmen (`isWide`) als feste Sidebar. Enthält einen **„✦ Mit KI prüfen"-Button**, der `/kai/chat` mit einem vorformulierten Prüf-Prompt öffnet (echte Funktion, kein Platzhalter – nutzt den bestehenden KI-Chat, keine neue Backend-Anbindung)
 
 ### `(modes)/kai/chat.tsx` – KI-Chat
 - Chat-Interface mit KI-Assistent (Claude API via `POST /ai/chat`), vormals `(tabs)/ai-chat.tsx`
 - `?prompt=` Query-Param: Nachricht wird vorbefüllt und beim Erstladen automatisch gesendet (Schnellaufgaben aus dem KAI-Modus-Start)
 - `?conversationId=` Query-Param: lädt die angegebene Konversation direkt beim Mounten
-- Header mit Zurück-Button (`/kai`) und Verlauf-Button (`/kai/history`) statt des früheren Modal-Konversationslisten-Buttons; der `isUltraWide`-Zweig (permanente Sidebar ab 2560px) ist unverändert
+- Header mit Zurück-Button (`/kai`) und Verlauf-Button (`/kai/history`) statt des früheren Modal-Konversationslisten-Buttons
+- **Permanente Verlauf-Sidebar ab `isWide` (≥768px)** – zeigt bereits auf Tablet-Breite, nicht erst ab `isUltraWide` (≥2560px, Desktop-Web); nutzt `useOrientation()` statt direktem `useWindowDimensions()`, konsistent mit den übrigen Screens (siehe `docs/wireframes-tablet.html`s `.chat-layout`)
 - Haushaltsmitglieder, Präferenzen, Nie-Bewertungen und verfügbare Rezepte werden automatisch als Kontext mitgegeben
 - **Multi-Konversationen:** Konversationsliste-Modal zum Wechseln, Erstellen und Löschen von Gesprächsverläufen
 - **Nachrichtenblase:** User-Nachrichten rechts (grün), KI-Antworten links (weiß)
@@ -180,7 +185,9 @@ Dreistufiger Flow:
 - Speichert via `useUpdateRecipe(id)`
 
 ### `recipe/[id]/cook.tsx` – Koch-Ansicht
-- Vereinfachte Ansicht der Zutaten für die Küche
+- Split-Layout (Zutaten links, Zubereitung rechts) ab `width >= height || width >= 600`, sonst Tab-Umschaltung
+- **Zutaten zum Abhaken:** Tippen auf eine Zeile markiert sie durchgestrichen (rein lokaler UI-Zustand, kein Speichern – für den Kochvorgang gedacht)
+- **Nummerierte Zubereitungsschritte:** `parseSteps()` erkennt "1. ... 2. ..."-formatierte Beschreibungen (typisch bei importierten Rezepten) und rendert sie als nummerierte Liste mit Kreis-Badges; unformatierte Beschreibungen fallen auf einen einzelnen Absatz zurück
 
 ### `(modes)/tools/settings.tsx` – Einstellungen
 - **Sektion Haushalt:** Kochtage (Checkbox-Grid Mo–So), warme Mahlzeit (Mittags/Abends/Beides), Tage mit kalten Mahlzeiten, Reste-Häufigkeit (Nie/Manchmal/Oft), Gemeinsames-Essen-Skala (1–5), Kochkenntnisse, bevorzugte Küchen, Wochenbudget, **Notizen für die KI** (mehrzeiliges Freitextfeld – wird als `HAUSHALT-NOTIZEN` in beide KI-Endpunkte injiziert)
@@ -303,7 +310,8 @@ Alle Meal-Plan-Mutations invalidieren `['meal-plans']`.
 
 | Hook | Rückgabe | Beschreibung |
 |------|----------|--------------|
-| `useRecentRecipes(plan, recipes, limit=5)` | `Recipe[]` | Letzte `limit` eindeutige Rezepte, die im übergebenen Wochenplan verwendet wurden (neueste zuerst). Genutzt von `(tabs)/meal-plan.tsx` für den "Zuletzt verwendet"-Block in `RecipeSearchPanel`. |
+| `useRecentRecipes(plan, recipes, limit=5)` | `Recipe[]` | Letzte `limit` eindeutige Rezepte, die im übergebenen Wochenplan verwendet wurden (neueste zuerst). Genutzt von `(modes)/tools/meal-plan.tsx` für den "Zuletzt verwendet"-Block in `RecipeSearchPanel`. |
+| `useLastCookedRecipe(plans, recipes)` | `Recipe \| null` | Zuletzt tatsächlich eingeplantes Rezept über **alle** Wochenpläne hinweg (nicht nur einen), anhand von `week_start_date + day_of_week` in die Vergangenheit projiziert. Genutzt von `(modes)/tools/recipes.tsx` für die „Zuletzt gekocht"-Hero-Karte/Sidebar. Nutzt `parseIsoDate`/`addDays` aus `lib/dateUtils.ts`. |
 
 ### User-Hooks (`useUsers.ts`)
 
@@ -544,6 +552,8 @@ Drei zusammenhängende Komponenten, mit denen die Rezeptdetailansicht sowohl als
 
 ### `RecipeDetailContent` (`mobile/components/RecipeDetailContent.tsx`)
 Reine Darstellungskomponente mit der vollständigen Rezeptdetail-Logik (Beschreibung, Quelle, Meta, Tags, Bewertungen, Zutaten-Inline-Editing, Aktionsleiste Kochen/Zum Essensplan/Bearbeiten/Löschen). Kennt keine Navigation direkt, sondern bekommt sie über Props gereicht – dadurch kann sie sowohl in einem Stack-Screen als auch in einem Modal verwendet werden.
+
+**Zweispaltiges Layout ab `isWide` (≥768px):** links Beschreibung/Quelle/Tags/Bewertungen/Zutaten, rechts eine feste „Auf einen Blick"-Sidebar (Portionen, Zeit, Ø-Bewertung, darunter die komplette Aktionsleiste gestapelt). Unter `isWide` bleibt die bisherige einspaltige Darstellung (Meta-Karten oben, Aktionsleiste unten) – dieselbe `actionButtons(stacked)`-Hilfsfunktion rendert beide Varianten, um Duplikation zu vermeiden.
 
 | Prop | Typ | Beschreibung |
 |------|-----|--------------|
