@@ -262,9 +262,49 @@ export function RecipeDetailContent({ recipeId, onNavigate, onDeleted }: RecipeD
   const getRating = (userId: number): number | null =>
     recipe.ratings.find(r => r.user_id === userId)?.stars ?? null;
 
+  const avgRating = recipe.ratings.length > 0
+    ? recipe.ratings.reduce((s, r) => s + r.stars, 0) / recipe.ratings.length
+    : null;
+
+  const actionButtons = (stacked: boolean) => (
+    <View style={[styles.actions, stacked && styles.actionsNarrow]}>
+      <TouchableOpacity
+        style={[styles.cookBtn, stacked && styles.actionBtnFull]}
+        onPress={() => onNavigate(`/recipe/${recipeId}/cook`)}
+      >
+        <Text style={styles.cookBtnText}>Kochen</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.mealPlanBtn, stacked && styles.actionBtnFull]}
+        onPress={() => setAddToMealPlanVisible(true)}
+      >
+        <Text style={styles.mealPlanBtnText}>Zum Essensplan</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.editBtn, stacked && styles.actionBtnFull]}
+        onPress={() => onNavigate(`/recipe/${recipeId}/edit`)}
+      >
+        <Text style={styles.editBtnText}>Bearbeiten</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.deleteBtn, stacked && styles.actionBtnFull]}
+        onPress={handleDelete}
+        disabled={deleteRecipe.isPending}
+      >
+        {deleteRecipe.isPending ? (
+          <ActivityIndicator color="#D32F2F" />
+        ) : (
+          <Text style={styles.deleteBtnText}>Löschen</Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <>
-      <ScrollView style={styles.container} contentContainerStyle={[styles.content, isWide && styles.contentWide]}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, isWide && styles.contentWideSplit]}>
+      <View style={[styles.body, isWide && styles.bodyWide]}>
+      <View style={styles.main}>
         {recipe.description ? (
           <Text style={styles.description}>{recipe.description}</Text>
         ) : null}
@@ -322,12 +362,14 @@ export function RecipeDetailContent({ recipeId, onNavigate, onDeleted }: RecipeD
           </View>
         ) : null}
 
-        <View style={styles.metaRow}>
-          <MetaCard label="Portionen" value={String(recipe.servings)} />
-          {recipe.prep_time_minutes ? (
-            <MetaCard label="Zubereitung" value={`${recipe.prep_time_minutes} Min.`} />
-          ) : null}
-        </View>
+        {!isWide && (
+          <View style={styles.metaRow}>
+            <MetaCard label="Portionen" value={String(recipe.servings)} />
+            {recipe.prep_time_minutes ? (
+              <MetaCard label="Zubereitung" value={`${recipe.prep_time_minutes} Min.`} />
+            ) : null}
+          </View>
+        )}
 
         {/* Tags */}
         {recipe.tags.length > 0 && (
@@ -436,37 +478,34 @@ export function RecipeDetailContent({ recipeId, onNavigate, onDeleted }: RecipeD
           </View>
         )}
 
-        <View style={[styles.actions, isNarrow && styles.actionsNarrow]}>
-          <TouchableOpacity
-            style={[styles.cookBtn, isNarrow && styles.actionBtnFull]}
-            onPress={() => onNavigate(`/recipe/${recipeId}/cook`)}
-          >
-            <Text style={styles.cookBtnText}>Kochen</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.mealPlanBtn, isNarrow && styles.actionBtnFull]}
-            onPress={() => setAddToMealPlanVisible(true)}
-          >
-            <Text style={styles.mealPlanBtnText}>Zum Essensplan</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.editBtn, isNarrow && styles.actionBtnFull]}
-            onPress={() => onNavigate(`/recipe/${recipeId}/edit`)}
-          >
-            <Text style={styles.editBtnText}>Bearbeiten</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.deleteBtn, isNarrow && styles.actionBtnFull]}
-            onPress={handleDelete}
-            disabled={deleteRecipe.isPending}
-          >
-            {deleteRecipe.isPending ? (
-              <ActivityIndicator color="#D32F2F" />
-            ) : (
-              <Text style={styles.deleteBtnText}>Löschen</Text>
-            )}
-          </TouchableOpacity>
+        {!isWide && actionButtons(isNarrow)}
+      </View>
+
+      {isWide && (
+        <View style={styles.sidebar}>
+          <Text style={styles.sidebarTitle}>Auf einen Blick</Text>
+          <View style={styles.sidebarRow}>
+            <Text style={styles.sidebarLabel}>Portionen</Text>
+            <Text style={styles.sidebarValue}>{recipe.servings}</Text>
+          </View>
+          {recipe.prep_time_minutes ? (
+            <View style={styles.sidebarRow}>
+              <Text style={styles.sidebarLabel}>Zeit</Text>
+              <Text style={styles.sidebarValue}>{recipe.prep_time_minutes} Min.</Text>
+            </View>
+          ) : null}
+          {avgRating !== null ? (
+            <View style={styles.sidebarRow}>
+              <Text style={styles.sidebarLabel}>Bewertung</Text>
+              <Text style={styles.sidebarValue}>★ {avgRating.toFixed(1)}</Text>
+            </View>
+          ) : null}
+          <View style={styles.sidebarActions}>
+            {actionButtons(true)}
+          </View>
         </View>
+      )}
+      </View>
       </ScrollView>
 
       <AddToMealPlanModal
@@ -493,8 +532,33 @@ const GREEN = Colors.cyanDark;
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.paper },
   content: { padding: 20, paddingBottom: 48 },
-  contentWide: { maxWidth: 800, alignSelf: 'center', width: '100%' },
+  contentWideSplit: { maxWidth: 1100, alignSelf: 'center', width: '100%' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  body: {},
+  bodyWide: { flexDirection: 'row', gap: 20, alignItems: 'flex-start' },
+  main: { flex: 1, minWidth: 0 },
+
+  sidebar: {
+    width: 300,
+    flexShrink: 0,
+    borderWidth: 1,
+    borderColor: Colors.line,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    padding: 16,
+  },
+  sidebarTitle: { fontSize: 15, fontWeight: '700', color: Colors.ink, marginBottom: 10 },
+  sidebarRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: Colors.line,
+  },
+  sidebarLabel: { fontSize: 13, color: Colors.muted },
+  sidebarValue: { fontSize: 14, fontWeight: '700', color: Colors.ink },
+  sidebarActions: { marginTop: 12 },
   description: {
     fontSize: 16,
     color: '#444',

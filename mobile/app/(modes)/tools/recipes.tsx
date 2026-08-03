@@ -13,15 +13,18 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { showAlert } from '../../../lib/alert';
 import { api } from '../../../lib/api';
 import { useImportRecipes, useRecipes, useTags } from '../../../lib/hooks/useRecipes';
+import { useMealPlans } from '../../../lib/hooks/useMealPlan';
+import { useLastCookedRecipe } from '../../../lib/hooks/useRecentRecipes';
 import type { Recipe, RecipeExportItem } from '../../../lib/types';
 import { Tooltip } from '../../../components/Tooltip';
-import { Colors } from '../../../lib/theme';
+import { Colors, Radii, Spacing } from '../../../lib/theme';
 import { AddToMealPlanModal } from '../../../components/AddToMealPlanModal';
 
 const RATING_LABELS: Record<number, string> = {
@@ -36,8 +39,9 @@ const RATING_LABELS: Record<number, string> = {
 export default function RecipesScreen() {
   const router = useRouter();
   const { filter_ids } = useLocalSearchParams<{ filter_ids?: string }>();
-  const { width, isLandscape, isUltraWide } = useOrientation();
-  const numColumns = isUltraWide ? 6 : width >= 1400 ? 4 : width >= 1024 ? 3 : width >= 768 ? 2 : 1;
+  const { width, isLandscape, isWide, isUltraWide } = useOrientation();
+  const effectiveWidth = isWide ? width - 320 : width;
+  const numColumns = isUltraWide ? 6 : effectiveWidth >= 1400 ? 4 : effectiveWidth >= 1024 ? 3 : effectiveWidth >= 700 ? 2 : 1;
   const { data: recipes, isLoading, error, refetch, isRefetching } = useRecipes();
   const importMutation = useImportRecipes();
   const [isExporting, setIsExporting] = useState(false);
@@ -48,7 +52,10 @@ export default function RecipesScreen() {
   // Filter state: set from navigation params, dismissed by user
   const [activeFilterIds, setActiveFilterIds] = useState<Set<number> | null>(null);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [searchText, setSearchText] = useState('');
   const { data: tags = [] } = useTags();
+  const { data: plans } = useMealPlans();
+  const lastCooked = useLastCookedRecipe(plans, recipes);
 
   useEffect(() => {
     if (filter_ids) {
@@ -74,8 +81,12 @@ export default function RecipesScreen() {
         return selectedTagIds.every(tid => recipeTagIds.includes(tid));
       });
     }
+    if (searchText.trim()) {
+      const q = searchText.trim().toLowerCase();
+      result = result.filter(r => r.name.toLowerCase().includes(q));
+    }
     return result;
-  }, [recipes, activeFilterIds, selectedTagIds]);
+  }, [recipes, activeFilterIds, selectedTagIds, searchText]);
 
   async function handleExport() {
     setIsExporting(true);
@@ -204,6 +215,19 @@ export default function RecipesScreen() {
         </View>
       )}
 
+      <View style={styles.searchRow}>
+        <Ionicons name="search-outline" size={18} color={Colors.muted} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Rezepte durchsuchen …"
+          placeholderTextColor={Colors.muted}
+          value={searchText}
+          onChangeText={setSearchText}
+          autoCapitalize="none"
+          clearButtonMode="while-editing"
+        />
+      </View>
+
       {tags.length > 0 && (
         <View style={styles.tagFilterBar}>
           <ScrollView
@@ -237,38 +261,77 @@ export default function RecipesScreen() {
         </View>
       )}
 
-      <FlatList
-        key={numColumns}
-        data={displayedRecipes}
-        keyExtractor={item => String(item.id)}
-        numColumns={numColumns}
-        columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
-        contentContainerStyle={[styles.list, numColumns > 1 && styles.listWide, isUltraWide && styles.listUltraWide, isLandscape && styles.listLandscape]}
-        onRefresh={refetch}
-        refreshing={isRefetching}
-        ListEmptyComponent={
-          <View style={[styles.emptyContainer, isLandscape && styles.emptyContainerLandscape]}>
-            {selectedTagIds.length > 0 || activeFilterIds ? (
-              <>
-                <Text style={styles.emptyTitle}>Keine Rezepte gefunden</Text>
-                <Text style={styles.emptySubtitle}>Keine Rezepte entsprechen den gewählten Filtern.</Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.emptyTitle}>Noch keine Rezepte</Text>
-                <Text style={styles.emptySubtitle}>Tippe auf "+ Rezept", um loszulegen.</Text>
-              </>
+      <View style={[styles.body, isWide && styles.bodyWide]}>
+        <View style={styles.main}>
+          {!isWide && lastCooked && (
+            <TouchableOpacity style={styles.heroCard} onPress={() => router.push(`/recipe/${lastCooked.id}`)}>
+              <Text style={styles.heroLabel}>Zuletzt gekocht</Text>
+              <Text style={styles.heroTitle}>{lastCooked.name}</Text>
+              {lastCooked.prep_time_minutes ? (
+                <Text style={styles.heroMeta}>{lastCooked.prep_time_minutes} Min. · laut Rezept</Text>
+              ) : null}
+            </TouchableOpacity>
+          )}
+
+          <FlatList
+            key={numColumns}
+            data={displayedRecipes}
+            keyExtractor={item => String(item.id)}
+            numColumns={numColumns}
+            columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
+            contentContainerStyle={[styles.list, numColumns > 1 && styles.listWide, isUltraWide && styles.listUltraWide, isLandscape && styles.listLandscape]}
+            onRefresh={refetch}
+            refreshing={isRefetching}
+            ListEmptyComponent={
+              <View style={[styles.emptyContainer, isLandscape && styles.emptyContainerLandscape]}>
+                {selectedTagIds.length > 0 || activeFilterIds || searchText.trim() ? (
+                  <>
+                    <Text style={styles.emptyTitle}>Keine Rezepte gefunden</Text>
+                    <Text style={styles.emptySubtitle}>Keine Rezepte entsprechen den gewählten Filtern.</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.emptyTitle}>Noch keine Rezepte</Text>
+                    <Text style={styles.emptySubtitle}>Tippe auf "+ Rezept", um loszulegen.</Text>
+                  </>
+                )}
+              </View>
+            }
+            renderItem={({ item }) => (
+              <RecipeCard
+                recipe={item}
+                onPress={() => router.push(`/recipe/${item.id}`)}
+                onAddToMealPlan={() => setAddModalRecipe({ id: item.id, name: item.name })}
+              />
             )}
-          </View>
-        }
-        renderItem={({ item }) => (
-          <RecipeCard
-            recipe={item}
-            onPress={() => router.push(`/recipe/${item.id}`)}
-            onAddToMealPlan={() => setAddModalRecipe({ id: item.id, name: item.name })}
           />
+        </View>
+
+        {isWide && lastCooked && (
+          <View style={styles.detailPanel}>
+            <View style={styles.detailPanelArt}>
+              <Text style={styles.detailPanelArtText}>{lastCooked.name.charAt(0)}</Text>
+            </View>
+            <Text style={styles.detailPanelLabel}>Zuletzt gekocht</Text>
+            <Text style={styles.detailPanelTitle}>{lastCooked.name}</Text>
+            {lastCooked.description ? (
+              <Text style={styles.detailPanelDesc} numberOfLines={3}>{lastCooked.description}</Text>
+            ) : null}
+            <TouchableOpacity
+              style={styles.detailPanelPrimary}
+              onPress={() => setAddModalRecipe({ id: lastCooked.id, name: lastCooked.name })}
+            >
+              <Text style={styles.detailPanelPrimaryText}>Zum Wochenplan</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.detailPanelSecondary}
+              onPress={() => router.push(`/recipe/${lastCooked.id}`)}
+            >
+              <Text style={styles.detailPanelSecondaryText}>Öffnen</Text>
+            </TouchableOpacity>
+          </View>
         )}
-      />
+      </View>
 
       {/* Action buttons */}
       <View style={styles.fabGroup}>
@@ -387,6 +450,65 @@ function Chip({ label }: { label: string }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.paper },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 12,
+    height: 44,
+    borderWidth: 1,
+    borderColor: Colors.line,
+    borderRadius: Radii.md,
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+  },
+  searchInput: { flex: 1, fontSize: 15, color: Colors.ink },
+
+  body: { flex: 1 },
+  bodyWide: { flexDirection: 'row' },
+  main: { flex: 1, minWidth: 0 },
+
+  heroCard: {
+    margin: 16,
+    marginBottom: 0,
+    padding: Spacing.md,
+    borderRadius: Radii.lg,
+    backgroundColor: Colors.night,
+  },
+  heroLabel: { color: '#8ee9f2', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  heroTitle: { color: '#fff', fontSize: 20, fontWeight: '700', marginTop: 6 },
+  heroMeta: { color: '#c2d5e0', fontSize: 13, marginTop: 4 },
+
+  detailPanel: {
+    width: 300,
+    margin: 16,
+    marginLeft: 0,
+    padding: Spacing.lg,
+    alignSelf: 'flex-start',
+    borderRadius: Radii.lg,
+    borderWidth: 1,
+    borderColor: Colors.line,
+    backgroundColor: '#fff',
+  },
+  detailPanelArt: {
+    height: 90,
+    borderRadius: Radii.md,
+    backgroundColor: Colors.cyan,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+  },
+  detailPanelArtText: { fontSize: 34, fontWeight: '700', color: Colors.night },
+  detailPanelLabel: { color: Colors.cyanDark, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  detailPanelTitle: { fontSize: 20, fontWeight: '700', color: Colors.ink, marginTop: 6, marginBottom: 6 },
+  detailPanelDesc: { fontSize: 13, color: Colors.muted, lineHeight: 19, marginBottom: Spacing.md },
+  detailPanelPrimary: { backgroundColor: Colors.cyan, borderRadius: Radii.md, paddingVertical: 12, alignItems: 'center', marginBottom: Spacing.sm },
+  detailPanelPrimaryText: { color: Colors.night, fontWeight: '700' },
+  detailPanelSecondary: { borderWidth: 1, borderColor: Colors.line, borderRadius: Radii.md, paddingVertical: 12, alignItems: 'center' },
+  detailPanelSecondaryText: { color: Colors.ink, fontWeight: '700' },
+
   list: { padding: 16, paddingBottom: 120 },
   listWide: { maxWidth: 1600, alignSelf: 'center', width: '100%' },
   listUltraWide: { maxWidth: 2600 },

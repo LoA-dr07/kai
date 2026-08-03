@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { ErrorScreen } from '../../../components/ErrorScreen';
 import {
   View,
@@ -129,6 +130,7 @@ type Preset = 'this_week' | 'next_week' | 'today' | 'tomorrow' | 'custom';
 // --- Main screen ---
 export default function ShoppingListScreen() {
   const { height, isWide, isUltraWide } = useOrientation();
+  const router = useRouter();
 
   const { data: list, isLoading, refetch, error } = useShoppingList();
   const generate = useGenerateShoppingList();
@@ -185,6 +187,28 @@ export default function ShoppingListScreen() {
 
   const uncheckedItems = list?.items.filter(i => !i.is_checked) ?? [];
   const checkedItems = list?.items.filter(i => i.is_checked) ?? [];
+  const totalItems = list?.items.length ?? 0;
+  const doneRatio = totalItems > 0 ? checkedItems.length / totalItems : 0;
+
+  const handleAiCheck = () => {
+    router.push({
+      pathname: '/kai/chat',
+      params: { prompt: 'Prüfe unsere aktuelle Einkaufsliste und schlage Ergänzungen oder Zusammenfassungen vor.' },
+    });
+  };
+
+  const summaryCard = (
+    <View style={styles.summaryCard}>
+      <Text style={styles.summaryTitle}>Diese Woche</Text>
+      <Text style={styles.summaryText}>{checkedItems.length} von {totalItems} Artikeln erledigt</Text>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${Math.round(doneRatio * 100)}%` }]} />
+      </View>
+      <TouchableOpacity style={styles.aiCheckBtn} onPress={handleAiCheck}>
+        <Text style={styles.aiCheckBtnText}>✦ Mit KI prüfen</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   // --- Handlers ---
 
@@ -309,38 +333,45 @@ export default function ShoppingListScreen() {
           </Text>
         </View>
       ) : (
-        <ScrollView
-          contentContainerStyle={[styles.listContent, isWide && styles.listContentWide, isUltraWide && styles.listContentUltraWide]}
-          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
-        >
-          {/* Unchecked items */}
-          <View style={isWide ? styles.itemsGrid : undefined}>
-            {uncheckedItems.map(item => (
-              <View key={item.id} style={isWide ? styles.itemGridCell : undefined}>
-                <ItemRow item={item} onToggle={() => handleToggle(item)} onDelete={() => handleDelete(item)} />
-              </View>
-            ))}
-          </View>
-
-          {/* Done section */}
-          {checkedItems.length > 0 && (
-            <View style={styles.doneSection}>
-              <View style={styles.doneSectionHeader}>
-                <Text style={styles.doneSectionTitle}>Erledigt ({checkedItems.length})</Text>
-                <TouchableOpacity onPress={handleClearDone}>
-                  <Text style={styles.clearDoneBtn}>Alle löschen</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={isWide ? styles.itemsGrid : undefined}>
-                {checkedItems.map(item => (
-                  <View key={item.id} style={isWide ? styles.itemGridCell : undefined}>
-                    <ItemRow item={item} onToggle={() => handleToggle(item)} onDelete={() => handleDelete(item)} />
-                  </View>
-                ))}
-              </View>
+        <View style={[styles.body, isWide && styles.bodyWide]}>
+          <ScrollView
+            style={styles.main}
+            contentContainerStyle={[styles.listContent, isWide && styles.listContentWide, isUltraWide && styles.listContentUltraWide]}
+            refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} />}
+          >
+            {/* Unchecked items */}
+            <View style={isWide ? styles.itemsGrid : undefined}>
+              {uncheckedItems.map(item => (
+                <View key={item.id} style={isWide ? styles.itemGridCell : undefined}>
+                  <ItemRow item={item} onToggle={() => handleToggle(item)} onDelete={() => handleDelete(item)} />
+                </View>
+              ))}
             </View>
-          )}
-        </ScrollView>
+
+            {/* Done section */}
+            {checkedItems.length > 0 && (
+              <View style={styles.doneSection}>
+                <View style={styles.doneSectionHeader}>
+                  <Text style={styles.doneSectionTitle}>Erledigt ({checkedItems.length})</Text>
+                  <TouchableOpacity onPress={handleClearDone}>
+                    <Text style={styles.clearDoneBtn}>Alle löschen</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={isWide ? styles.itemsGrid : undefined}>
+                  {checkedItems.map(item => (
+                    <View key={item.id} style={isWide ? styles.itemGridCell : undefined}>
+                      <ItemRow item={item} onToggle={() => handleToggle(item)} onDelete={() => handleDelete(item)} />
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {!isWide && summaryCard}
+          </ScrollView>
+
+          {isWide && <View style={styles.summarySidebar}>{summaryCard}</View>}
+        </View>
       )}
 
       {/* ── Date range picker modal ── */}
@@ -548,11 +579,29 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 20, fontWeight: '700', color: Colors.ink },
   emptySubtitle: { fontSize: 14, color: '#888', textAlign: 'center', lineHeight: 20 },
 
+  body: { flex: 1 },
+  bodyWide: { flexDirection: 'row' },
+  main: { flex: 1 },
+  summarySidebar: { width: 300, padding: 12, paddingLeft: 0 },
+
   listContent: { padding: 12 },
   listContentWide: { maxWidth: 680, alignSelf: 'center', width: '100%' },
   listContentUltraWide: { maxWidth: 1400 },
   itemsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   itemGridCell: { width: '49.5%' },
+
+  summaryCard: {
+    marginTop: 16,
+    borderRadius: 16,
+    padding: 16,
+    backgroundColor: Colors.night,
+  },
+  summaryTitle: { color: '#fff', fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  summaryText: { color: '#bed0dc', fontSize: 12 },
+  progressTrack: { height: 6, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.18)', overflow: 'hidden', marginVertical: 12 },
+  progressFill: { height: '100%', backgroundColor: Colors.cyan },
+  aiCheckBtn: { backgroundColor: Colors.cyan, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  aiCheckBtnText: { color: Colors.night, fontWeight: '700', fontSize: 13 },
 
   doneSection: { marginTop: 16 },
   doneSectionHeader: {
